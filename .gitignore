@@ -5,6 +5,7 @@ node_modules/
 # Build
 /dist
 /build
+/inksa-entregadores/dist/ # Esta linha é crucial para sua estrutura aninhada
 
 # Arquivos de log
 npm-debug.log*
