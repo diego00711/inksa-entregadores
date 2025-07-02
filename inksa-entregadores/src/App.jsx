@@ -1,23 +1,53 @@
-import React, { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Input } from '@/components/ui/input.jsx';
+import { Label } from '@/components/ui/label.jsx';
+import { Badge } from '@/components/ui/badge.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Area, AreaChart
-} from 'recharts'
+} from 'recharts';
 import { 
   Truck, MapPin, Clock, DollarSign, TrendingUp, Star,
   CheckCircle, XCircle, AlertCircle, Navigation, Phone,
   Package, User, Settings, LogOut, Eye, Play, Pause,
   RotateCcw, Calendar, BarChart3, Award, Target,
   Zap, Timer, Route, Fuel, Shield
-} from 'lucide-react'
-import logoImg from './assets/logo.png'
-import './App.css'
+} from 'lucide-react';
+// Removido: import newLogoImg from 'https://placehold.co/100x100/FF5733/FFFFFF?text=NOVA+LOGO';
+// Removido: import logoImg from './assets/logo.png';
+import './App.css';
+
+// Componente SVG da Nova Logo (Caminhão de Entrega com Asas)
+// Este SVG representa um caminhão de entrega com elementos que sugerem velocidade e movimento.
+// As cores foram escolhidas para combinar com o tema do aplicativo.
+const DeliveryLogo = ({ className = "w-24 h-24" }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    {/* Corpo do caminhão: um retângulo arredondado que forma a parte de carga do veículo. */}
+    <rect x="1" y="3" width="15" height="10" rx="2" ry="2" fill="#2563eb" stroke="#2563eb" />
+    {/* Rodas: dois círculos escuros para as rodas do caminhão. */}
+    <circle cx="5" cy="17" r="3" fill="#333" stroke="#333" />
+    <circle cx="17" cy="17" r="3" fill="#333" stroke="#333" />
+    {/* Cabine: um caminho que forma a área do motorista do caminhão. */}
+    <path d="M16 8V3h4l3 3v7H16z" fill="#1e40af" stroke="#1e40af" />
+    {/* Asa (simulando velocidade/entrega): linhas que dão a impressão de movimento rápido. */}
+    <path d="M20 5l3 3m-3 -3l-3 3" stroke="#fcd34d" strokeWidth="2" />
+    <path d="M22 6h-2l-2 2" stroke="#fcd34d" strokeWidth="2" />
+    {/* Detalhe da logo Inksa: um texto simples para a marca dentro do caminhão. */}
+    <text x="8" y="10" fontSize="5" fill="white" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle">INKS</text>
+  </svg>
+);
+
 
 // Dados simulados para entregadores
 const mockDeliveries = [
@@ -73,14 +103,14 @@ const mockDeliveries = [
     phone: '(11) 66666-6666',
     estimatedTime: '15 min'
   }
-]
+];
 
 const mockStats = {
   todayDeliveries: 12,
   todayEarnings: 285.50,
   avgRating: 4.8,
   completionRate: 98
-}
+};
 
 const earningsData = [
   { name: 'Seg', ganhos: 180, entregas: 8 },
@@ -90,47 +120,62 @@ const earningsData = [
   { name: 'Sex', ganhos: 310, entregas: 14 },
   { name: 'Sáb', ganhos: 380, entregas: 16 },
   { name: 'Dom', ganhos: 290, entregas: 13 }
-]
+];
 
 // Componente de Login
 function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(''); // Estado para mensagem de erro
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage(''); // Limpa a mensagem de erro anterior
     
     // Simular autenticação
     setTimeout(() => {
       if (email === 'entregador@inksa.com' && password === 'ent123') {
-        localStorage.setItem('deliveryLoggedIn', 'true')
-        onLogin(true)
+        localStorage.setItem('deliveryLoggedIn', 'true');
+        onLogin(true);
       } else {
-        alert('Credenciais inválidas')
+        setErrorMessage('Credenciais inválidas. Verifique seu email e senha.'); // Define a mensagem de erro
       }
-      setLoading(false)
-    }, 1000)
-  }
+      setLoading(false);
+    }, 1000);
+  };
+
+  // Função placeholder para "Esqueceu a senha?"
+  const handleForgotPassword = () => {
+    // Aqui você implementaria a lógica para navegar para a página de recuperação de senha
+    // ou abrir um modal. Por enquanto, um console.log.
+    console.log('Navegar para Esqueceu a Senha');
+    setErrorMessage('Funcionalidade "Esqueceu a Senha" em desenvolvimento.');
+  };
+
+  // Função placeholder para "Cadastre-se"
+  const handleRegister = () => {
+    // Aqui você implementaria a lógica para navegar para a página de cadastro
+    // ou abrir um modal. Por enquanto, um console.log.
+    console.log('Navegar para Cadastro');
+    setErrorMessage('Funcionalidade "Cadastro" em desenvolvimento.');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center space-y-4">
+      <Card className="w-full max-w-md shadow-2xl rounded-xl">
+        <CardHeader className="text-center space-y-4 pt-8">
           <div className="flex justify-center">
-            <img 
-              src={logoImg} 
-              alt="Inksa Logo" 
-              className="w-20 h-20 rounded-xl object-contain bg-white p-2"
-            />
+            {/* Nova Logo SVG */}
+            <DeliveryLogo className="w-24 h-24" />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold text-gray-900">Inksa Entregadores</CardTitle>
             <CardDescription className="text-lg text-gray-600">App de Entregas</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pb-8">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email do Entregador</Label>
@@ -140,27 +185,61 @@ function LoginPage({ onLogin }) {
                 placeholder="entregador@inksa.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
+                className="h-11 rounded-md"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                {/* Link "Esqueceu a senha?" */}
+                <Button 
+                  variant="link" 
+                  type="button" 
+                  onClick={handleForgotPassword} 
+                  className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Esqueceu a senha?
+                </Button>
+              </div>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
+                className="h-11 rounded-md"
                 required
               />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-medium bg-blue-600 hover:bg-blue-700" disabled={loading}>
+            {/* Mensagem de erro */}
+            {errorMessage && (
+              <div className="text-red-600 text-sm text-center p-2 bg-red-50 rounded-md">
+                {errorMessage}
+              </div>
+            )}
+            <Button 
+              type="submit" 
+              className="w-full h-11 text-base font-medium bg-blue-600 hover:bg-blue-700 rounded-md transition-colors" 
+              disabled={loading}
+            >
               {loading ? 'Entrando...' : 'Acessar App'}
             </Button>
           </form>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
+
+          {/* Botão "Cadastre-se" */}
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600 mb-2">Não tem uma conta?</p>
+            <Button 
+              variant="outline" 
+              className="w-full h-11 text-base font-medium border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+              onClick={handleRegister}
+            >
+              Cadastre-se
+            </Button>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
             <p className="text-sm font-medium text-gray-700 mb-2">Credenciais de teste:</p>
             <p className="text-sm text-gray-600">Email: entregador@inksa.com</p>
             <p className="text-sm text-gray-600">Senha: ent123</p>
@@ -168,7 +247,7 @@ function LoginPage({ onLogin }) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 // Componente de Header
@@ -177,11 +256,7 @@ function Header({ deliveryName, isOnline, onToggleOnline, onLogout }) {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <img 
-            src={logoImg} 
-            alt="Inksa Logo" 
-            className="w-10 h-10 rounded-lg object-contain"
-          />
+          <DeliveryLogo className="w-10 h-10" /> {/* Usando a nova logo SVG no header */}
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{deliveryName}</h1>
             <p className="text-gray-600">Entregador Inksa</p>
@@ -208,14 +283,14 @@ function Header({ deliveryName, isOnline, onToggleOnline, onLogout }) {
         </div>
       </div>
     </header>
-  )
+  );
 }
 
 // Componente de Estatísticas
 function StatsCards() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -229,7 +304,7 @@ function StatsCards() {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -243,7 +318,7 @@ function StatsCards() {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -257,7 +332,7 @@ function StatsCards() {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -271,53 +346,53 @@ function StatsCards() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 // Componente de Entrega
 function DeliveryCard({ delivery, onUpdateStatus }) {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'available': return 'bg-blue-100 text-blue-800'
-      case 'accepted': return 'bg-yellow-100 text-yellow-800'
-      case 'picked_up': return 'bg-purple-100 text-purple-800'
-      case 'delivered': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'available': return 'bg-blue-100 text-blue-800';
+      case 'accepted': return 'bg-yellow-100 text-yellow-800';
+      case 'picked_up': return 'bg-purple-100 text-purple-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'available': return 'Disponível'
-      case 'accepted': return 'Aceito'
-      case 'picked_up': return 'Coletado'
-      case 'delivered': return 'Entregue'
-      default: return 'Desconhecido'
+      case 'available': return 'Disponível';
+      case 'accepted': return 'Aceito';
+      case 'picked_up': return 'Coletado';
+      case 'delivered': return 'Entregue';
+      default: return 'Desconhecido';
     }
-  }
+  };
 
   const getNextStatus = (status) => {
     switch (status) {
-      case 'available': return 'accepted'
-      case 'accepted': return 'picked_up'
-      case 'picked_up': return 'delivered'
-      default: return status
+      case 'available': return 'accepted';
+      case 'accepted': return 'picked_up';
+      case 'picked_up': return 'delivered';
+      default: return status;
     }
-  }
+  };
 
   const getNextStatusText = (status) => {
     switch (status) {
-      case 'available': return 'Aceitar Entrega'
-      case 'accepted': return 'Coletar Pedido'
-      case 'picked_up': return 'Finalizar Entrega'
-      default: return ''
+      case 'available': return 'Aceitar Entrega';
+      case 'accepted': return 'Coletar Pedido';
+      case 'picked_up': return 'Finalizar Entrega';
+      default: return '';
     }
-  }
+  };
 
-  const totalValue = delivery.value + delivery.tip
+  const totalValue = delivery.value + delivery.tip;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow rounded-xl">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -325,7 +400,7 @@ function DeliveryCard({ delivery, onUpdateStatus }) {
             <p className="text-gray-600">{delivery.customer}</p>
             <p className="text-sm text-gray-500">{delivery.restaurant}</p>
           </div>
-          <Badge className={getStatusColor(delivery.status)}>
+          <Badge className={getStatusColor(delivery.status) + " rounded-md"}>
             {getStatusText(delivery.status)}
           </Badge>
         </div>
@@ -363,7 +438,7 @@ function DeliveryCard({ delivery, onUpdateStatus }) {
           {delivery.status !== 'delivered' && (
             <Button 
               size="sm" 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
               onClick={() => onUpdateStatus(delivery.id, getNextStatus(delivery.status))}
             >
               {getNextStatusText(delivery.status)}
@@ -372,14 +447,14 @@ function DeliveryCard({ delivery, onUpdateStatus }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // Componente de Gráficos
 function ChartsSection() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>Ganhos por Dia</CardTitle>
           <CardDescription>Últimos 7 dias</CardDescription>
@@ -394,13 +469,13 @@ function ChartsSection() {
                 name === 'ganhos' ? `R$ ${value}` : value,
                 name === 'ganhos' ? 'Ganhos' : 'Entregas'
               ]} />
-              <Bar dataKey="ganhos" fill="#2563eb" />
+              <Bar dataKey="ganhos" fill="#2563eb" className="rounded-t-lg" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>Entregas por Dia</CardTitle>
           <CardDescription>Últimos 7 dias</CardDescription>
@@ -418,28 +493,28 @@ function ChartsSection() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 // Componente Principal
 function DeliveryDashboard({ onLogout }) {
-  const [deliveries, setDeliveries] = useState(mockDeliveries)
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const [isOnline, setIsOnline] = useState(true)
+  const [deliveries, setDeliveries] = useState(mockDeliveries);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isOnline, setIsOnline] = useState(true);
 
   const handleUpdateDeliveryStatus = (deliveryId, newStatus) => {
     setDeliveries(deliveries.map(delivery => 
       delivery.id === deliveryId ? { ...delivery, status: newStatus } : delivery
-    ))
-  }
+    ));
+  };
 
   const filterDeliveriesByStatus = (status) => {
-    return deliveries.filter(delivery => delivery.status === status)
-  }
+    return deliveries.filter(delivery => delivery.status === status);
+  };
 
   const handleToggleOnline = () => {
-    setIsOnline(!isOnline)
-  }
+    setIsOnline(!isOnline);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -452,7 +527,7 @@ function DeliveryDashboard({ onLogout }) {
       
       <main className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4 rounded-md">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="deliveries">Entregas</TabsTrigger>
             <TabsTrigger value="earnings">Ganhos</TabsTrigger>
@@ -473,7 +548,7 @@ function DeliveryDashboard({ onLogout }) {
             <StatsCards />
             <ChartsSection />
             
-            <Card>
+            <Card className="rounded-xl">
               <CardHeader>
                 <CardTitle>Entregas Disponíveis</CardTitle>
                 <CardDescription>Pedidos próximos à sua localização</CardDescription>
@@ -498,7 +573,7 @@ function DeliveryDashboard({ onLogout }) {
             </div>
 
             <Tabs defaultValue="all" className="space-y-4">
-              <TabsList>
+              <TabsList className="rounded-md">
                 <TabsTrigger value="all">Todas ({deliveries.length})</TabsTrigger>
                 <TabsTrigger value="available">Disponíveis ({filterDeliveriesByStatus('available').length})</TabsTrigger>
                 <TabsTrigger value="accepted">Aceitas ({filterDeliveriesByStatus('accepted').length})</TabsTrigger>
@@ -576,7 +651,7 @@ function DeliveryDashboard({ onLogout }) {
             <StatsCards />
             <ChartsSection />
             
-            <Card>
+            <Card className="rounded-xl">
               <CardHeader>
                 <CardTitle>Resumo Semanal</CardTitle>
                 <CardDescription>Últimos 7 dias</CardDescription>
@@ -605,7 +680,7 @@ function DeliveryDashboard({ onLogout }) {
               <h2 className="text-2xl font-bold text-gray-900">Meu Perfil</h2>
             </div>
             
-            <Card>
+            <Card className="rounded-xl">
               <CardContent className="p-12">
                 <div className="text-center text-gray-500">
                   <User className="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -619,34 +694,33 @@ function DeliveryDashboard({ onLogout }) {
         </Tabs>
       </main>
     </div>
-  )
+  );
 }
 
 // Componente Principal da Aplicação
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     // Verificar se o entregador está logado
-    const loggedIn = localStorage.getItem('deliveryLoggedIn') === 'true'
-    setIsLoggedIn(loggedIn)
-  }, [])
+    const loggedIn = localStorage.getItem('deliveryLoggedIn') === 'true';
+    setIsLoggedIn(loggedIn);
+  }, []);
 
   const handleLogin = (status) => {
-    setIsLoggedIn(status)
-  }
+    setIsLoggedIn(status);
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem('deliveryLoggedIn')
-    setIsLoggedIn(false)
-  }
+    localStorage.removeItem('deliveryLoggedIn');
+    setIsLoggedIn(false);
+  };
 
   if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />
+    return <LoginPage onLogin={handleLogin} />;
   }
 
-  return <DeliveryDashboard onLogout={handleLogout} />
+  return <DeliveryDashboard onLogout={handleLogout} />;
 }
 
-export default App
-
+export default App;
