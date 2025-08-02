@@ -1,4 +1,4 @@
-// Ficheiro: src/services/authService.js
+// Ficheiro: src/services/authService.js (VERSÃO CORRIGIDA E CONSOLIDADA)
 
 // A URL base da sua API. Mantemos aqui pois é usada pela autenticação.
 const API_BASE_URL = '/api';
@@ -72,6 +72,8 @@ export const authService = {
         if (data.access_token) {
             localStorage.setItem(AUTH_TOKEN_KEY, data.access_token);
             // Salva os dados do utilizador retornados no login.
+            // **IMPORTANTE:** O 'data.data.user' ou 'data.user' deve conter o 'id' do delivery_profile aqui.
+            // Pelo que vi, 'data.data.user' é o mais provável de existir.
             localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(data.data.user || data.user));
         }
         return data;
@@ -106,5 +108,18 @@ export const authService = {
             body: JSON.stringify({ access_token: token, password: newPassword }),
         });
         return processResponse(response);
+    },
+
+    /**
+     * Retorna o ID do perfil do utilizador (entregador) logado.
+     * Assume que o objeto de usuário salvo no localStorage (DELIVERY_USER_DATA_KEY)
+     * tem uma propriedade 'id' que corresponde ao ID do delivery_profile.
+     * @returns {string|null} - O ID do perfil ou null se não estiver logado.
+     */
+    getProfileId: () => {
+        const user = authService.getUser(); // Reutiliza a função getUser existente
+        // Com base nos seus schemas, o ID do perfil na tabela delivery_profiles é 'id'.
+        // O objeto de usuário salvo no localStorage deve conter este 'id'.
+        return user ? user.id : null; 
     },
 };

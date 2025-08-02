@@ -1,4 +1,4 @@
-// Ficheiro: src/main.jsx (VERSÃO FINAL CORRIGIDA)
+// Ficheiro: src/main.jsx (VERSÃO FINAL E CORRIGIDA)
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -9,13 +9,16 @@ import 'leaflet/dist/leaflet.css';
 
 import App from './App';
 import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
+import { ToastProvider } from './context/ToastContext'; // <-- NOVA IMPORTAÇÃO
 import './app.css'; 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <DeliveryProfileProvider>
-        <App />
+        <ToastProvider> {/* <-- NOVO: Envolvendo o App com ToastProvider */}
+          <App />
+        </ToastProvider>
       </DeliveryProfileProvider>
     </BrowserRouter>
   </React.StrictMode>
