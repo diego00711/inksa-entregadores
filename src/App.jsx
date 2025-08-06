@@ -1,4 +1,4 @@
-// Ficheiro: src/App.jsx (VERSÃO FINAL COM IMPORTAÇÃO CORRETA DO DASHBOARD)
+// Ficheiro: src/App.jsx (VERSÃO FINAL COM ROTA DE GAMIFICAÇÃO)
 
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -7,7 +7,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import DeliveryPortalLayout from './components/delivery-portal/DeliveryPortalLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; 
 
-// 1. IMPORTAÇÃO CORRIGIDA: Agora importamos o ficheiro e o componente corretos.
 import DeliveryDashboard from './pages/DeliveryDashboard.jsx'; 
 import { LoginPage } from './pages/LoginPage.jsx';
 import { MyDeliveriesPage } from './pages/MyDeliveriesPage.jsx';
@@ -17,6 +16,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import DeliveryProfilePage from './pages/DeliveryProfilePage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import GamificationPage from './pages/GamificationPage.jsx'; // <-- NOVA IMPORTAÇÃO AQUI!
 
 function App() {
   return (
@@ -39,12 +39,11 @@ function App() {
           </ProtectedRoute>
         } 
       >
-        {/* 2. ROTA CORRIGIDA: Agora usa o componente importado corretamente. */}
         <Route path="dashboard" element={<DeliveryDashboard />} />
-
         <Route path="entregas" element={<MyDeliveriesPage />} />
         <Route path="ganhos" element={<EarningsPage />} />
         <Route path="meu-perfil" element={<DeliveryProfilePage />} />
+        <Route path="gamificacao" element={<GamificationPage />} /> {/* <-- NOVA ROTA AQUI! */}
         
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>

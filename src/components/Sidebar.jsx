@@ -1,9 +1,9 @@
-// Ficheiro: src/components/Sidebar.jsx (VERSÃO FINAL)
+// Ficheiro: src/components/Sidebar.jsx (VERSÃO FINAL E CORRIGIDA COM LINK DE GAMIFICAÇÃO)
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
-import { LayoutDashboard, List, BarChart2, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, List, BarChart2, User, LogOut, Trophy } from 'lucide-react'; // <-- NOVO: Trophy icon
 
 export function Sidebar() {
   const { profile, logout } = useProfile();
@@ -14,21 +14,20 @@ export function Sidebar() {
     { name: 'Entregas', icon: List, path: '/delivery/entregas' },
     { name: 'Ganhos', icon: BarChart2, path: '/delivery/ganhos' },
     { name: 'Meu Perfil', icon: User, path: '/delivery/meu-perfil' },
+    { name: 'Gamificação', icon: Trophy, path: '/delivery/gamificacao' }, // <-- NOVO ITEM DE NAVEGAÇÃO AQUI!
   ];
 
   return (
     <div className="sidebar">
       <div>
-        <div className="sidebar-header">
-          <img src="/inka-logo.png" alt="Inksa Logo" className="logo h-16 mx-auto mb-8" />
-          <div className="profile-info text-center">
+        <div className="profile-info">
             <img 
               src={profile?.avatar_url || 'https://sbcf.fr/wp-content/uploads/2018/03/sbcf-default-avatar.png'} 
               alt="Avatar" 
-              className="avatar w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-orange-400" 
+              className="avatar"
             />
-            <span className="profile-name font-semibold text-lg">{profile?.name || 'Entregador'}</span>
-          </div>
+            <span className="profile-name">{profile?.first_name || 'Entregador'} {profile?.last_name || ''}</span>
+            <span className="profile-type">Entregador</span>
         </div>
 
         <nav className="sidebar-nav">
@@ -44,6 +43,7 @@ export function Sidebar() {
           ))}
         </nav>
       </div>
+
       <div className="sidebar-footer">
         <button onClick={logout} className="nav-link logout-btn w-full">
             <LogOut size={20} />

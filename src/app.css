@@ -2,13 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ... (a sua secção de @theme, :root e .dark, que já está correta, permanece aqui) ... */
+/* ... (a sua secção de @theme permanece aqui) ... */
 @custom-variant dark (&:is(.dark *));
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-md: calc(var( --radius) - 2px);
+  --radius-lg: var( --radius);
+  --radius-xl: calc(var( --radius) + 4px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -42,30 +42,29 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* --- BLOCO :root CORRIGIDO PARA O TEMA CLARO --- */
+/* --- BLOCO :root (TEMA CLARO) - CORES AJUSTADAS PARA FUNDO BRANCO --- */
 :root {
   --radius: 0.625rem;
   
-  /* Fundo principal: um cinzento muito claro para dar contraste aos cartões */
-  --background: oklch(0.98 0.005 240); 
+  /* Fundo principal: BRANCO PURO */
+  --background: oklch(1 0 0); /* Branco puro */
   --foreground: oklch(0.145 0 0); /* Texto principal (preto) */
 
-  /* Cartões: branco puro para se destacarem */
+  /* Cartões: Branco puro */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
 
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* Cor Primária: o laranja da sua marca */
-  --primary: oklch(0.7 0.16 45);
-  --primary-foreground: oklch(1 0 0); /* Texto branco para botões primários */
+  /* Cor Primária: o laranja da sua marca (mantido) */
+  --primary: oklch(0.7 0.16 45); 
+  --primary-foreground: oklch(1 0 0); 
 
-  /* Cor Secundária: um cinzento claro para botões e fundos secundários */
+  /* Cor Secundária: um cinzento claro */
   --secondary: oklch(0.94 0.01 240);
   --secondary-foreground: oklch(0.205 0 0);
 
-  /* Muted: para textos e elementos com menos destaque */
   --muted: oklch(0.94 0.01 240);
   --muted-foreground: oklch(0.5 0.01 240);
 
@@ -74,10 +73,10 @@
 
   --destructive: oklch(0.577 0.245 27.325);
 
-  /* Borda: um cinzento visível para separar os elementos */
+  /* Borda: um cinzento visível */
   --border: oklch(0.9 0.01 240);
   --input: oklch(0.9 0.01 240);
-  --ring: oklch(0.7 0.16 45); /* Anel de foco laranja */
+  --ring: oklch(0.7 0.16 45); 
 
   /* Cores dos gráficos (mantidas) */
   --chart-1: oklch(0.646 0.222 41.116);
@@ -86,59 +85,63 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  /* Cores da Sidebar para o tema claro (mantidas) */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* --- CORES DA SIDEBAR DO ENTREGADOR (TEMA CLARO - AZUL) - MANTIDAS --- */
+  --sidebar: oklch(0.2 0.05 260); /* Um azul escuro e sóbrio */
+  --sidebar-foreground: oklch(0.98 0 0); /* Texto quase branco */
+  --sidebar-primary: oklch(0.98 0 0); /* Fundo do item ativo (quase branco) */
+  --sidebar-primary-foreground: oklch(0.145 0 0); /* Texto do item ativo (preto) */
+  --sidebar-accent: oklch(0.3 0.06 260); /* Azul um pouco mais claro para acentos (hover) */
+  --sidebar-accent-foreground: oklch(0.98 0 0); /* Texto dos acentos */
+  --sidebar-border: oklch(0.25 0.05 260); /* Borda da sidebar */
+  --sidebar-ring: oklch(0.4 0.08 260); /* Anel de foco */
 }
-/* --- FIM DO BLOCO CORRIGIDO --- */
+/* --- FIM DO BLOCO :root CORRIGIDO --- */
 
-/* VERSÃO ATUALIZADA DO TEMA ESCURO (inalterado) */
+/* VERSÃO ATUALIZADA DO TEMA ESCURO (FUNDO BRANCO) */
 .dark {
-  /* Fundo principal para um laranja bem claro */
-  --background: oklch(0.96 0.02 60);
-  --foreground: oklch(0.145 0 0);
+  /* --- CORRIGIDO: Fundo principal para BRANCO PURO --- */
+  --background: oklch(1 0 0); /* Branco puro */
+  --foreground: oklch(0.145 0 0); /* Texto principal (preto), para contrastar com o fundo branco */
 
-  --card: oklch(1 0 0); /* Cartões brancos para contraste */
-  --card-foreground: oklch(0.145 0 0);
+  /* Cartões: Também branco puro para consistência */
+  --card: oklch(1 0 0); 
+  --card-foreground: oklch(0.145 0 0); 
   
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.922 0 0);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  /* Cor Primária: o laranja da sua marca (mantido) */
+  --primary: oklch(0.6 0.15 45); 
+  --primary-foreground: oklch(0.1 0 0); 
+
+  /* Cores Secundárias: ajustadas para contrastar com o fundo branco */
+  --secondary: oklch(0.94 0.01 240); /* Um cinza claro */
+  --secondary-foreground: oklch(0.2 0 0); /* Texto cinza escuro */
+  --muted: oklch(0.94 0.01 240);
+  --muted-foreground: oklch(0.5 0.01 240);
+  --accent: oklch(0.94 0.01 240);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325); /* Vermelho */
+  --border: oklch(0.9 0.01 240); /* Borda cinza visível no branco */
+  --input: oklch(0.9 0.01 240); /* Input backgrounds */
+  --ring: oklch(0.6 0.15 45); 
+
+  /* Cores dos gráficos (mantidas) */
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
 
-  /* Cor da sidebar para um laranja mais suave */
-  --sidebar: oklch(0.7 0.16 45); /* Laranja mais "queimado" e menos vibrante */
-  --sidebar-foreground: oklch(1 0 0); /* Texto branco para bom contraste */
-  
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  
-  /* Borda da sidebar a combinar com a nova cor */
-  --sidebar-border: oklch(0.65 0.16 45); 
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Cores da sidebar (mantidas do ajuste anterior que você gostou) */
+  --sidebar: oklch(0.15 0.03 260); 
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.98 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.25 0.04 260); 
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.2 0.03 260);
+  --sidebar-ring: oklch(0.3 0.06 260);
 }
 
 
@@ -160,13 +163,26 @@
   .main-content {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: var(--background);
+    background-color: var(--background); 
   }
 
-  /* VERSÃO ATUALIZADA DA SIDEBAR */
+  /* --- ESTILO PARA O CABEÇALHO (MANTIDO DO AJUSTE ANTERIOR) --- */
+  .main-content > header {
+      background-color: var(--card); 
+      border-bottom: 1px solid var(--border); 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+      padding: 16px 24px; 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky; 
+      top: 0;
+      z-index: 10; 
+  }
+
+  /* VERSÃO ATUALIZADA DA SIDEBAR (MANTIDA DO AJUSTE ANTERIOR, AGORA USANDO AS NOVAS CORES) */
   .sidebar {
     width: 260px;
-    /* Usamos a variável para que a cor possa mudar com o tema */
     background-color: var(--sidebar); 
     color: var(--sidebar-foreground);
     border-right: 1px solid var(--sidebar-border);
@@ -175,33 +191,51 @@
     justify-content: space-between;
     padding: 20px;
     flex-shrink: 0;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
   }
 
   .sidebar-header {
     text-align: center;
+    padding-bottom: 20px; 
+    border-bottom: 1px solid var(--sidebar-border); 
+    margin-bottom: 20px;
   }
   
+  .profile-info { 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px; 
+  }
+
   .profile-info .avatar {
       width: 80px;
       height: 80px;
       border-radius: 50%;
       object-fit: cover;
-      margin: 0 auto 12px;
-      border: 3px solid rgba(255, 255, 255, 0.8);
+      margin-bottom: 8px; 
+      border: 3px solid var(--sidebar-primary); 
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.3); 
   }
 
   .profile-info .profile-name {
     font-weight: 600;
     font-size: 1.1rem;
-    color: #ffffff;
+    color: var(--sidebar-foreground); 
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
   }
+  .profile-info .profile-type { 
+    font-size: 0.9rem;
+    color: var(--sidebar-foreground);
+    opacity: 0.8;
+  }
+
 
   .sidebar-nav {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 24px;
+    flex-grow: 1; 
   }
 
   .nav-link {
@@ -210,23 +244,30 @@
     gap: 12px;
     padding: 10px 12px;
     border-radius: 8px;
-    color: #ffffff;
+    color: var(--sidebar-foreground); 
     text-decoration: none;
     font-weight: 500;
     transition: background-color 0.2s, color 0.2s;
   }
 
   .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--sidebar-accent); 
+    color: var(--sidebar-accent-foreground); 
   }
 
   .nav-link.active {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--sidebar-primary); 
+    color: var(--sidebar-primary-foreground); 
     font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--sidebar-ring); 
   }
 
   .sidebar-footer {
     padding-top: 16px;
-    border-top: 1px solid #ea580c;
+    border-top: 1px solid var(--sidebar-border); 
+    color: var(--sidebar-foreground); 
+    text-align: center; 
+    font-size: 0.9rem;
+    opacity: 0.9;
   }
 }
