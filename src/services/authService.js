@@ -1,125 +1,225 @@
-// Ficheiro: src/services/authService.js (VERSÃO CORRIGIDA E CONSOLIDADA)
-
-// A URL base da sua API. Mantemos aqui pois é usada pela autenticação.
-const API_BASE_URL = '/api';
-
-// Chaves do localStorage para manter a consistência.
+// services/authService.js - INKSA ENTREGADORES
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const DELIVERY_USER_DATA_KEY = 'deliveryUser';
 
-/**
- * Cria os cabeçalhos de autenticação para as chamadas à API.
- * Esta função será usada tanto pelo authService quanto pelo deliveryService.
- * @returns {object} - Objeto de cabeçalho com o token, se existir.
- */
-export const createAuthHeaders = () => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-/**
- * Processa a resposta da API, tratando erros de forma centralizada.
- * Esta função também será usada pelos dois serviços.
- * @param {Response} response - O objeto de resposta do fetch.
- * @returns {Promise<object|null>} - Os dados da resposta em JSON.
- */
-export const processResponse = async (response) => {
-    // Se não autorizado, limpa a sessão e redireciona para o login.
+const processResponse = async (response) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(DELIVERY_USER_DATA_KEY);
         window.location.href = '/login';
-        throw new Error('Sessão expirada. Por favor, faça login novamente.');
-    }
-    // Trata outras respostas de erro.
-    if (!response.ok) {
-        try {
-            const errorData = await response.json();
-            const errorMessage = errorData.message || errorData.error || `Erro ${response.status}`;
-            throw new Error(errorMessage);
-        } catch (jsonError) {
-            throw new Error(`Erro HTTP ${response.status}`);
-        }
-    }
-    // Se a resposta for "No Content", retorna null.
-    if (response.status === 204) {
         return null;
     }
+    
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    
     return response.json();
 };
 
+const authService = {
+    async login(email, password) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    email, 
+                    password,
+                    user_type: 'entregador' 
+                }),
+            });
 
-// --- SERVIÇO DE AUTENTICAÇÃO ---
-// Um objeto que agrupa todas as funções de autenticação.
-export const authService = {
-    register: async (name, email, password, phone) => {
-        const dataToSend = { email, password, name, user_type: 'delivery', profileData: { phone } };
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataToSend),
-        });
-        return processResponse(response);
-    },
-
-    login: async (email, password) => {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, user_type: 'delivery' }),
-        });
-        const data = await processResponse(response);
-        if (data.access_token) {
-            localStorage.setItem(AUTH_TOKEN_KEY, data.access_token);
-            // Salva os dados do utilizador retornados no login.
-            // **IMPORTANTE:** O 'data.data.user' ou 'data.user' deve conter o 'id' do delivery_profile aqui.
-            // Pelo que vi, 'data.data.user' é o mais provável de existir.
-            localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(data.data.user || data.user));
+            const data = await processResponse(response);
+            
+            if (data && data.token) {
+                localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+                localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(data.user));
+                return data;
+            }
+            
+            throw new Error('Token não recebido');
+        } catch (error) {
+            console.error('Erro no login:', error);
+            throw error;
         }
-        return data;
     },
 
-    logout: () => {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(DELIVERY_USER_DATA_KEY);
-        window.location.href = '/login';
+    async register(deliveryData) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...deliveryData,
+                    user_type: 'entregador'
+                }),
+            });
+
+            const data = await processResponse(response);
+            
+            if (data && data.token) {
+                localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+                localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(data.user));
+                return data;
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Erro no registro:', error);
+            throw error;
+        }
     },
 
-    isAuthenticated: () => !!localStorage.getItem(AUTH_TOKEN_KEY),
-
-    getUser: () => {
-        const user = localStorage.getItem(DELIVERY_USER_DATA_KEY);
-        return user ? JSON.parse(user) : null;
-    },
-    
-    forgotPassword: async (email) => {
-        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
-        return processResponse(response);
-    },
-
-    resetPassword: async (token, newPassword) => {
-        const response = await fetch(`${API_BASE_URL}/auth/update-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_token: token, password: newPassword }),
-        });
-        return processResponse(response);
+    async logout() {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            if (token) {
+                await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('Erro no logout:', error);
+        } finally {
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            localStorage.removeItem(DELIVERY_USER_DATA_KEY);
+            window.location.href = '/login';
+        }
     },
 
-    /**
-     * Retorna o ID do perfil do utilizador (entregador) logado.
-     * Assume que o objeto de usuário salvo no localStorage (DELIVERY_USER_DATA_KEY)
-     * tem uma propriedade 'id' que corresponde ao ID do delivery_profile.
-     * @returns {string|null} - O ID do perfil ou null se não estiver logado.
-     */
-    getProfileId: () => {
-        const user = authService.getUser(); // Reutiliza a função getUser existente
-        // Com base nos seus schemas, o ID do perfil na tabela delivery_profiles é 'id'.
-        // O objeto de usuário salvo no localStorage deve conter este 'id'.
-        return user ? user.id : null; 
+    async updateLocation(latitude, longitude) {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/delivery/location`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ latitude, longitude }),
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao atualizar localização:', error);
+            throw error;
+        }
     },
+
+    async setAvailability(isAvailable) {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/delivery/availability`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ is_available: isAvailable }),
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao alterar disponibilidade:', error);
+            throw error;
+        }
+    },
+
+    async getActiveDeliveries() {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/delivery/active`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao buscar entregas ativas:', error);
+            throw error;
+        }
+    },
+
+    async acceptDelivery(deliveryId) {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao aceitar entrega:', error);
+            throw error;
+        }
+    },
+
+    async completeDelivery(deliveryId) {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao completar entrega:', error);
+            throw error;
+        }
+    },
+
+    async getEarnings(period) {
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/delivery/earnings?period=${period}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao buscar ganhos:', error);
+            throw error;
+        }
+    },
+
+    getToken() {
+        return localStorage.getItem(AUTH_TOKEN_KEY);
+    },
+
+    getCurrentDeliveryUser() {
+        const deliveryStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
+        return deliveryStr ? JSON.parse(deliveryStr) : null;
+    },
+
+    isAuthenticated() {
+        return !!localStorage.getItem(AUTH_TOKEN_KEY);
+    }
 };
+
+export default authService;
