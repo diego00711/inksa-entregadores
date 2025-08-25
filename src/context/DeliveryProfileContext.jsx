@@ -1,7 +1,7 @@
 // Ficheiro: src/context/DeliveryProfileContext.jsx (VERSÃO COM UPDATE)
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authService } from '../services/authService.js';
+import  authService  from '../services/authService.js';
 import DeliveryService from '../services/deliveryService.js';
 
 const DeliveryProfileContext = createContext(null);
