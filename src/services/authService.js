@@ -1,249 +1,124 @@
-// authService.js - VERSÃO FINAL PARA TODOS OS APPS
-// Funciona com a estrutura real da API: session.access_token
+// src/services/deliveryService.js (VERSÃO COMPLETA E CORRIGIDA)
 
+// Importa o authService como o módulo padrão para obter o token.
+import authService from './authService';
+
+// A URL base da API deve vir das variáveis de ambiente.
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
-const AUTH_TOKEN_KEY = 'deliveryAuthToken';
-const USER_DATA_KEY = 'deliveryUser';
-const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
-const DEFAULT_USER_TYPE = 'entregador'; 
+/**
+ * Função auxiliar para processar a resposta da API.
+ * Lida com erros comuns e redireciona para o login se o token for inválido.
+ */
 const processResponse = async (response ) => {
+    // Se o token for inválido ou expirado, a API retorna 401.
     if (response.status === 401) {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(USER_DATA_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-        window.location.href = '/login';
+        // O authService já tem a lógica para limpar o storage e redirecionar.
+        authService.logout();
+        // Retorna null para interromper o fluxo.
         return null;
     }
     
+    // Se a resposta não for bem-sucedida (ex: erro 400, 500).
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        // Tenta extrair a mensagem de erro do corpo da resposta.
+        const error = await response.json().catch(() => ({ message: 'Erro desconhecido no servidor' }));
+        // Lança um erro para ser capturado pelo bloco catch da chamada.
         throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
     }
     
+    // Se tudo correu bem, retorna os dados da resposta em formato JSON.
     return response.json();
 };
 
-const authService = {
-    async login(email, password, userType = DEFAULT_USER_TYPE) {
-        try {
-            console.log('Tentando login com:', { email, user_type: userType });
-            
-            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    email, 
-                    password,
-                    user_type: userType 
-                }),
-            });
-
-            const data = await processResponse(response);
-            console.log('Resposta do servidor:', data);
-            
-            if (data && data.session && data.session.access_token) {
-                const token = data.session.access_token;
-                const refreshToken = data.session.refresh_token;
-                const user = data.user;
-                
-                localStorage.setItem(AUTH_TOKEN_KEY, token);
-                localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-                
-                console.log('Login bem-sucedido! Token salvo.');
-                
-                return {
-                    token: token,
-                    user: user,
-                    success: true,
-                    message: data.message
-                };
-            }
-            
-            throw new Error('Token não recebido do servidor');
-        } catch (error) {
-            console.error('Erro no login:', error);
-            throw error;
-        }
-    },
-
-    async register(userData, userType = DEFAULT_USER_TYPE) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...userData,
-                    user_type: userType
-                }),
-            });
-
-            const data = await processResponse(response);
-            
-            if (data && data.session && data.session.access_token) {
-                const token = data.session.access_token;
-                const refreshToken = data.session.refresh_token;
-                const user = data.user;
-                
-                localStorage.setItem(AUTH_TOKEN_KEY, token);
-                localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-                
-                return {
-                    token: token,
-                    user: user,
-                    success: true,
-                    message: data.message
-                };
-            }
-            
-            return data;
-        } catch (error) {
-            console.error('Erro no registro:', error);
-            throw error;
-        }
-    },
-
-    async logout() {
-        try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
-            if (token) {
-                await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-            }
-        } catch (error) {
-            console.error('Erro no logout:', error);
-        } finally {
-            localStorage.removeItem(AUTH_TOKEN_KEY);
-            localStorage.removeItem(USER_DATA_KEY);
-            localStorage.removeItem(REFRESH_TOKEN_KEY);
-            window.location.href = '/login';
-        }
-    },
-
-    async refreshToken() {
-        try {
-            const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-            if (!refreshToken) {
-                throw new Error('No refresh token available');
-            }
-
-            const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    refresh_token: refreshToken
-                }),
-            });
-
-            const data = await processResponse(response);
-            
-            if (data && data.session && data.session.access_token) {
-                const token = data.session.access_token;
-                const newRefreshToken = data.session.refresh_token;
-                
-                localStorage.setItem(AUTH_TOKEN_KEY, token);
-                localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-                
-                return token;
-            }
-            
-            throw new Error('Failed to refresh token');
-        } catch (error) {
-            console.error('Erro ao renovar token:', error);
-            this.logout();
-            throw error;
-        }
-    },
-
-    async forgotPassword(email) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao solicitar recuperação de senha:', error);
-            throw error;
-        }
-    },
-
-    async resetPassword(token, newPassword) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token, new_password: newPassword }),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao resetar senha:', error);
-            throw error;
-        }
-    },
-
-    async updateProfile(profileData) {
-        try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
-            const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(profileData),
-            });
-
-            const data = await processResponse(response);
-            
-            if (data && data.user) {
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-            }
-            
-            return data;
-        } catch (error) {
-            console.error('Erro ao atualizar perfil:', error);
-            throw error;
-        }
-    },
-
-    getToken() {
-        return localStorage.getItem(AUTH_TOKEN_KEY);
-    },
-
-    getRefreshToken() {
-        return localStorage.getItem(REFRESH_TOKEN_KEY);
-    },
-
-    getCurrentUser() {
-        const userStr = localStorage.getItem(USER_DATA_KEY);
-        return userStr ? JSON.parse(userStr) : null;
-    },
-
-    isAuthenticated() {
-        return !!localStorage.getItem(AUTH_TOKEN_KEY);
+/**
+ * Função auxiliar para criar os cabeçalhos de autenticação.
+ * Pega o token do authService e o adiciona ao cabeçalho 'Authorization'.
+ */
+const createAuthHeaders = () => {
+    const token = authService.getToken();
+    if (!token) {
+        // Avisa no console se o token não for encontrado.
+        console.warn("Nenhum token de autenticação encontrado para a requisição.");
     }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    };
 };
 
-// Exportar como default para garantir uma única instância do serviço
-export default authService;
+// Objeto que contém todos os métodos do serviço de entrega.
+const deliveryService = {
+
+    /**
+     * Busca o status atual do entregador.
+     */
+    async getDeliveryStatus() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/status`, {
+                method: 'GET',
+                headers: createAuthHeaders(),
+            });
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao buscar status do entregador:', error);
+            throw error; // Re-lança o erro para o componente que chamou a função.
+        }
+    },
+
+    /**
+     * Atualiza a localização do entregador.
+     * @param {object} locationData - Objeto com latitude e longitude.
+     */
+    async updateLocation(locationData) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/location`, {
+                method: 'POST',
+                headers: createAuthHeaders(),
+                body: JSON.stringify(locationData),
+            });
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao atualizar localização:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Busca a lista de entregas disponíveis para o entregador.
+     */
+    async getAvailableDeliveries() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/deliveries/available`, {
+                method: 'GET',
+                headers: createAuthHeaders(),
+            });
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao buscar entregas disponíveis:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Aceita uma entrega específica.
+     * @param {string} deliveryId - O ID da entrega a ser aceita.
+     */
+    async acceptDelivery(deliveryId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/accept`, {
+                method: 'POST',
+                headers: createAuthHeaders(),
+            });
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao aceitar entrega:', error);
+            throw error;
+        }
+    },
+    
+    // Adicione aqui outras funções do seu serviço de entrega conforme necessário.
+};
+
+// Exporta o objeto deliveryService como padrão.
+export default deliveryService;
