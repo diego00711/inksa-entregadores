@@ -7,11 +7,6 @@ const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';
 const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
 const DEFAULT_USER_TYPE = 'entregador';
-const AUTH_TOKEN_KEY = 'authToken';
-const USER_DATA_KEY = 'userData';
-const REFRESH_TOKEN_KEY = 'refreshToken';
-const DEFAULT_USER_TYPE = 'cliente'; // Mude conforme o app
-
 const processResponse = async (response) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
