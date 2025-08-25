@@ -1,21 +1,45 @@
-// src/services/deliveryService.js (VERSÃO FINAL E CORRIGIDA para Gamificação)
+// deliveryService.js - VERSÃO CORRIGIDA E FINAL
 
-import { createAuthHeaders, processResponse, authService } from './authService';
+import authService from './authService';
 
-// Base URL da sua API Flask. CONFIRME SE ESTÁ CORRETO.
-const API_BASE_URL = 'http://127.0.0.1:5000/api'; 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com/api';
 const DELIVERY_USER_DATA_KEY = 'deliveryUser'; 
 
+/**
+ * Função auxiliar para processar a resposta da API.
+ */
+const processResponse = async (response ) => {
+    if (response.status === 401) {
+        authService.logout();
+        return null;
+    }
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+/**
+ * Função auxiliar para criar os cabeçalhos de autenticação.
+ */
+const createAuthHeaders = () => {
+    const token = authService.getToken();
+    return {
+        'Authorization': `Bearer ${token}`,
+    };
+};
+
 const DeliveryService = {
-    getDeliveryProfile: async () => {
+    async getDeliveryProfile() {
         const response = await fetch(`${API_BASE_URL}/delivery/profile`, {
-            headers: createAuthHeaders(),
+            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         });
         const data = await processResponse(response);
         return data.data; 
     },
 
-    updateDeliveryProfile: async (profileData) => {
+    async updateDeliveryProfile(profileData) {
         const response = await fetch(`${API_BASE_URL}/delivery/profile`, {
             method: 'PUT',
             headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
@@ -31,34 +55,31 @@ const DeliveryService = {
         return data.data;
     },
 
-    getDashboardStats: async (profileId) => { 
-        if (!profileId) {
-            throw new Error("ID do perfil do entregador não fornecido para buscar estatísticas.");
-        }
+    async getDashboardStats(profileId) { 
         const response = await fetch(`${API_BASE_URL}/delivery/dashboard-stats/${profileId}`, { 
-            headers: createAuthHeaders(),
+            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         });
         const data = await processResponse(response);
         return data.data; 
     },
 
-    getDeliveriesByStatus: async (status = 'all') => {
+    async getDeliveriesByStatus(status = 'all') {
         const response = await fetch(`${API_BASE_URL}/delivery/orders?status=${status}`, {
-            headers: createAuthHeaders(),
+            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         });
         const data = await processResponse(response);
         return data.data || [];
     },
 
-    getOrderDetail: async (orderId) => {
+    async getOrderDetail(orderId) {
         const response = await fetch(`${API_BASE_URL}/delivery/orders/${orderId}`, {
-            headers: createAuthHeaders(),
+            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         });
         const data = await processResponse(response);
         return data.data; 
     },
 
-    acceptDelivery: async (orderId) => {
+    async acceptDelivery(orderId) {
         const response = await fetch(`${API_BASE_URL}/delivery/orders/${orderId}/accept`, {
             method: 'POST',
             headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
@@ -66,50 +87,7 @@ const DeliveryService = {
         return processResponse(response);
     },
 
-    getEarningsHistory: async (profileId, startDate, endDate) => {
-        if (!profileId) {
-            throw new Error("ID do perfil do entregador não fornecido para buscar histórico de ganhos.");
-        }
-
-        let url = `${API_BASE_URL}/delivery/earnings-history`;
-        const params = new URLSearchParams();
-        if (startDate) {
-            params.append('start_date', startDate);
-        }
-        if (endDate) {
-            params.append('end_date', endDate);
-        }
-        if (params.toString()) {
-            url += `?${params.toString()}`;
-        }
-
-        const response = await fetch(url, {
-            headers: createAuthHeaders(),
-        });
-        const data = await processResponse(response);
-        return data.data; 
-    },
-
-    updateAvailability: async (profileId, isAvailable) => { 
-        if (!profileId) {
-            throw new Error("ID do perfil do entregador não fornecido para atualizar disponibilidade.");
-        }
-        const response = await fetch(`${API_BASE_URL}/delivery/profile`, { 
-            method: 'PUT',
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_available: isAvailable }), 
-        });
-        const data = await processResponse(response);
-        const userStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
-        if (userStr && data.data) {
-            const currentUserData = JSON.parse(userStr);
-            const updatedUserData = { ...currentUserData, is_available: data.data.is_available };
-            localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
-        }
-        return data.data; 
-    },
-
-    completeDelivery: async (orderId) => {
+    async completeDelivery(orderId) {
         const response = await fetch(`${API_BASE_URL}/delivery/orders/${orderId}/complete`, {
             method: 'POST', 
             headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
@@ -117,59 +95,22 @@ const DeliveryService = {
         return processResponse(response);
     },
 
-    // ✅ NOVO: Função para buscar dados de gamificação
-    getGamificationStats: async (profileId) => {
-        if (!profileId) {
-            throw new Error("ID do perfil do entregador não fornecido para buscar estatísticas de gamificação.");
-        }
-        const response = await fetch(`${API_BASE_URL}/gamification/${profileId}/points-level`, {
-            headers: createAuthHeaders(),
-        });
-        const data = await processResponse(response);
-        return data.data;
-    },
-    
-    // ✅ NOVO: Função para buscar os badges do usuário
-    getUserBadges: async (profileId) => {
-        if (!profileId) {
-            throw new Error("ID do perfil do entregador não fornecido para buscar badges.");
-        }
-        const response = await fetch(`${API_BASE_URL}/gamification/${profileId}/badges`, {
-            headers: createAuthHeaders(),
-        });
-        const data = await processResponse(response);
-        return data.data;
-    },
-
-    // ✅ NOVO: Função para buscar o ranking global
-    getGlobalRankings: async (typeFilter = '') => { // typeFilter pode ser 'delivery', 'client', 'restaurant'
-        let url = `${API_BASE_URL}/gamification/rankings`;
-        if (typeFilter) {
-            url += `?type=${typeFilter}`;
-        }
-        const response = await fetch(url, {
-            headers: createAuthHeaders(),
-        });
-        const data = await processResponse(response);
-        return data.data;
-    },
-
-    uploadDeliveryAvatar: async (file) => {
+    async uploadDeliveryAvatar(file) {
         const formData = new FormData();
         formData.append('avatar', file);
         const response = await fetch(`${API_BASE_URL}/delivery/upload-avatar`, {
             method: 'POST',
-            headers: createAuthHeaders(),
+            headers: createAuthHeaders(), // FormData define o Content-Type automaticamente
             body: formData,
         });
         const data = await processResponse(response);
         const userStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
-        if (userStr && data.avatar_url) { // data.avatar_url deve vir do backend
+        if (userStr && data.avatar_url) {
             const currentUserData = JSON.parse(userStr);
             const updatedUserData = { ...currentUserData, avatar_url: data.avatar_url };
             localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
         }
-        return data.avatar_url; // Retorna a URL pública do avatar
+        return data.avatar_url;
     },
 };
 
