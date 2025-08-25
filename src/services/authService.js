@@ -1,37 +1,39 @@
-// services/authService.js - INKSA ENTREGADORES (VERSÃO CORRIGIDA)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
-const AUTH_TOKEN_KEY = 'deliveryAuthToken';
-const DELIVERY_USER_DATA_KEY = 'deliveryUser';
+// authService.js - VERSÃO FINAL PARA TODOS OS APPS
+// Funciona com a estrutura real da API: session.access_token
 
-// FUNÇÃO AUXILIAR EXPORTADA
-export const processResponse = async (response) => {
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+
+const AUTH_TOKEN_KEY = 'deliveryAuthToken';
+const USER_DATA_KEY = 'deliveryUser';
+const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
+const DEFAULT_USER_TYPE = 'entregador';
+const AUTH_TOKEN_KEY = 'authToken';
+const USER_DATA_KEY = 'userData';
+const REFRESH_TOKEN_KEY = 'refreshToken';
+const DEFAULT_USER_TYPE = 'cliente'; // Mude conforme o app
+
+const processResponse = async (response) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(DELIVERY_USER_DATA_KEY);
+        localStorage.removeItem(USER_DATA_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
         window.location.href = '/login';
         return null;
     }
     
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
     }
     
     return response.json();
 };
 
-// FUNÇÃO AUXILIAR EXPORTADA
-export const createAuthHeaders = () => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    return {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
-    };
-};
-
-export const authService = {
-    async login(email, password) {
+const authService = {
+    async login(email, password, userType = DEFAULT_USER_TYPE) {
         try {
+            console.log('Tentando login com:', { email, user_type: userType });
+            
             const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -40,26 +42,43 @@ export const authService = {
                 body: JSON.stringify({ 
                     email, 
                     password,
-                    user_type: 'entregador' 
+                    user_type: userType 
                 }),
             });
 
             const data = await processResponse(response);
+            console.log('Resposta do servidor:', data);
             
-            if (data && data.token) {
-                localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-                localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(data.user));
-                return data;
+            // CORREÇÃO: Pegar o token de session.access_token
+            if (data && data.session && data.session.access_token) {
+                const token = data.session.access_token;
+                const refreshToken = data.session.refresh_token;
+                const user = data.user;
+                
+                // Salvar no localStorage
+                localStorage.setItem(AUTH_TOKEN_KEY, token);
+                localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+                
+                console.log('Login bem-sucedido! Token salvo.');
+                
+                // Retornar no formato esperado pelo frontend
+                return {
+                    token: token,
+                    user: user,
+                    success: true,
+                    message: data.message
+                };
             }
             
-            throw new Error('Token não recebido');
+            throw new Error('Token não recebido do servidor');
         } catch (error) {
             console.error('Erro no login:', error);
             throw error;
         }
     },
 
-    async register(deliveryData) {
+    async register(userData, userType = DEFAULT_USER_TYPE) {
         try {
             const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                 method: 'POST',
@@ -67,17 +86,29 @@ export const authService = {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ...deliveryData,
-                    user_type: 'entregador'
+                    ...userData,
+                    user_type: userType
                 }),
             });
 
             const data = await processResponse(response);
             
-            if (data && data.token) {
-                localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-                localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(data.user));
-                return data;
+            // Se a resposta tiver session.access_token (mesmo formato do login)
+            if (data && data.session && data.session.access_token) {
+                const token = data.session.access_token;
+                const refreshToken = data.session.refresh_token;
+                const user = data.user;
+                
+                localStorage.setItem(AUTH_TOKEN_KEY, token);
+                localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+                
+                return {
+                    token: token,
+                    user: user,
+                    success: true,
+                    message: data.message
+                };
             }
             
             return data;
@@ -93,15 +124,57 @@ export const authService = {
             if (token) {
                 await fetch(`${API_BASE_URL}/api/auth/logout`, {
                     method: 'POST',
-                    headers: createAuthHeaders(),
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
                 });
             }
         } catch (error) {
             console.error('Erro no logout:', error);
         } finally {
             localStorage.removeItem(AUTH_TOKEN_KEY);
-            localStorage.removeItem(DELIVERY_USER_DATA_KEY);
+            localStorage.removeItem(USER_DATA_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
             window.location.href = '/login';
+        }
+    },
+
+    async refreshToken() {
+        try {
+            const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+            if (!refreshToken) {
+                throw new Error('No refresh token available');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    refresh_token: refreshToken
+                }),
+            });
+
+            const data = await processResponse(response);
+            
+            if (data && data.session && data.session.access_token) {
+                const token = data.session.access_token;
+                const newRefreshToken = data.session.refresh_token;
+                
+                localStorage.setItem(AUTH_TOKEN_KEY, token);
+                localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+                
+                return token;
+            }
+            
+            throw new Error('Failed to refresh token');
+        } catch (error) {
+            console.error('Erro ao renovar token:', error);
+            // Se falhar, fazer logout
+            this.logout();
+            throw error;
         }
     },
 
@@ -139,88 +212,27 @@ export const authService = {
         }
     },
 
-    async updateLocation(latitude, longitude) {
+    async updateProfile(profileData) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/delivery/location`, {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
                 method: 'PUT',
-                headers: createAuthHeaders(),
-                body: JSON.stringify({ latitude, longitude }),
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(profileData),
             });
 
-            return await processResponse(response);
+            const data = await processResponse(response);
+            
+            if (data && data.user) {
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
+            }
+            
+            return data;
         } catch (error) {
-            console.error('Erro ao atualizar localização:', error);
-            throw error;
-        }
-    },
-
-    async setAvailability(isAvailable) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/delivery/availability`, {
-                method: 'PUT',
-                headers: createAuthHeaders(),
-                body: JSON.stringify({ is_available: isAvailable }),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao alterar disponibilidade:', error);
-            throw error;
-        }
-    },
-
-    async getActiveDeliveries() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/delivery/active`, {
-                method: 'GET',
-                headers: createAuthHeaders(),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao buscar entregas ativas:', error);
-            throw error;
-        }
-    },
-
-    async acceptDelivery(deliveryId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/accept`, {
-                method: 'POST',
-                headers: createAuthHeaders(),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao aceitar entrega:', error);
-            throw error;
-        }
-    },
-
-    async completeDelivery(deliveryId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/complete`, {
-                method: 'POST',
-                headers: createAuthHeaders(),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao completar entrega:', error);
-            throw error;
-        }
-    },
-
-    async getEarnings(period) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/delivery/earnings?period=${period}`, {
-                method: 'GET',
-                headers: createAuthHeaders(),
-            });
-
-            return await processResponse(response);
-        } catch (error) {
-            console.error('Erro ao buscar ganhos:', error);
+            console.error('Erro ao atualizar perfil:', error);
             throw error;
         }
     },
@@ -229,9 +241,13 @@ export const authService = {
         return localStorage.getItem(AUTH_TOKEN_KEY);
     },
 
+    getRefreshToken() {
+        return localStorage.getItem(REFRESH_TOKEN_KEY);
+    },
+
     getCurrentUser() {
-        const deliveryStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
-        return deliveryStr ? JSON.parse(deliveryStr) : null;
+        const userStr = localStorage.getItem(USER_DATA_KEY);
+        return userStr ? JSON.parse(userStr) : null;
     },
 
     isAuthenticated() {
@@ -239,5 +255,6 @@ export const authService = {
     }
 };
 
-// EXPORTAÇÃO DEFAULT PARA COMPATIBILIDADE
+// Exportar como default e named export para compatibilidade
 export default authService;
+export { authService };
