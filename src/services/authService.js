@@ -7,7 +7,8 @@ const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';
 const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
 const DEFAULT_USER_TYPE = 'entregador';
-const processResponse = async (response) => {
+
+const processResponse = async (response ) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_DATA_KEY);
@@ -44,20 +45,17 @@ const authService = {
             const data = await processResponse(response);
             console.log('Resposta do servidor:', data);
             
-            // CORREÇÃO: Pegar o token de session.access_token
             if (data && data.session && data.session.access_token) {
                 const token = data.session.access_token;
                 const refreshToken = data.session.refresh_token;
                 const user = data.user;
                 
-                // Salvar no localStorage
                 localStorage.setItem(AUTH_TOKEN_KEY, token);
                 localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
                 localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
                 
                 console.log('Login bem-sucedido! Token salvo.');
                 
-                // Retornar no formato esperado pelo frontend
                 return {
                     token: token,
                     user: user,
@@ -88,7 +86,6 @@ const authService = {
 
             const data = await processResponse(response);
             
-            // Se a resposta tiver session.access_token (mesmo formato do login)
             if (data && data.session && data.session.access_token) {
                 const token = data.session.access_token;
                 const refreshToken = data.session.refresh_token;
@@ -167,7 +164,6 @@ const authService = {
             throw new Error('Failed to refresh token');
         } catch (error) {
             console.error('Erro ao renovar token:', error);
-            // Se falhar, fazer logout
             this.logout();
             throw error;
         }
@@ -250,6 +246,5 @@ const authService = {
     }
 };
 
-// Exportar como default e named export para compatibilidade
+// Exportar como default para garantir uma única instância do serviço
 export default authService;
-export { authService };
