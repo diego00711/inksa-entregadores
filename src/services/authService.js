@@ -1,9 +1,10 @@
-// services/authService.js - INKSA ENTREGADORES
+// services/authService.js - INKSA ENTREGADORES (VERSÃO CORRIGIDA)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const DELIVERY_USER_DATA_KEY = 'deliveryUser';
 
-const processResponse = async (response) => {
+// FUNÇÃO AUXILIAR EXPORTADA
+export const processResponse = async (response) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(DELIVERY_USER_DATA_KEY);
@@ -19,7 +20,16 @@ const processResponse = async (response) => {
     return response.json();
 };
 
-const authService = {
+// FUNÇÃO AUXILIAR EXPORTADA
+export const createAuthHeaders = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json',
+    };
+};
+
+export const authService = {
     async login(email, password) {
         try {
             const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -83,10 +93,7 @@ const authService = {
             if (token) {
                 await fetch(`${API_BASE_URL}/api/auth/logout`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
+                    headers: createAuthHeaders(),
                 });
             }
         } catch (error) {
@@ -98,15 +105,45 @@ const authService = {
         }
     },
 
-    async updateLocation(latitude, longitude) {
+    async forgotPassword(email) {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
-            const response = await fetch(`${API_BASE_URL}/api/delivery/location`, {
-                method: 'PUT',
+            const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ email }),
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao solicitar recuperação de senha:', error);
+            throw error;
+        }
+    },
+
+    async resetPassword(token, newPassword) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token, new_password: newPassword }),
+            });
+
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao resetar senha:', error);
+            throw error;
+        }
+    },
+
+    async updateLocation(latitude, longitude) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/location`, {
+                method: 'PUT',
+                headers: createAuthHeaders(),
                 body: JSON.stringify({ latitude, longitude }),
             });
 
@@ -119,13 +156,9 @@ const authService = {
 
     async setAvailability(isAvailable) {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
             const response = await fetch(`${API_BASE_URL}/api/delivery/availability`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: createAuthHeaders(),
                 body: JSON.stringify({ is_available: isAvailable }),
             });
 
@@ -138,13 +171,9 @@ const authService = {
 
     async getActiveDeliveries() {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
             const response = await fetch(`${API_BASE_URL}/api/delivery/active`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: createAuthHeaders(),
             });
 
             return await processResponse(response);
@@ -156,13 +185,9 @@ const authService = {
 
     async acceptDelivery(deliveryId) {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
             const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/accept`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: createAuthHeaders(),
             });
 
             return await processResponse(response);
@@ -174,13 +199,9 @@ const authService = {
 
     async completeDelivery(deliveryId) {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
             const response = await fetch(`${API_BASE_URL}/api/delivery/${deliveryId}/complete`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: createAuthHeaders(),
             });
 
             return await processResponse(response);
@@ -192,13 +213,9 @@ const authService = {
 
     async getEarnings(period) {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
             const response = await fetch(`${API_BASE_URL}/api/delivery/earnings?period=${period}`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: createAuthHeaders(),
             });
 
             return await processResponse(response);
@@ -212,7 +229,7 @@ const authService = {
         return localStorage.getItem(AUTH_TOKEN_KEY);
     },
 
-    getCurrentDeliveryUser() {
+    getCurrentUser() {
         const deliveryStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
         return deliveryStr ? JSON.parse(deliveryStr) : null;
     },
@@ -222,4 +239,5 @@ const authService = {
     }
 };
 
+// EXPORTAÇÃO DEFAULT PARA COMPATIBILIDADE
 export default authService;
