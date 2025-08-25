@@ -6,8 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-d
 const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';
 const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
-const DEFAULT_USER_TYPE = 'entregador';
-
+const DEFAULT_USER_TYPE = 'entregador'; 
 const processResponse = async (response ) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
