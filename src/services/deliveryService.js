@@ -2,115 +2,205 @@
 
 import authService from './authService';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com/api';
+// CORREÇÃO 1: Remover /api do final pois já está nas rotas
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const DELIVERY_USER_DATA_KEY = 'deliveryUser'; 
+const DELIVERY_AUTH_TOKEN_KEY = 'deliveryAuthToken'; // Adicionar constante do token
 
 /**
  * Função auxiliar para processar a resposta da API.
  */
-const processResponse = async (response ) => {
+const processResponse = async (response) => {
+    console.log('Response status:', response.status, 'URL:', response.url);
+    
     if (response.status === 401) {
         authService.logout();
         return null;
     }
+    
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
         throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
     }
+    
     return response.json();
 };
 
 /**
  * Função auxiliar para criar os cabeçalhos de autenticação.
+ * CORREÇÃO 2: Garantir que o token seja lido corretamente
  */
 const createAuthHeaders = () => {
-    const token = authService.getToken();
+    // Tentar pegar o token de várias formas possíveis
+    const token = authService.getToken() || 
+                  localStorage.getItem(DELIVERY_AUTH_TOKEN_KEY) ||
+                  localStorage.getItem('authToken') ||
+                  localStorage.getItem('deliveryAuthToken');
+    
+    console.log('Token presente:', !!token);
+    
+    if (!token) {
+        console.warn('Nenhum token de autenticação encontrado!');
+        return {
+            'Content-Type': 'application/json',
+        };
+    }
+    
     return {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
     };
 };
 
 const DeliveryService = {
     async getDeliveryProfile() {
-        const response = await fetch(`${API_BASE_URL}/delivery/profile`, {
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        });
-        const data = await processResponse(response);
-        return data.data; 
+        try {
+            console.log('Buscando perfil do entregador...');
+            // CORREÇÃO 3: URL completa com /api
+            const response = await fetch(`${API_BASE_URL}/api/delivery/profile`, {
+                method: 'GET',
+                headers: createAuthHeaders(),
+            });
+            const data = await processResponse(response);
+            return data.data || data; // Flexível para diferentes formatos de resposta
+        } catch (error) {
+            console.error('Erro ao buscar perfil:', error);
+            throw error;
+        }
     },
 
     async updateDeliveryProfile(profileData) {
-        const response = await fetch(`${API_BASE_URL}/delivery/profile`, {
-            method: 'PUT',
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify(profileData),
-        });
-        const data = await processResponse(response);
-        const userStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
-        if (userStr && data.data) {
-            const currentUserData = JSON.parse(userStr);
-            const updatedUserData = { ...currentUserData, ...data.data }; 
-            localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/profile`, {
+                method: 'PUT',
+                headers: createAuthHeaders(),
+                body: JSON.stringify(profileData),
+            });
+            const data = await processResponse(response);
+            
+            // Atualizar localStorage se necessário
+            const userStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
+            if (userStr && data.data) {
+                const currentUserData = JSON.parse(userStr);
+                const updatedUserData = { ...currentUserData, ...data.data }; 
+                localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
+            }
+            
+            return data.data || data;
+        } catch (error) {
+            console.error('Erro ao atualizar perfil:', error);
+            throw error;
         }
-        return data.data;
     },
 
     async getDashboardStats(profileId) { 
-        const response = await fetch(`${API_BASE_URL}/delivery/dashboard-stats/${profileId}`, { 
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        });
-        const data = await processResponse(response);
-        return data.data; 
+        try {
+            const url = profileId 
+                ? `${API_BASE_URL}/api/delivery/dashboard-stats/${profileId}`
+                : `${API_BASE_URL}/api/delivery/dashboard-stats`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: createAuthHeaders(),
+            });
+            const data = await processResponse(response);
+            return data.data || data;
+        } catch (error) {
+            console.error('Erro ao buscar estatísticas:', error);
+            throw error;
+        }
     },
 
     async getDeliveriesByStatus(status = 'all') {
-        const response = await fetch(`${API_BASE_URL}/delivery/orders?status=${status}`, {
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        });
-        const data = await processResponse(response);
-        return data.data || [];
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/orders?status=${status}`, {
+                method: 'GET',
+                headers: createAuthHeaders(),
+            });
+            const data = await processResponse(response);
+            return data.data || data || [];
+        } catch (error) {
+            console.error('Erro ao buscar entregas:', error);
+            throw error;
+        }
     },
 
     async getOrderDetail(orderId) {
-        const response = await fetch(`${API_BASE_URL}/delivery/orders/${orderId}`, {
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        });
-        const data = await processResponse(response);
-        return data.data; 
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/orders/${orderId}`, {
+                method: 'GET',
+                headers: createAuthHeaders(),
+            });
+            const data = await processResponse(response);
+            return data.data || data;
+        } catch (error) {
+            console.error('Erro ao buscar detalhes do pedido:', error);
+            throw error;
+        }
     },
 
     async acceptDelivery(orderId) {
-        const response = await fetch(`${API_BASE_URL}/delivery/orders/${orderId}/accept`, {
-            method: 'POST',
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        });
-        return processResponse(response);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/orders/${orderId}/accept`, {
+                method: 'POST',
+                headers: createAuthHeaders(),
+                body: JSON.stringify({}), // Enviar body vazio se necessário
+            });
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao aceitar entrega:', error);
+            throw error;
+        }
     },
 
     async completeDelivery(orderId) {
-        const response = await fetch(`${API_BASE_URL}/delivery/orders/${orderId}/complete`, {
-            method: 'POST', 
-            headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        });
-        return processResponse(response);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/delivery/orders/${orderId}/complete`, {
+                method: 'POST', 
+                headers: createAuthHeaders(),
+                body: JSON.stringify({}), // Enviar body vazio se necessário
+            });
+            return await processResponse(response);
+        } catch (error) {
+            console.error('Erro ao completar entrega:', error);
+            throw error;
+        }
     },
 
     async uploadDeliveryAvatar(file) {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        const response = await fetch(`${API_BASE_URL}/delivery/upload-avatar`, {
-            method: 'POST',
-            headers: createAuthHeaders(), // FormData define o Content-Type automaticamente
-            body: formData,
-        });
-        const data = await processResponse(response);
-        const userStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
-        if (userStr && data.avatar_url) {
-            const currentUserData = JSON.parse(userStr);
-            const updatedUserData = { ...currentUserData, avatar_url: data.avatar_url };
-            localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
+        try {
+            const formData = new FormData();
+            formData.append('avatar', file);
+            
+            // Para FormData, não incluir Content-Type (browser define automaticamente)
+            const token = authService.getToken() || 
+                          localStorage.getItem(DELIVERY_AUTH_TOKEN_KEY) ||
+                          localStorage.getItem('authToken') ||
+                          localStorage.getItem('deliveryAuthToken');
+            
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            
+            const response = await fetch(`${API_BASE_URL}/api/delivery/upload-avatar`, {
+                method: 'POST',
+                headers: headers,
+                body: formData,
+            });
+            
+            const data = await processResponse(response);
+            
+            // Atualizar localStorage com nova URL do avatar
+            const userStr = localStorage.getItem(DELIVERY_USER_DATA_KEY);
+            if (userStr && data.avatar_url) {
+                const currentUserData = JSON.parse(userStr);
+                const updatedUserData = { ...currentUserData, avatar_url: data.avatar_url };
+                localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
+            }
+            
+            return data.avatar_url || data;
+        } catch (error) {
+            console.error('Erro ao fazer upload do avatar:', error);
+            throw error;
         }
-        return data.avatar_url;
     },
 };
 
