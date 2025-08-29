@@ -1,18 +1,17 @@
-// authService.js - VERSÃO CORRIGIDA E FINAL
+// src/services/authService.js - VERSÃO FINAL E CORRIGIDA
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
 const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';
-const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
-const DEFAULT_USER_TYPE = 'entregador';
+const REFRESH_TOKEN_KEY = 'deliveryRefreshToken'; // Mantido por consistência, embora não usado diretamente no login
+const DEFAULT_USER_TYPE = 'delivery'; // ✅ Corrigido para 'delivery' para corresponder ao backend
 
 const processResponse = async (response ) => {
     if (response.status === 401) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_DATA_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
-        // Força o recarregamento da página para o estado de login.
         window.location.href = '/login';
         return null;
     }
@@ -26,28 +25,39 @@ const processResponse = async (response ) => {
 };
 
 const authService = {
-    async login(email, password, userType = DEFAULT_USER_TYPE) {
+    async login(email, password) { // ✅ Simplificado: userType é fixo
         const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, user_type: userType }),
+            // ✅ Envia o tipo de usuário correto para a API
+            body: JSON.stringify({ email, password, user_type: DEFAULT_USER_TYPE }),
         });
 
-        const data = await processResponse(response);
-        if (data && data.session && data.session.access_token) {
-            localStorage.setItem(AUTH_TOKEN_KEY, data.session.access_token);
-            localStorage.setItem(REFRESH_TOKEN_KEY, data.session.refresh_token);
-            localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-            return { token: data.session.access_token, user: data.user, success: true };
+        const responseData = await processResponse(response);
+
+        // ✅ CORREÇÃO PRINCIPAL: Agora ele lê a resposta correta da nossa API
+        // Procura por { status: 'success', data: { token: '...' } }
+        if (responseData && responseData.status === 'success' && responseData.data && responseData.data.token) {
+            const { token, user } = responseData.data;
+            
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+            localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+            
+            // O refresh token não vem da nossa API customizada, então não o salvamos.
+            // localStorage.setItem(REFRESH_TOKEN_KEY, ...);
+
+            return { token, user, success: true };
         }
+
+        // Se o formato da resposta for inesperado, lança o erro.
         throw new Error('Token não recebido do servidor');
     },
 
-    async register(userData, userType = DEFAULT_USER_TYPE) {
+    async register(userData) {
         const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...userData, user_type: userType }),
+            body: JSON.stringify({ ...userData, user_type: DEFAULT_USER_TYPE }),
         });
         return await processResponse(response);
     },
@@ -73,5 +83,4 @@ const authService = {
     }
 };
 
-// Exporta apenas como default para evitar erros de build.
 export default authService;
