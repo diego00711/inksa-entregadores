@@ -154,6 +154,15 @@
   }
 }
 
+/* ✅ CORREÇÃO APLICADA AQUI */
+/* Garante que o contêiner raiz do React e o body ocupem sempre a altura total da tela. */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 @layer components {
   .portal-layout {
     display: flex;
@@ -164,8 +173,7 @@
     flex-grow: 1;
     overflow-y: auto;
     background-color: var(--background);
-    /* ✅ CORREÇÃO APLICADA AQUI */
-    padding: 2rem; 
+    padding: 2rem;
   }
 
   /* --- ESTILO PARA O CABEÇALHO (MANTIDO DO AJUSTE ANTERIOR) --- */
