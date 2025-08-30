@@ -1,4 +1,4 @@
-// Ficheiro: src/App.jsx (VERSÃO FINAL COM ROTA DE GAMIFICAÇÃO)
+// Ficheiro: src/App.jsx (VERSÃO FINAL COM ROTA DE GAMIFICAÇÃO E AVALIAÇÕES)
 
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -16,7 +16,8 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import DeliveryProfilePage from './pages/DeliveryProfilePage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
-import GamificationPage from './pages/GamificationPage.jsx'; // <-- NOVA IMPORTAÇÃO AQUI!
+import GamificationPage from './pages/GamificationPage.jsx'; // Gamificação
+import DeliverymanEvaluationsCenter from './pages/DeliverymanEvaluationsCenter.jsx'; // <-- NOVA IMPORTAÇÃO
 
 function App() {
   return (
@@ -43,7 +44,8 @@ function App() {
         <Route path="entregas" element={<MyDeliveriesPage />} />
         <Route path="ganhos" element={<EarningsPage />} />
         <Route path="meu-perfil" element={<DeliveryProfilePage />} />
-        <Route path="gamificacao" element={<GamificationPage />} /> {/* <-- NOVA ROTA AQUI! */}
+        <Route path="gamificacao" element={<GamificationPage />} />
+        <Route path="avaliacoes" element={<DeliverymanEvaluationsCenter />} /> {/* <-- NOVA ROTA AQUI! */}
         
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
