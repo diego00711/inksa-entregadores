@@ -152,31 +152,21 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* ✅ CORREÇÃO APLICADA AQUI */
-/* Garante que o contêiner raiz do React e o body ocupem sempre a altura total da tela. */
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
+  
+  /* ✅ CORREÇÃO MANTIDA: Garante que a aplicação ocupe sempre a altura total. */
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 @layer components {
-  .portal-layout {
-    display: flex;
-    height: 100vh;
-  }
-
-  .main-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    background-color: var(--background);
-    padding: 2rem;
-  }
+  /* ❌ CORREÇÃO APLICADA: As classes .portal-layout e .main-content foram removidas. */
 
   /* --- ESTILO PARA O CABEÇALHO (MANTIDO DO AJUSTE ANTERIOR) --- */
+  /* Esta classe pode ser removida se você não tiver um <header> dentro do <main> */
   .main-content > header {
       background-color: var(--card); 
       border-bottom: 1px solid var(--border); 
