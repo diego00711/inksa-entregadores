@@ -1,8 +1,9 @@
-// src/components/Header.jsx (VERSÃO SIMPLIFICADA: Sem troca de tema e com nome dinâmico)
+// src/components/Header.jsx (ATUALIZADO: Inclui botão para avaliações)
 
-import React from 'react'; // Removidos useState e useEffect
-import { Bell, Moon } from 'lucide-react';
+import React from 'react';
+import { Bell, Moon, Star } from 'lucide-react'; // IMPORTADO Star
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
+import { Link, useLocation } from 'react-router-dom';
 
 function UserAvatar() {
   return (
@@ -14,8 +15,7 @@ function UserAvatar() {
 
 export function Header() {
   const { profile, loading: profileLoading } = useProfile();
-  
-  // Toda a lógica de tema (useState, useEffect, toggleTheme) foi removida.
+  const location = useLocation();
 
   const hour = new Date().getHours();
   let greeting;
@@ -27,7 +27,6 @@ export function Header() {
     greeting = "Boa noite";
   }
 
-  // Lógica segura para obter o nome (mantida)
   const firstName = profile && profile.name ? profile.name.split(' ')[0] : 'Entregador';
 
   return (
@@ -48,6 +47,10 @@ export function Header() {
         <button className="p-2 rounded-full hover:bg-muted">
           <Bell className="w-5 h-5" />
         </button>
+        {/* NOVO BOTÃO: Central de Avaliações */}
+        <Link to="/delivery/avaliacoes" className={`p-2 rounded-full hover:bg-yellow-100 ${location.pathname === '/delivery/avaliacoes' ? 'bg-yellow-200' : ''}`} title="Minhas Avaliações">
+          <Star className="w-5 h-5 text-yellow-500" />
+        </Link>
         <UserAvatar />
       </div>
     </header>
