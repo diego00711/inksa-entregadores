@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import RestaurantReviewForm from "../components/RestaurantReviewForm";
 import ClientReviewForm from "../components/ClientReviewForm";
 import useDeliveredOrders from "../hooks/useDeliveredOrders";
-import { useAuth } from "../context/AuthContext";
+import { useProfile } from "../context/DeliveryProfileContext"; // Corrigido para usar o contexto do entregador
 
 export default function DeliverymanEvaluationsCenter() {
-  const { user } = useAuth();
-  const { orders, loading } = useDeliveredOrders(user?.id, "deliveryman");
+  const { profile } = useProfile(); // Corrigido para pegar o perfil do entregador
+  const { orders, loading } = useDeliveredOrders(profile?.id, "deliveryman");
   const [highlightOrderId, setHighlightOrderId] = useState(null);
 
   return (
