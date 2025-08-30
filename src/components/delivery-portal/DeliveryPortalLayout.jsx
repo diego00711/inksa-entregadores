@@ -1,17 +1,18 @@
-// Ficheiro: src/components/delivery-portal/DeliveryPortalLayout.jsx (VERSÃO FINAL E COMPLETA)
+// Ficheiro: src/components/delivery-portal/DeliveryPortalLayout.jsx (VERSÃO FINAL COM TAILWIND)
 
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-// O caminho para a Sidebar, assumindo que ela está em 'src/components/'
 import { Sidebar } from '../Sidebar.jsx'; 
 
 export default function DeliveryPortalLayout() {
   return (
-    // Esta estrutura usa as classes do seu app.css para criar o layout
-    <div className="portal-layout">
+    // ✅ CORREÇÃO APLICADA AQUI:
+    // Usamos as classes do Tailwind para criar o layout de tela cheia.
+    <div className="flex h-screen bg-gray-100">
       <Sidebar />
-      <main className="main-content">
-        {/* O Outlet é onde as suas páginas (Dashboard, Entregas, etc.) serão renderizadas */}
+      
+      {/* Esta 'main' agora controla a área de conteúdo e sua rolagem */}
+      <main className="flex-1 overflow-y-auto p-8">
         <Outlet />
       </main>
     </div>
