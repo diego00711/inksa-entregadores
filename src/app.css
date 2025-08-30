@@ -163,7 +163,9 @@
   .main-content {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: var(--background); 
+    background-color: var(--background);
+    /* ✅ CORREÇÃO APLICADA AQUI */
+    padding: 2rem; 
   }
 
   /* --- ESTILO PARA O CABEÇALHO (MANTIDO DO AJUSTE ANTERIOR) --- */
