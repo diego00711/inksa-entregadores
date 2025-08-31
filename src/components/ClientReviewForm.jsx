@@ -1,9 +1,5 @@
-export default function ClientReviewForm({ clientId, orderId, onSuccess }) {
-  return (
-    <form
-      onSubmit={e => {
-        e.preventDefault();
-        alert(`Avaliação do cliente ${clientId} enviada!`);import React, { useState } from "react";
+// Componente otimizado para entregadores avaliarem clientes
+import React, { useState } from "react";
 import { Star, Send, CheckCircle, MessageSquare, Clock, MapPin, Phone } from "lucide-react";
 
 // Componente para rating rápido com estrelas
@@ -235,16 +231,5 @@ export default function ClientReviewForm({ clientId, orderId, onSuccess }) {
         </p>
       </div>
     </div>
-  );
-}
-        onSuccess?.();
-      }}
-    >
-      <label>
-        Nota:
-        <input type="number" min="1" max="5" defaultValue={5} />
-      </label>
-      <button type="submit">Enviar avaliação cliente</button>
-    </form>
   );
 }
