@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { Star, TrendingUp, MessageCircle, Award, Clock, User, Utensils, MapPin, DollarSign, Timer, Route } from "lucide-react";
 import ClientReviewForm from "../components/ClientReviewForm";
 import RestaurantReviewForm from "../components/RestaurantReviewForm";
-import { useProfile } from "../context/ProfileContext";
+import { useProfile } from "../context/DeliveryProfileContext";
 import useDeliveredOrders from "../hooks/useDeliveredOrders";
 
 export default function DeliverymanEvaluationsCenter() {
   const { profile, loading } = useProfile();
-  const { orders, loading: loadingOrders } = useDeliveredOrders(profile?.id);
+  const { orders, loading: loadingOrders } = useDeliveredOrders(profile?.id, "deliveryman");
   const [highlightOrderId, setHighlightOrderId] = useState(null);
 
   if (loading) {
