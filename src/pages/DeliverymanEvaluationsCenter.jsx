@@ -55,82 +55,41 @@ export default function DeliverymanEvaluationsCenter() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Performance Overview Cards - Mobile Optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-xs font-medium">Média Geral</p>
-                <p className="text-2xl font-bold">4.9</p>
-                <div className="flex items-center gap-1 mt-1">
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} className="w-3 h-3 text-yellow-300 fill-yellow-300" />
-                  ))}
-                </div>
-              </div>
-              <Award className="h-6 w-6 text-green-200" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-xs font-medium">Entregas Hoje</p>
-                <p className="text-2xl font-bold">12</p>
-                <p className="text-blue-200 text-xs">+3 que ontem</p>
-              </div>
-              <Route className="h-6 w-6 text-blue-200" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-xs font-medium">Tempo Médio</p>
-                <p className="text-2xl font-bold">24min</p>
-                <p className="text-purple-200 text-xs">Por entrega</p>
-              </div>
-              <Timer className="h-6 w-6 text-purple-200" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-yellow-100 text-xs font-medium">Gorjetas Hoje</p>
-                <p className="text-2xl font-bold">R$ 45</p>
-                <p className="text-yellow-200 text-xs">8 gorjetas</p>
-              </div>
-              <DollarSign className="h-6 w-6 text-yellow-200" />
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
+        {/* Quick Access Actions */}
         <div className="bg-white rounded-xl shadow-lg border border-orange-100 p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="h-5 w-5 text-orange-500" />
-            <h2 className="text-lg md:text-xl font-bold text-gray-800">Seus números</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-orange-500" />
+              <h2 className="text-lg md:text-xl font-bold text-gray-800">Avaliações Pendentes</h2>
+            </div>
+            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+              {orders?.length || 0} para avaliar
+            </span>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center bg-orange-50 rounded-lg p-3">
-              <p className="text-2xl font-bold text-orange-600">127</p>
-              <p className="text-xs text-gray-600">Entregas totais</p>
+          {orders?.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button 
+                onClick={() => {
+                  // Avaliar todas as entregas como positivas
+                  alert(`${orders.length} avaliações enviadas como positivas!`);
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <Star className="h-4 w-4" />
+                Avaliar Todas (Positivo)
+              </button>
+              <button 
+                onClick={() => {
+                  // Pular todas as avaliações
+                  alert("Avaliações ignoradas.");
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Pular Todas
+              </button>
             </div>
-            <div className="text-center bg-green-50 rounded-lg p-3">
-              <p className="text-2xl font-bold text-green-600">96%</p>
-              <p className="text-xs text-gray-600">Taxa aprovação</p>
-            </div>
-            <div className="text-center bg-blue-50 rounded-lg p-3">
-              <p className="text-2xl font-bold text-blue-600">18km</p>
-              <p className="text-xs text-gray-600">Distância hoje</p>
-            </div>
-            <div className="text-center bg-purple-50 rounded-lg p-3">
-              <p className="text-2xl font-bold text-purple-600">R$ 180</p>
-              <p className="text-xs text-gray-600">Ganhos hoje</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Evaluate Section - Simplified for mobile use */}
