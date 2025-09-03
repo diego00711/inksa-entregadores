@@ -640,6 +640,4 @@ export default function EnhancedDeliveryDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-purple-700">
-              <AnimatedNumber value={dashboardStats.totalDeliveries} />
-            </div>
-            <div className="flex items-center gap-1 mt-1
+              <AnimatedNumber value={dashboardStats.totalDeliveries
