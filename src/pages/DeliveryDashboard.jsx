@@ -1,4 +1,4 @@
-// src/pages/DeliveryDashboard.jsx (VERSÃO CORRIGIDA)
+// src/pages/DeliveryDashboard.jsx (VERSÃO FINAL E COMPLETA)
 
 import React, { useState, useEffect, useCallback } from 'react';
 // ✅ 1. Importa os serviços corretos
@@ -11,8 +11,8 @@ import {
   Award, Target, Calendar, Activity, Navigation, Users, Zap, Bell,
   Coffee, Timer, Route, Trophy, ChevronUp, ChevronDown, Flame
 } from 'lucide-react';
-import { useProfile } from '../context/DeliveryProfileContext.jsx'; // Corrigido para usar o caminho relativo correto
-import { useToast } from '../context/ToastContext.jsx'; // Corrigido para usar o caminho relativo correto
+import { useProfile } from '../context/DeliveryProfileContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,6 +25,7 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', decimals = 0 }) => {
   const [displayValue, setDisplayValue] = useState(0);
   
   useEffect(() => {
+    if (isNaN(value)) value = 0; // Garante que o valor não seja NaN
     const duration = 1000;
     const steps = 60;
     const stepDuration = duration / steps;
@@ -53,7 +54,7 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', decimals = 0 }) => {
 
 // ========== COMPONENTE DE META DIÁRIA ==========
 const DailyGoalCard = ({ current, goal }) => {
-  const percentage = Math.min((current / goal) * 100, 100);
+  const percentage = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
   const isCompleted = percentage >= 100;
   
   return (
@@ -127,7 +128,7 @@ const OnlineTimeCard = ({ minutes }) => {
 
 // ========== COMPONENTE DE RANKING ==========
 const RankingCard = ({ position, total }) => {
-  const topPercentage = ((total - position + 1) / total * 100).toFixed(0);
+  const topPercentage = total > 0 ? ((total - position + 1) / total * 100).toFixed(0) : 0;
   
   return (
     <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
@@ -432,7 +433,6 @@ export default function EnhancedDeliveryDashboard() {
     setLoading(true);
     setError('');
     try {
-      // ✅ 2. Usa a função correta do serviço correto
       const statsData = await DeliveryService.getDashboardStats();
       setDashboardStats(prev => ({
         ...prev,
@@ -465,7 +465,6 @@ export default function EnhancedDeliveryDashboard() {
     try {
       addToast("Atualizando disponibilidade...", 'info');
       const newAvailability = !profile.is_available;
-      // ✅ 3. Usa a função correta do serviço correto
       const updatedProfile = await DeliveryService.updateDeliveryProfile({ is_available: newAvailability });
       updateProfile({ is_available: updatedProfile.is_available });
       addToast(`Você está agora ${newAvailability ? 'ONLINE' : 'OFFLINE'}!`, 'success');
@@ -478,7 +477,6 @@ export default function EnhancedDeliveryDashboard() {
   const handleAcceptOrder = async (orderId) => {
     try {
       addToast(`Aceitando pedido ${orderId}...`, 'info');
-      // ✅ 4. Usa a função correta do serviço correto
       await acceptDelivery(orderId);
       addToast(`Pedido ${orderId} aceito com sucesso!`, 'success');
       fetchDashboardData();
@@ -490,7 +488,6 @@ export default function EnhancedDeliveryDashboard() {
   const handleCompleteOrder = async (orderId) => {
     try {
       addToast(`Completando pedido ${orderId}...`, 'info');
-      // ✅ 5. Usa a função correta do serviço correto
       await completeDelivery(orderId);
       addToast(`Pedido ${orderId} marcado como entregue!`, 'success');
       fetchDashboardData();
@@ -535,7 +532,7 @@ export default function EnhancedDeliveryDashboard() {
   }
 
   const isAvailable = profile?.is_available ?? false;
-  const projectedEarnings = dashboardStats.todayEarnings * (480 / dashboardStats.onlineMinutes);
+  const projectedEarnings = dashboardStats.onlineMinutes > 0 ? dashboardStats.todayEarnings * (480 / dashboardStats.onlineMinutes) : 0;
 
   return (
     <div className="page-container p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -543,7 +540,7 @@ export default function EnhancedDeliveryDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Olá, {profile?.name || 'Entregador'}! 👋
+            Olá, {profile?.first_name || 'Entregador'}! 👋
           </h1>
           <p className="text-gray-600 flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -607,3 +604,44 @@ export default function EnhancedDeliveryDashboard() {
           <CardContent>
             <div className="text-3xl font-bold text-blue-700">
               <AnimatedNumber value={dashboardStats.todayDeliveries} prefix="+" />
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+              <Route className="h-3 w-3 text-blue-500" />
+              <span className="text-xs text-gray-600">{dashboardStats.distanceToday} km rodados</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card de Avaliação */}
+        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Sua Avaliação</CardTitle>
+            <Star className="h-5 w-5 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-yellow-700">
+              <AnimatedNumber value={dashboardStats.avgRating} decimals={1} />
+            </div>
+            <div className="flex gap-0.5 mt-1">
+              {[1,2,3,4,5].map(i => (
+                <Star 
+                  key={i} 
+                  className={`h-3 w-3 ${i <= Math.floor(dashboardStats.avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card de Total de Entregas */}
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Total de Entregas</CardTitle>
+            <Trophy className="h-5 w-5 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-700">
+              <AnimatedNumber value={dashboardStats.totalDeliveries} />
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+              <Flame
