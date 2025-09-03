@@ -1,6 +1,5 @@
-// src/services/deliveryService.js (Refatorado)
+// src/services/deliveryService.js (VERSÃO COMPLETA E CORRIGIDA)
 
-// ✅ Importa as funções auxiliares do novo arquivo central
 import { DELIVERY_API_URL, processResponse, createAuthHeaders } from './api';
 
 const DELIVERY_USER_DATA_KEY = 'deliveryUser';
@@ -78,6 +77,15 @@ const DeliveryService = {
       localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
     }
     return data.avatar_url || data;
+  },
+
+  // ✅ MÉTODO ADICIONADO PARA CORRIGIR O ERRO
+  async getDeliveriesByStatus(status = 'all') {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders?status=${status}`, {
+      headers: createAuthHeaders(),
+    });
+    const data = await processResponse(response);
+    return data.data || [];
   },
 };
 
