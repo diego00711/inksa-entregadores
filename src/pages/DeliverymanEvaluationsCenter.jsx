@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, MessageSquare, User, Clock } from 'lucide-react';
 
-// ✅ CORREÇÃO: Ajusta o caminho da importação para o ProfileContext
-import { useProfile } from '../context/ProfileContext'; 
+// ✅✅✅ CORREÇÃO FINAL: Usa o alias '@' para apontar para a pasta 'src'
+import { useProfile } from '@/context/ProfileContext'; 
 
 // Importa as novas funções de serviço dos arquivos corretos
-import { getMyDeliveryReviews, postClientReview } from '../services/reviewService';
+import { getMyDeliveryReviews } from '../services/reviewService';
 import { getOrdersToReview } from '../services/orderService';
 import ClientReviewForm from '../components/ClientReviewForm'; // Supondo que você tenha este formulário
 
