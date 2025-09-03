@@ -1,21 +1,25 @@
-// src/pages/DeliveryDashboard.jsx (VERSÃO TURBINADA)
+// src/pages/DeliveryDashboard.jsx (VERSÃO CORRIGIDA)
 
 import React, { useState, useEffect, useCallback } from 'react';
+// ✅ 1. Importa os serviços corretos
 import DeliveryService from '../services/deliveryService';
+import { acceptDelivery, completeDelivery } from '../services/orderService'; // Importa as funções de pedido
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Clock, TrendingUp, 
   Award, Target, Calendar, Activity, Navigation, Users, Zap, Bell,
   Coffee, Timer, Route, Trophy, ChevronUp, ChevronDown, Flame
 } from 'lucide-react';
-import { useProfile } from '../context/DeliveryProfileContext';
-import { useToast } from '../context/ToastContext';
+import { useProfile } from '../context/DeliveryProfileContext.jsx'; // Corrigido para usar o caminho relativo correto
+import { useToast } from '../context/ToastContext.jsx'; // Corrigido para usar o caminho relativo correto
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadialBarChart, RadialBar, Cell, PieChart, Pie
 } from 'recharts';
 
+// ... (Todos os seus componentes de UI como AnimatedNumber, DailyGoalCard, etc. continuam aqui, sem alterações) ...
 // ========== COMPONENTES DE ANIMAÇÃO ==========
 const AnimatedNumber = ({ value, prefix = '', suffix = '', decimals = 0 }) => {
   const [displayValue, setDisplayValue] = useState(0);
@@ -428,7 +432,8 @@ export default function EnhancedDeliveryDashboard() {
     setLoading(true);
     setError('');
     try {
-      const statsData = await DeliveryService.getDashboardStats(profile.id);
+      // ✅ 2. Usa a função correta do serviço correto
+      const statsData = await DeliveryService.getDashboardStats();
       setDashboardStats(prev => ({
         ...prev,
         ...statsData
@@ -460,7 +465,8 @@ export default function EnhancedDeliveryDashboard() {
     try {
       addToast("Atualizando disponibilidade...", 'info');
       const newAvailability = !profile.is_available;
-      const updatedProfile = await DeliveryService.updateAvailability(profile.id, newAvailability);
+      // ✅ 3. Usa a função correta do serviço correto
+      const updatedProfile = await DeliveryService.updateDeliveryProfile({ is_available: newAvailability });
       updateProfile({ is_available: updatedProfile.is_available });
       addToast(`Você está agora ${newAvailability ? 'ONLINE' : 'OFFLINE'}!`, 'success');
     } catch (err) {
@@ -472,7 +478,8 @@ export default function EnhancedDeliveryDashboard() {
   const handleAcceptOrder = async (orderId) => {
     try {
       addToast(`Aceitando pedido ${orderId}...`, 'info');
-      await DeliveryService.acceptDelivery(orderId);
+      // ✅ 4. Usa a função correta do serviço correto
+      await acceptDelivery(orderId);
       addToast(`Pedido ${orderId} aceito com sucesso!`, 'success');
       fetchDashboardData();
     } catch (err) {
@@ -483,7 +490,8 @@ export default function EnhancedDeliveryDashboard() {
   const handleCompleteOrder = async (orderId) => {
     try {
       addToast(`Completando pedido ${orderId}...`, 'info');
-      await DeliveryService.completeDelivery(orderId);
+      // ✅ 5. Usa a função correta do serviço correto
+      await completeDelivery(orderId);
       addToast(`Pedido ${orderId} marcado como entregue!`, 'success');
       fetchDashboardData();
     } catch (err) {
@@ -599,175 +607,3 @@ export default function EnhancedDeliveryDashboard() {
           <CardContent>
             <div className="text-3xl font-bold text-blue-700">
               <AnimatedNumber value={dashboardStats.todayDeliveries} prefix="+" />
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              <Route className="h-3 w-3 text-blue-500" />
-              <span className="text-xs text-gray-600">{dashboardStats.distanceToday} km rodados</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card de Avaliação */}
-        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Sua Avaliação</CardTitle>
-            <Star className="h-5 w-5 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-700">
-              <AnimatedNumber value={dashboardStats.avgRating} decimals={1} />
-            </div>
-            <div className="flex gap-0.5 mt-1">
-              {[1,2,3,4,5].map(i => (
-                <Star 
-                  key={i} 
-                  className={`h-3 w-3 ${i <= Math.floor(dashboardStats.avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card de Total de Entregas */}
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Entregas</CardTitle>
-            <Trophy className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-700">
-              <AnimatedNumber value={dashboardStats.totalDeliveries} />
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              <Flame className="h-3 w-3 text-orange-500" />
-              <span className="text-xs text-gray-600">{dashboardStats.streak} dias seguidos</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card de Próximo Pagamento */}
-        <Card className="bg-gradient-to-br from-teal-50 to-cyan-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Próximo Pagamento</CardTitle>
-            <Calendar className="h-5 w-5 text-teal-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-teal-700">
-              R$ {dashboardStats.nextPayment.amount.toFixed(2)}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              Dia {dashboardStats.nextPayment.date}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Segunda linha de cards */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <DailyGoalCard current={dashboardStats.todayEarnings} goal={dashboardStats.dailyGoal} />
-        <OnlineTimeCard minutes={dashboardStats.onlineMinutes} />
-        <RankingCard position={dashboardStats.ranking} total={dashboardStats.totalDeliverers} />
-        
-        {/* Card de Projeção */}
-        <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-bold text-indigo-800 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-indigo-600" />
-              Projeção do Dia
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-700">
-              R$ {projectedEarnings.toFixed(2)}
-            </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Se continuar neste ritmo
-            </p>
-            <div className="mt-2 flex items-center gap-1">
-              <Zap className="h-4 w-4 text-yellow-500" />
-              <span className="text-xs text-gray-600">Acelere para ganhar mais!</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gráfico de Ganhos e Conquistas */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 mb-8">
-        <EarningsChart data={dashboardStats.weeklyEarnings} />
-        <AchievementsSection achievements={achievements} />
-      </div>
-
-      {/* Seção de Pedidos Ativos */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Activity className="h-6 w-6 text-orange-600" />
-            Pedidos Ativos
-            {dashboardStats.activeOrders?.length > 0 && (
-              <span className="ml-2 px-3 py-1 bg-orange-500 text-white text-sm rounded-full font-bold animate-pulse">
-                {dashboardStats.activeOrders.length}
-              </span>
-            )}
-          </h2>
-          {dashboardStats.activeOrders?.length > 0 && (
-            <button className="text-sm text-orange-600 hover:text-orange-700 font-semibold">
-              Ver mapa completo →
-            </button>
-          )}
-        </div>
-
-        {dashboardStats.activeOrders?.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            {dashboardStats.activeOrders.map(order => (
-              <EnhancedActiveOrderCard
-                key={order.id}
-                order={order}
-                onAcceptOrder={handleAcceptOrder}
-                onCompleteOrder={handleCompleteOrder}
-              />
-            ))}
-          </div>
-        ) : (
-          <Card className="p-12 text-center bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-md mx-auto">
-              <div className="text-6xl mb-4">📦</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
-                Nenhum pedido disponível no momento
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {isAvailable 
-                  ? 'Fique tranquilo! Novos pedidos aparecerão em breve.' 
-                  : 'Fique ONLINE para começar a receber pedidos!'
-                }
-              </p>
-              {!isAvailable && (
-                <button 
-                  onClick={toggleAvailability}
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-bold transition-all transform hover:scale-105"
-                >
-                  Ficar Online Agora
-                </button>
-              )}
-            </div>
-          </Card>
-        )}
-      </div>
-
-      {/* Dicas Rápidas */}
-      <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Dica do Dia
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">
-            💡 Trabalhe nos horários de pico para ganhar bônus especiais! 
-            Hoje o melhor horário é das {dashboardStats.peakHours.start} às {dashboardStats.peakHours.end}.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
