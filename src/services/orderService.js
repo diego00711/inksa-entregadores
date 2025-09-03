@@ -22,7 +22,7 @@ export async function getOrdersToReview() {
  */
 export async function getDeliveriesByStatus(status = 'all') {
   try {
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders?status=${status}`, {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders-by-status?status=${status}`, {
       headers: createAuthHeaders(),
     });
     const data = await processResponse(response);
