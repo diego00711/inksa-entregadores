@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, MessageSquare, User, Clock } from 'lucide-react';
 
-// ✅✅✅ CORREÇÃO FINAL: Usa o alias '@' para apontar para a pasta 'src'
-import { useProfile } from '@/context/ProfileContext'; 
+// ✅✅✅ CORREÇÃO FINAL: Usa o nome correto do contexto e do hook do seu projeto.
+import { useDeliveryProfile } from '@/context/DeliveryProfileContext.jsx'; 
 
 // Importa as novas funções de serviço dos arquivos corretos
 import { getMyDeliveryReviews } from '../services/reviewService';
@@ -29,7 +29,8 @@ const ReviewReceivedCard = ({ review }) => (
 );
 
 export default function DeliverymanEvaluationsCenter() {
-  const { profile, loading: loadingProfile } = useProfile();
+  // ✅ CORREÇÃO: Usa o hook com o nome correto
+  const { profile, loading: loadingProfile } = useDeliveryProfile();
 
   // Estados para as duas seções
   const [receivedReviews, setReceivedReviews] = useState(null);
