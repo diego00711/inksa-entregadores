@@ -1,4 +1,4 @@
-// src/services/orderService.js
+// src/services/orderService.js (VERSÃO CORRIGIDA E COMPLETA)
 
 import { DELIVERY_API_URL, createAuthHeaders, processResponse } from './api';
 
@@ -10,6 +10,18 @@ export async function getOrdersToReview() {
     headers: createAuthHeaders(),
   });
   return processResponse(response);
+}
+
+// ✅✅✅ FUNÇÃO ADICIONADA ✅✅✅
+/**
+ * Busca as entregas com base em um status.
+ */
+export async function getDeliveriesByStatus(status = 'all') {
+  const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders?status=${status}`, {
+    headers: createAuthHeaders(),
+  });
+  const data = await processResponse(response);
+  return data.data || [];
 }
 
 /**
