@@ -1,11 +1,13 @@
-// Exemplo: src/pages/DeliveryEvaluationsCenter.jsx
+// src/pages/DeliverymanEvaluationsCenter.jsx
 
 import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, MessageSquare, User, Clock } from 'lucide-react';
-import { useProfile } from '../context/ProfileContext'; // Supondo que você tenha um ProfileContext
 
-// ✅ 1. Importa as novas funções de serviço
-import { getMyDeliveryReviews } from '../services/reviewService';
+// ✅ CORREÇÃO: Ajusta o caminho da importação para o ProfileContext
+import { useProfile } from '../context/ProfileContext'; 
+
+// Importa as novas funções de serviço dos arquivos corretos
+import { getMyDeliveryReviews, postClientReview } from '../services/reviewService';
 import { getOrdersToReview } from '../services/orderService';
 import ClientReviewForm from '../components/ClientReviewForm'; // Supondo que você tenha este formulário
 
@@ -26,10 +28,10 @@ const ReviewReceivedCard = ({ review }) => (
   </div>
 );
 
-export default function DeliveryEvaluationsCenter() {
+export default function DeliverymanEvaluationsCenter() {
   const { profile, loading: loadingProfile } = useProfile();
 
-  // ✅ 2. Estados para as duas seções
+  // Estados para as duas seções
   const [receivedReviews, setReceivedReviews] = useState(null);
   const [loadingReceived, setLoadingReceived] = useState(true);
 
@@ -38,7 +40,7 @@ export default function DeliveryEvaluationsCenter() {
   
   const [highlightOrderId, setHighlightOrderId] = useState(null);
 
-  // ✅ 3. useEffect para buscar avaliações recebidas
+  // useEffect para buscar avaliações recebidas
   useEffect(() => {
     if (profile) {
       setLoadingReceived(true);
@@ -49,7 +51,7 @@ export default function DeliveryEvaluationsCenter() {
     }
   }, [profile]);
 
-  // ✅ 4. useEffect para buscar pedidos a avaliar
+  // useEffect para buscar pedidos a avaliar
   useEffect(() => {
     if (profile) {
       setLoadingOrders(true);
