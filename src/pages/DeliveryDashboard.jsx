@@ -503,3 +503,142 @@ export default function EnhancedDeliveryDashboard() {
       <div className="page-container p-6 bg-gray-50 min-h-screen">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-300 rounded w-1/3 mb-4"></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-32 bg-gray-300 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container flex items-center justify-center min-h-screen">
+        <Card className="p-8 max-w-md text-center">
+          <div className="text-6xl mb-4">😕</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Ops! Algo deu errado</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
+          >
+            Tentar Novamente
+          </button>
+        </Card>
+      </div>
+    );
+  }
+
+  const isAvailable = dashboardStats.is_available;
+  const projectedEarnings = dashboardStats.onlineMinutes > 0 ? dashboardStats.todayEarnings * (480 / dashboardStats.onlineMinutes) : 0;
+
+  return (
+    <div className="page-container p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      {/* Header com Status Online/Offline */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            Olá, {profile?.first_name || 'Entregador'}! 👋
+          </h1>
+          <p className="text-gray-600 flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button className="p-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all">
+            <Bell className="h-5 w-5 text-gray-600" />
+          </button>
+          <button
+            onClick={toggleAvailability}
+            className={`px-6 py-3 rounded-full text-white font-bold transition-all duration-300 flex items-center gap-2 text-lg
+              ${isAvailable 
+                ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' 
+                : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+              }
+              shadow-lg hover:shadow-xl transform hover:scale-105
+            `}
+          >
+            {isAvailable ? <Wifi className="h-6 w-6" /> : <WifiOff className="h-6 w-6" />}
+            {isAvailable ? 'ONLINE' : 'OFFLINE'}
+          </button>
+        </div>
+      </div>
+
+      {/* Notificação de Horário de Pico */}
+      {dashboardStats.peakHours && (
+        <NotificationBanner
+          type="promo"
+          message={`🔥 Horário de pico: ${dashboardStats.peakHours.start} - ${dashboardStats.peakHours.end} | Ganhe ${dashboardStats.peakHours.bonus}x mais!`}
+          icon={<Flame className="h-5 w-5" />}
+        />
+      )}
+
+      {/* Cards de Estatísticas Principais */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 mb-8">
+        {/* Card de Ganhos */}
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Ganhos de Hoje</CardTitle>
+            <DollarSign className="h-5 w-5 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-700">
+              <AnimatedNumber value={dashboardStats.todayEarnings} prefix="R$ " decimals={2} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card de Entregas */}
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Entregas Hoje</CardTitle>
+            <Truck className="h-5 w-5 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-700">
+              <AnimatedNumber value={dashboardStats.todayDeliveries} prefix="+" />
+            </div>
+            <p className="text-xs text-gray-600 mt-1">{dashboardStats.distanceToday.toFixed(1)} km rodados</p>
+          </CardContent>
+        </Card>
+
+        {/* Card de Avaliação */}
+        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Sua Avaliação</CardTitle>
+            <Star className="h-5 w-5 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-yellow-700">
+              <AnimatedNumber value={dashboardStats.avgRating} decimals={1} />
+            </div>
+            <div className="flex gap-0.5 mt-1">
+              {[1,2,3,4,5].map(i => (
+                <Star 
+                  key={i} 
+                  className={`h-3 w-3 ${i <= Math.round(dashboardStats.avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card de Total de Entregas */}
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Total de Entregas</CardTitle>
+            <Trophy className="h-5 w-5 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-700">
+              <AnimatedNumber value={dashboardStats.totalDeliveries} />
+            </div>
+            <p className="text-xs text-gray-600 mt-1">desde o início</p>
+          </CardContent>
+        </Card>
+
+        {/* Card de Próximo Pagamento */}
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y
