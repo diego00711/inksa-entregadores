@@ -1,9 +1,8 @@
 // src/pages/DeliveryDashboard.jsx (VERSÃO FINAL, COMPLETA E CORRIGIDA)
 
 import React, { useState, useEffect, useCallback } from 'react';
-// ✅ 1. Importa os serviços corretos
 import DeliveryService from '../services/deliveryService';
-import { acceptDelivery, completeDelivery } from '../services/orderService'; // Importa as funções de pedido
+import { acceptDelivery, completeDelivery } from '../services/orderService';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -14,12 +13,10 @@ import {
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  RadialBarChart, RadialBar, Cell, PieChart, Pie
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
-// ========== COMPONENTES DE ANIMAÇÃO ==========
+// ========== COMPONENTE DE ANIMAÇÃO ==========
 const AnimatedNumber = ({ value, prefix = '', suffix = '', decimals = 0 }) => {
   const [displayValue, setDisplayValue] = useState(0);
   
@@ -90,7 +87,7 @@ const DailyGoalCard = ({ current, goal }) => {
           <p className="text-xs text-center text-gray-500">
             {isCompleted 
               ? '🎉 Parabéns! Meta atingida!' 
-              : `Faltam R$ ${(goal - current).toFixed(2)}`
+              : `Faltam R$ ${(goal - current > 0 ? goal - current : 0).toFixed(2)}`
             }
           </p>
         </div>
@@ -140,12 +137,12 @@ const RankingCard = ({ position, total }) => {
       <CardContent>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-3xl font-bold text-orange-700">#{position}</div>
-            <p className="text-xs text-gray-600">de {total} entregadores</p>
+            <div className="text-3xl font-bold text-orange-700">#{position || 0}</div>
+            <p className="text-xs text-gray-600">de {total || 0} entregadores</p>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">Top {topPercentage}%</div>
-            {position <= 3 && (
+            {position > 0 && position <= 3 && (
               <div className="mt-1">
                 {position === 1 && <span className="text-2xl">🥇</span>}
                 {position === 2 && <span className="text-2xl">🥈</span>}
@@ -185,6 +182,7 @@ const EarningsChart = ({ data }) => {
               contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
               labelStyle={{ color: '#f3f4f6' }}
               itemStyle={{ color: '#10b981' }}
+              formatter={(value) => `R$ ${value.toFixed(2)}`}
             />
             <Area 
               type="monotone" 
@@ -205,28 +203,48 @@ const EnhancedActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeElapsed(prev => prev + 1);
-    }, 60000); // Atualiza a cada minuto
-    return () => clearInterval(timer);
-  }, []);
+    const calculateTime = () => {
+      if (!order.created_at) return;
+      const created = new Date(order.created_at);
+      const now = new Date();
+      const diff = Math.floor((now - created) / 60000); // Diferença em minutos
+      setTimeElapsed(diff);
+    };
 
-  const formatAddress = (street, number, neighborhood, city, state) => {
-    if (street || number || neighborhood || city || state) {
-      const parts = [street, number, neighborhood, city, state].filter(Boolean);
+    calculateTime();
+    const timer = setInterval(calculateTime, 60000);
+    
+    return () => clearInterval(timer);
+  }, [order.created_at]);
+
+  const formatAddress = (street, number, neighborhood, deliveryAddress) => {
+    if (street || number || neighborhood) {
+      const parts = [street, number, neighborhood].filter(Boolean);
       return parts.join(', ');
     }
-    if (typeof order.pickup_address === 'string' && order.pickup_address) {
-      return order.pickup_address;
+    if (typeof deliveryAddress === 'string' && deliveryAddress) {
+      return deliveryAddress;
     }
     return 'Endereço não informado';
   };
 
+  const getStatusText = (status) => {
+    const statusMap = {
+      'accepted': 'Aceito',
+      'preparing': 'Em Preparo',
+      'ready': 'Pronto para Coleta',
+      'delivering': 'Em Rota de Entrega',
+      'pending': 'Pendente'
+    };
+    return statusMap[status] || status;
+  };
+
   const getStatusColor = (status) => {
     switch(status) {
-      case 'Pendente': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'Aceito': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'Para Entrega': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'accepted': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'ready': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'delivering': return 'bg-teal-100 text-teal-800 border-teal-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
@@ -237,13 +255,13 @@ const EnhancedActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-lg font-bold text-orange-700">
-              Pedido #{order.order_id || order.id?.substring(0, 8)}
+              Pedido #{order.id?.substring(0, 8)}
             </CardTitle>
             <div className="flex items-center gap-2 mt-1">
               <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(order.status)}`}>
-                {order.status}
+                {getStatusText(order.status)}
               </span>
-              {order.status !== 'Pendente' && (
+              {order.status !== 'pending' && (
                 <span className="text-xs text-gray-500 flex items-center gap-1">
                   <Timer className="h-3 w-3" />
                   {timeElapsed} min
@@ -270,7 +288,7 @@ const EnhancedActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
             <div className="flex-1">
               <p className="text-sm font-semibold text-gray-700">{order.restaurant_name || 'Restaurante'}</p>
               <p className="text-xs text-gray-500">
-                {formatAddress(order.restaurant_street, order.restaurant_number, order.restaurant_neighborhood, order.restaurant_city, order.restaurant_state)}
+                {formatAddress(order.restaurant_street, order.restaurant_number, order.restaurant_neighborhood, null)}
               </p>
             </div>
           </div>
@@ -285,21 +303,13 @@ const EnhancedActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-gray-700">{order.client_name || 'Cliente'}</p>
-              <p className="text-xs text-gray-500">{formatAddress(order.delivery_address)}</p>
+              <p className="text-xs text-gray-500">{formatAddress(null, null, null, order.delivery_address)}</p>
             </div>
           </div>
         </div>
 
         {/* Informações adicionais */}
         <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-600">Distância estimada:</span>
-            <span className="font-semibold">2.5 km</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-600">Tempo estimado:</span>
-            <span className="font-semibold">15 min</span>
-          </div>
           <div className="flex justify-between text-xs">
             <span className="text-gray-600">Total do pedido:</span>
             <span className="font-semibold">R$ {order.total_amount ? parseFloat(order.total_amount).toFixed(2) : '0.00'}</span>
@@ -308,7 +318,7 @@ const EnhancedActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
         
         {/* Botões de ação */}
         <div className="flex gap-2 pt-2">
-          {order.status === 'Pendente' && (
+          {order.status === 'pending' && (
             <button 
               onClick={() => onAcceptOrder(order.id)} 
               className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-md"
@@ -317,7 +327,7 @@ const EnhancedActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
               Aceitar Agora
             </button>
           )}
-          {(order.status === 'Aceito' || order.status === 'Para Entrega') && (
+          {(order.status === 'accepted' || order.status === 'ready' || order.status === 'delivering') && (
             <button 
               onClick={() => onCompleteOrder(order.id)} 
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-md"
@@ -379,7 +389,6 @@ const AchievementsSection = ({ achievements }) => {
     </Card>
   );
 };
-
 // ========== COMPONENTE PRINCIPAL DO DASHBOARD ==========
 export default function EnhancedDeliveryDashboard() {
   const { profile, updateProfile, loading: profileLoading } = useProfile();
@@ -391,37 +400,26 @@ export default function EnhancedDeliveryDashboard() {
     avgRating: 0,
     totalDeliveries: 0,
     activeOrders: [],
-    weeklyEarnings: [
-      { day: 'Seg', value: 120 },
-      { day: 'Ter', value: 180 },
-      { day: 'Qua', value: 150 },
-      { day: 'Qui', value: 200 },
-      { day: 'Sex', value: 280 },
-      { day: 'Sáb', value: 320 },
-      { day: 'Dom', value: 250 }
-    ],
-    dailyGoal: 300,
-    onlineMinutes: 245,
-    ranking: 5,
-    totalDeliverers: 50,
-    distanceToday: 28.5,
-    nextPayment: { date: '05/09', amount: 1580.00 },
-    streak: 7,
-    peakHours: { start: '11:30', end: '13:30', bonus: 1.5 }
+    weeklyEarnings: [],
+    dailyGoal: 0,
+    onlineMinutes: 0,
+    ranking: 0,
+    totalDeliverers: 0,
+    distanceToday: 0,
+    nextPayment: { date: '--/--', amount: 0 },
+    streak: 0,
+    peakHours: null,
+    is_available: false
   });
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showNotification, setShowNotification] = useState(true);
 
-  // Conquistas mockadas
   const achievements = [
     { name: 'Primeira Entrega', icon: '🎯', unlocked: true },
     { name: '5 Estrelas', icon: '⭐', unlocked: true },
     { name: 'Velocista', icon: '⚡', unlocked: true },
     { name: '100 Entregas', icon: '💯', unlocked: false },
-    { name: 'Rei da Noite', icon: '🌙', unlocked: false },
-    { name: 'Sem Reclamações', icon: '😊', unlocked: true }
   ];
 
   const fetchDashboardData = useCallback(async () => {
@@ -429,69 +427,73 @@ export default function EnhancedDeliveryDashboard() {
       setLoading(false); 
       return; 
     }
-    setLoading(true);
     setError('');
     try {
-      const statsData = await DeliveryService.getDashboardStats();
-      setDashboardStats(prev => ({
-        ...prev,
-        ...statsData
-      }));
-      if (statsData && typeof statsData.is_available === 'boolean') {
+      const response = await DeliveryService.getDashboardStats();
+      const statsData = response.data;
+      setDashboardStats(statsData);
+      if (typeof statsData.is_available === 'boolean') {
         updateProfile({ is_available: statsData.is_available });
       }
     } catch (err) {
       console.error("Erro ao buscar dados do dashboard:", err);
-      setError(err.message || 'Não foi possível carregar as estatísticas.');
-      addToast(err.message || 'Erro ao carregar dashboard', 'error');
+      const errorMessage = err.response?.data?.message || err.message || 'Não foi possível carregar as estatísticas.';
+      setError(errorMessage);
+      addToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
   }, [profile, profileLoading, updateProfile, addToast]);
 
   useEffect(() => {
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+    if (!profileLoading && profile?.id) {
+      setLoading(true);
+      fetchDashboardData();
+      const interval = setInterval(fetchDashboardData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [profileLoading, profile, fetchDashboardData]);
 
   const toggleAvailability = async () => {
     if (!profile || profileLoading) {
       addToast("Perfil não carregado ou em carregamento.", 'warning');
       return;
     }
-
     try {
       addToast("Atualizando disponibilidade...", 'info');
-      const newAvailability = !profile.is_available;
+      const newAvailability = !dashboardStats.is_available;
       const updatedProfile = await DeliveryService.updateDeliveryProfile({ is_available: newAvailability });
       updateProfile({ is_available: updatedProfile.is_available });
+      setDashboardStats(prev => ({ ...prev, is_available: updatedProfile.is_available }));
       addToast(`Você está agora ${newAvailability ? 'ONLINE' : 'OFFLINE'}!`, 'success');
     } catch (err) {
       console.error("Erro ao atualizar disponibilidade:", err);
-      addToast(err.message || 'Erro ao atualizar disponibilidade.', 'error');
+      const errorMessage = err.response?.data?.message || 'Erro ao atualizar disponibilidade.';
+      addToast(errorMessage, 'error');
     }
   };
 
   const handleAcceptOrder = async (orderId) => {
     try {
-      addToast(`Aceitando pedido ${orderId}...`, 'info');
+      addToast(`Aceitando pedido...`, 'info');
       await acceptDelivery(orderId);
-      addToast(`Pedido ${orderId} aceito com sucesso!`, 'success');
+      addToast(`Pedido aceito com sucesso!`, 'success');
       fetchDashboardData();
     } catch (err) {
-      addToast(err.message || `Erro ao aceitar pedido ${orderId}.`, 'error');
+      const errorMessage = err.response?.data?.message || `Erro ao aceitar pedido.`;
+      addToast(errorMessage, 'error');
     }
   };
 
   const handleCompleteOrder = async (orderId) => {
     try {
-      addToast(`Completando pedido ${orderId}...`, 'info');
+      addToast(`Completando pedido...`, 'info');
       await completeDelivery(orderId);
-      addToast(`Pedido ${orderId} marcado como entregue!`, 'success');
+      addToast(`Pedido marcado como entregue!`, 'success');
       fetchDashboardData();
     } catch (err) {
-      addToast(err.message || `Erro ao completar pedido ${orderId}.`, 'error');
+      const errorMessage = err.response?.data?.message || `Erro ao completar pedido.`;
+      addToast(errorMessage, 'error');
     }
   };
 
@@ -513,24 +515,22 @@ export default function EnhancedDeliveryDashboard() {
   if (error) {
     return (
       <div className="page-container flex items-center justify-center min-h-screen">
-        <Card className="p-8 max-w-md">
-          <div className="text-center">
-            <div className="text-6xl mb-4">😕</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Ops! Algo deu errado</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button 
-              onClick={fetchDashboardData}
-              className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
-            >
-              Tentar Novamente
-            </button>
-          </div>
+        <Card className="p-8 max-w-md text-center">
+          <div className="text-6xl mb-4">😕</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Ops! Algo deu errado</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
+          >
+            Tentar Novamente
+          </button>
         </Card>
       </div>
     );
   }
 
-  const isAvailable = profile?.is_available ?? false;
+  const isAvailable = dashboardStats.is_available;
   const projectedEarnings = dashboardStats.onlineMinutes > 0 ? dashboardStats.todayEarnings * (480 / dashboardStats.onlineMinutes) : 0;
 
   return (
@@ -567,7 +567,7 @@ export default function EnhancedDeliveryDashboard() {
       </div>
 
       {/* Notificação de Horário de Pico */}
-      {showNotification && dashboardStats.peakHours && (
+      {dashboardStats.peakHours && (
         <NotificationBanner
           type="promo"
           message={`🔥 Horário de pico: ${dashboardStats.peakHours.start} - ${dashboardStats.peakHours.end} | Ganhe ${dashboardStats.peakHours.bonus}x mais!`}
@@ -587,10 +587,6 @@ export default function EnhancedDeliveryDashboard() {
             <div className="text-3xl font-bold text-green-700">
               <AnimatedNumber value={dashboardStats.todayEarnings} prefix="R$ " decimals={2} />
             </div>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-green-500" />
-              <span className="text-xs text-green-600">+23% vs ontem</span>
-            </div>
           </CardContent>
         </Card>
 
@@ -604,10 +600,7 @@ export default function EnhancedDeliveryDashboard() {
             <div className="text-3xl font-bold text-blue-700">
               <AnimatedNumber value={dashboardStats.todayDeliveries} prefix="+" />
             </div>
-            <div className="flex items-center gap-1 mt-1">
-              <Route className="h-3 w-3 text-blue-500" />
-              <span className="text-xs text-gray-600">{dashboardStats.distanceToday} km rodados</span>
-            </div>
+            <p className="text-xs text-gray-600 mt-1">{dashboardStats.distanceToday.toFixed(1)} km rodados</p>
           </CardContent>
         </Card>
 
@@ -625,7 +618,7 @@ export default function EnhancedDeliveryDashboard() {
               {[1,2,3,4,5].map(i => (
                 <Star 
                   key={i} 
-                  className={`h-3 w-3 ${i <= Math.floor(dashboardStats.avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
+                  className={`h-3 w-3 ${i <= Math.round(dashboardStats.avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
                 />
               ))}
             </div>
@@ -665,90 +658,4 @@ export default function EnhancedDeliveryDashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Coluna da Esquerda - Gráficos e Metas */}
         <div className="space-y-6 lg:col-span-2">
-          <EarningsChart data={dashboardStats.weeklyEarnings} />
-          
-          <div className="grid gap-4 sm:grid-cols-2">
-            <DailyGoalCard 
-              current={dashboardStats.todayEarnings} 
-              goal={dashboardStats.dailyGoal} 
-            />
-            <OnlineTimeCard minutes={dashboardStats.onlineMinutes} />
-            <RankingCard 
-              position={dashboardStats.ranking} 
-              total={dashboardStats.totalDeliverers} 
-            />
-            
-            {/* Card de Sequência */}
-            <Card className="bg-gradient-to-br from-red-50 to-pink-50 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold text-red-800 flex items-center gap-2">
-                  <Flame className="h-5 w-5 text-red-600" />
-                  Sequência Ativa
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-red-700">
-                  {dashboardStats.streak} dias
-                </div>
-                <p className="text-xs text-gray-600 mt-1">trabalhando consecutivos</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Seção de Conquistas */}
-          <AchievementsSection achievements={achievements} />
-        </div>
-
-        {/* Coluna da Direita - Pedidos Ativos */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
-            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-              {dashboardStats.activeOrders?.length || 0}
-            </span>
-          </div>
-
-          {dashboardStats.activeOrders && dashboardStats.activeOrders.length > 0 ? (
-            dashboardStats.activeOrders.map(order => (
-              <EnhancedActiveOrderCard
-                key={order.id}
-                order={order}
-                onAcceptOrder={handleAcceptOrder}
-                onCompleteOrder={handleCompleteOrder}
-              />
-            ))
-          ) : (
-            <Card className="p-6 text-center">
-              <div className="text-6xl mb-4">📦</div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum pedido ativo</h3>
-              <p className="text-gray-500 text-sm">
-                {isAvailable 
-                  ? 'Aguardando novos pedidos...' 
-                  : 'Ative sua disponibilidade para receber pedidos'
-                }
-              </p>
-            </Card>
-          )}
-
-          {/* Projeção de Ganhos */}
-          <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-indigo-800 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-indigo-600" />
-                Projeção do Dia
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-indigo-700">
-                R$ {projectedEarnings.toFixed(2)}
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Baseado no seu desempenho atual mantendo o mesmo ritmo
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
+          {dashboardStats.
