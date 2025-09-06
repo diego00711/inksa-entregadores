@@ -435,6 +435,7 @@ export function MyDeliveriesPage() {
                                         activeDelivery={activeDelivery}
                                         onDeliverySelect={handleDeliverySelect}
                                         userLocation={userLocation}
+                                        isVisible={showMap}
                                     />
                                     <ActiveDeliveryCard 
                                         delivery={activeDelivery}
