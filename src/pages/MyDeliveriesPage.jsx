@@ -1,6 +1,7 @@
 // src/pages/MyDeliveriesPage.jsx (VERSÃO COM MAPA E WAZE)
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import '../styles/DeliveryMap.css'; // Importar os estilos do mapa
 import { useProfile } from '../context/DeliveryProfileContext.jsx'; 
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx'; 
