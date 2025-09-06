@@ -1,20 +1,21 @@
-// Ficheiro: src/components/Sidebar.jsx (VERSÃO FINAL E CORRIGIDA COM LINK DE GAMIFICAÇÃO)
+// src/components/Sidebar.jsx (VERSÃO MELHORADA - MANTENDO ESTILO EXISTENTE + AVALIAÇÕES)
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
-import { LayoutDashboard, List, BarChart2, User, LogOut, Trophy } from 'lucide-react'; // <-- NOVO: Trophy icon
+import { LayoutDashboard, List, BarChart2, User, LogOut, Trophy, Star } from 'lucide-react';
 
 export function Sidebar() {
   const { profile, logout } = useProfile();
 
-  // Caminhos corretos que correspondem ao App.jsx
+  // Caminhos corretos que correspondem ao App.jsx - AGORA COM AVALIAÇÕES
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/delivery/dashboard' },
     { name: 'Entregas', icon: List, path: '/delivery/entregas' },
+    { name: 'Avaliações', icon: Star, path: '/delivery/avaliacoes' }, // ✅ NOVO ITEM ADICIONADO
     { name: 'Ganhos', icon: BarChart2, path: '/delivery/ganhos' },
+    { name: 'Gamificação', icon: Trophy, path: '/delivery/gamificacao' },
     { name: 'Meu Perfil', icon: User, path: '/delivery/meu-perfil' },
-    { name: 'Gamificação', icon: Trophy, path: '/delivery/gamificacao' }, // <-- NOVO ITEM DE NAVEGAÇÃO AQUI!
   ];
 
   return (
