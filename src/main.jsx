@@ -1,4 +1,4 @@
-// Ficheiro: src/main.jsx (VERSÃO FINAL E CORRIGIDA)
+// Ficheiro: src/main.jsx (VERSÃO FINAL E CORRIGIDA + PWA)
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -9,14 +9,39 @@ import 'leaflet/dist/leaflet.css';
 
 import App from './App';
 import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
-import { ToastProvider } from './context/ToastContext'; // <-- NOVA IMPORTAÇÃO
-import './app.css'; 
+import { ToastProvider } from './context/ToastContext';import './app.css'; 
+
+// REGISTRO DO SERVICE WORKER - PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW Entregador registered successfully:', registration);
+      })
+      .catch((error) => {
+        console.log('SW Entregador registration failed:', error);
+      });
+  });
+}
+
+// BEFORE INSTALL PROMPT - Detecta quando pode instalar como app
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('beforeinstallprompt fired - App Entregador pode ser instalado!');
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+// DETECTAR QUANDO FOI INSTALADO
+window.addEventListener('appinstalled', (evt) => {
+  console.log('App Entregador foi instalado com sucesso!');
+});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <DeliveryProfileProvider>
-        <ToastProvider> {/* <-- NOVO: Envolvendo o App com ToastProvider */}
+        <ToastProvider>
           <App />
         </ToastProvider>
       </DeliveryProfileProvider>
