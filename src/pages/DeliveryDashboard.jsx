@@ -433,7 +433,7 @@ export default function EnhancedDeliveryDashboard() {
       const response = await DeliveryService.getDashboardStats();
       const statsData = response.data;
       setDashboardStats(statsData);
-      if (typeof statsData.is_available === 'boolean') {
+      if (typeof statsData?.is_available === 'boolean') {
         updateProfile({ is_available: statsData.is_available });
       }
     } catch (err) {
@@ -462,10 +462,13 @@ export default function EnhancedDeliveryDashboard() {
     }
     try {
       addToast("Atualizando disponibilidade...", 'info');
-      const newAvailability = !dashboardStats.is_available;
+      const newAvailability = !(dashboardStats?.is_available || false);
       const updatedProfile = await DeliveryService.updateDeliveryProfile({ is_available: newAvailability });
-      updateProfile({ is_available: updatedProfile.is_available });
-      setDashboardStats(prev => ({ ...prev, is_available: updatedProfile.is_available }));
+      updateProfile({ is_available: updatedProfile?.is_available || false });
+      setDashboardStats(prev => ({ 
+        ...prev, 
+        is_available: updatedProfile?.is_available || false 
+      }));
       addToast(`Você está agora ${newAvailability ? 'ONLINE' : 'OFFLINE'}!`, 'success');
     } catch (err) {
       console.error("Erro ao atualizar disponibilidade:", err);
@@ -531,8 +534,26 @@ export default function EnhancedDeliveryDashboard() {
     );
   }
 
-  const isAvailable = dashboardStats.is_available;
-  const projectedEarnings = dashboardStats.onlineMinutes > 0 ? dashboardStats.todayEarnings * (480 / dashboardStats.onlineMinutes) : 0;
+  // VERIFICAÇÃO DE SEGURANÇA ADICIONADA
+  if (!dashboardStats) {
+    return (
+      <div className="page-container p-6 bg-gray-50 min-h-screen">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-300 rounded w-1/3 mb-4"></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-32 bg-gray-300 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CORREÇÕES DE SEGURANÇA APLICADAS
+  const isAvailable = dashboardStats?.is_available || false;
+  const projectedEarnings = (dashboardStats?.onlineMinutes || 0) > 0 ? 
+    (dashboardStats?.todayEarnings || 0) * (480 / (dashboardStats?.onlineMinutes || 1)) : 0;
 
   return (
     <div className="page-container p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -568,7 +589,7 @@ export default function EnhancedDeliveryDashboard() {
       </div>
 
       {/* Notificação de Horário de Pico */}
-      {dashboardStats.peakHours && (
+      {dashboardStats?.peakHours && (
         <NotificationBanner
           type="promo"
           message={`🔥 Horário de pico: ${dashboardStats.peakHours.start} - ${dashboardStats.peakHours.end} | Ganhe ${dashboardStats.peakHours.bonus}x mais!`}
@@ -586,7 +607,7 @@ export default function EnhancedDeliveryDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-700">
-              <AnimatedNumber value={dashboardStats.todayEarnings} prefix="R$ " decimals={2} />
+              <AnimatedNumber value={dashboardStats?.todayEarnings || 0} prefix="R$ " decimals={2} />
             </div>
           </CardContent>
         </Card>
@@ -599,9 +620,9 @@ export default function EnhancedDeliveryDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-700">
-              <AnimatedNumber value={dashboardStats.todayDeliveries} prefix="+" />
+              <AnimatedNumber value={dashboardStats?.todayDeliveries || 0} prefix="+" />
             </div>
-            <p className="text-xs text-gray-600 mt-1">{dashboardStats.distanceToday.toFixed(1)} km rodados</p>
+            <p className="text-xs text-gray-600 mt-1">{(dashboardStats?.distanceToday || 0).toFixed(1)} km rodados</p>
           </CardContent>
         </Card>
 
@@ -613,13 +634,13 @@ export default function EnhancedDeliveryDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-yellow-700">
-              <AnimatedNumber value={dashboardStats.avgRating} decimals={1} />
+              <AnimatedNumber value={dashboardStats?.avgRating || 0} decimals={1} />
             </div>
             <div className="flex gap-0.5 mt-1">
               {[1,2,3,4,5].map(i => (
                 <Star 
                   key={i} 
-                  className={`h-3 w-3 ${i <= Math.round(dashboardStats.avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
+                  className={`h-3 w-3 ${i <= Math.round(dashboardStats?.avgRating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
                 />
               ))}
             </div>
@@ -634,7 +655,7 @@ export default function EnhancedDeliveryDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-purple-700">
-              <AnimatedNumber value={dashboardStats.totalDeliveries} />
+              <AnimatedNumber value={dashboardStats?.totalDeliveries || 0} />
             </div>
             <p className="text-xs text-gray-600 mt-1">desde o início</p>
           </CardContent>
@@ -648,9 +669,9 @@ export default function EnhancedDeliveryDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-700">
-              R$ {dashboardStats.nextPayment?.amount?.toFixed(2) || '0.00'}
+              R$ {dashboardStats?.nextPayment?.amount?.toFixed(2) || '0.00'}
             </div>
-            <p className="text-xs text-gray-600 mt-1">em {dashboardStats.nextPayment?.date || '--/--'}</p>
+            <p className="text-xs text-gray-600 mt-1">em {dashboardStats?.nextPayment?.date || '--/--'}</p>
           </CardContent>
         </Card>
       </div>
@@ -659,19 +680,19 @@ export default function EnhancedDeliveryDashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Coluna da Esquerda - Gráficos e Metas */}
         <div className="space-y-6 lg:col-span-2">
-          {dashboardStats.weeklyEarnings && dashboardStats.weeklyEarnings.length > 0 && (
+          {dashboardStats?.weeklyEarnings && dashboardStats.weeklyEarnings.length > 0 && (
             <EarningsChart data={dashboardStats.weeklyEarnings} />
           )}
           
           <div className="grid gap-4 sm:grid-cols-2">
             <DailyGoalCard 
-              current={dashboardStats.todayEarnings} 
-              goal={dashboardStats.dailyGoal} 
+              current={dashboardStats?.todayEarnings || 0} 
+              goal={dashboardStats?.dailyGoal || 0} 
             />
-            <OnlineTimeCard minutes={dashboardStats.onlineMinutes} />
+            <OnlineTimeCard minutes={dashboardStats?.onlineMinutes || 0} />
             <RankingCard 
-              position={dashboardStats.ranking} 
-              total={dashboardStats.totalDeliverers} 
+              position={dashboardStats?.ranking || 0} 
+              total={dashboardStats?.totalDeliverers || 0} 
             />
             <Card className="bg-gradient-to-br from-red-50 to-pink-50 shadow-xl">
               <CardHeader className="pb-3">
@@ -682,7 +703,7 @@ export default function EnhancedDeliveryDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-red-700">
-                  {dashboardStats.streak} dias
+                  {dashboardStats?.streak || 0} dias
                 </div>
               </CardContent>
             </Card>
@@ -695,11 +716,11 @@ export default function EnhancedDeliveryDashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
             <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-              {dashboardStats.activeOrders?.length || 0}
+              {dashboardStats?.activeOrders?.length || 0}
             </span>
           </div>
 
-          {dashboardStats.activeOrders && dashboardStats.activeOrders.length > 0 ? (
+          {dashboardStats?.activeOrders && dashboardStats.activeOrders.length > 0 ? (
             dashboardStats.activeOrders.map(order => (
               <EnhancedActiveOrderCard
                 key={order.id}
