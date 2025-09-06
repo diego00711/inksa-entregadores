@@ -17,21 +17,22 @@ export async function getOrdersToReview() {
   }
 }
 
+// COMENTADO TEMPORARIAMENTE - ENDPOINT NÃO EXISTE NA API
 /**
  * Busca as entregas com base em um status.
  */
-export async function getDeliveriesByStatus(status = 'all') {
-  try {
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders-by-status?status=${status}`, {
-      headers: createAuthHeaders(),
-    });
-    const data = await processResponse(response);
-    return data.data || [];
-  } catch (error) {
-    console.error('Erro ao buscar entregas por status:', error);
-    throw error;
-  }
-}
+// export async function getDeliveriesByStatus(status = 'all') {
+//   try {
+//     const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders-by-status?status=${status}`, {
+//       headers: createAuthHeaders(),
+//     });
+//     const data = await processResponse(response);
+//     return data.data || [];
+//   } catch (error) {
+//     console.error('Erro ao buscar entregas por status:', error);
+//     throw error;
+//   }
+// }
 
 /**
  * Busca os detalhes de um pedido específico.
