@@ -428,7 +428,7 @@ export function MyDeliveriesPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-0 relative" style={{ height: '500px' }}>
-                            {showMap ? (
+                            {showMap && mapEnabled ? (
                                 <>
                                     <DeliveryMap 
                                         deliveries={filteredDeliveries}
@@ -446,7 +446,28 @@ export function MyDeliveriesPage() {
                                 <div className="h-full flex items-center justify-center bg-gray-50">
                                     <div className="text-center">
                                         <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                        <p className="text-gray-500">Mapa oculto</p>
+                                        <p className="text-gray-500 mb-4">
+                                            {mapEnabled ? 'Mapa oculto' : 'Clique em "Ativar Mapa" para ver entregas no mapa'}
+                                        </p>
+                                        {!mapEnabled && (
+                                            <Button 
+                                                onClick={enableMap}
+                                                disabled={leafletLoading}
+                                                className="mb-2"
+                                            >
+                                                {leafletLoading ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                                        Carregando mapa...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                        Ativar Mapa
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             )}
