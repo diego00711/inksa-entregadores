@@ -149,47 +149,55 @@ export function MyDeliveriesPage() {
                             <div className="h-full flex items-center justify-center bg-gray-50">
                                 <div className="text-center">
                                     <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-500 mb-4">
-                                        {showMap ? 'Mapa em desenvolvimento' : 'Clique no ícone do olho para ver o mapa'}
-                                    </p>
-                                    {activeDelivery && (
-                                        <div className="bg-white p-4 rounded-lg shadow-sm border max-w-sm mx-auto">
-                                            <h3 className="font-semibold mb-2">Entrega Ativa #{activeDelivery.id}</h3>
-                                            <p className="text-sm text-gray-600 mb-3">
-                                                {activeDelivery.customer?.name || 'Cliente não informado'}
+                                    
+                                    {!activeDelivery ? (
+                                        <div>
+                                            <p className="text-gray-500 mb-4">Nenhuma entrega ativa no momento</p>
+                                            <p className="text-sm text-gray-400">O mapa será exibido quando houver entregas em andamento</p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-gray-500 mb-4">
+                                                {showMap ? 'Mapa em desenvolvimento' : 'Clique no ícone do olho para ver o mapa'}
                                             </p>
-                                            <div className="flex gap-2">
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline" 
-                                                    className="flex-1"
-                                                    onClick={() => {
-                                                        const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
-                                                        window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}`, '_blank');
-                                                    }}
-                                                >
-                                                    <ExternalLink className="w-4 h-4 mr-1" />
-                                                    Waze
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline" 
-                                                    className="flex-1"
-                                                    onClick={() => {
-                                                        const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
-                                                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
-                                                    }}
-                                                >
-                                                    <Route className="w-4 h-4 mr-1" />
-                                                    Maps
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline"
-                                                    onClick={() => window.open(`tel:${activeDelivery.customer?.phone}`, '_self')}
-                                                >
-                                                    <Phone className="w-4 h-4" />
-                                                </Button>
+                                            <div className="bg-white p-4 rounded-lg shadow-sm border max-w-sm mx-auto">
+                                                <h3 className="font-semibold mb-2">Entrega Ativa #{activeDelivery.id}</h3>
+                                                <p className="text-sm text-gray-600 mb-3">
+                                                    {activeDelivery.customer?.name || 'Cliente não informado'}
+                                                </p>
+                                                <div className="flex gap-2">
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline" 
+                                                        className="flex-1"
+                                                        onClick={() => {
+                                                            const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
+                                                            window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}`, '_blank');
+                                                        }}
+                                                    >
+                                                        <ExternalLink className="w-4 h-4 mr-1" />
+                                                        Waze
+                                                    </Button>
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline" 
+                                                        className="flex-1"
+                                                        onClick={() => {
+                                                            const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
+                                                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
+                                                        }}
+                                                    >
+                                                        <Route className="w-4 h-4 mr-1" />
+                                                        Maps
+                                                    </Button>
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline"
+                                                        onClick={() => window.open(`tel:${activeDelivery.customer?.phone}`, '_self')}
+                                                    >
+                                                        <Phone className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
