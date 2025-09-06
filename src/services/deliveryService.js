@@ -79,14 +79,14 @@ const DeliveryService = {
     return data.avatar_url || data;
   },
 
-  // ✅ MÉTODO ADICIONADO PARA CORRIGIR O ERRO
-  async getDeliveriesByStatus(status = 'all') {
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders?status=${status}`, {
-      headers: createAuthHeaders(),
-    });
-    const data = await processResponse(response);
-    return data.data || [];
-  },
+  // COMENTADO TEMPORARIAMENTE - ENDPOINT NÃO EXISTE NA API
+  // async getDeliveriesByStatus(status = 'all') {
+  //   const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders?status=${status}`, {
+  //     headers: createAuthHeaders(),
+  //   });
+  //   const data = await processResponse(response);
+  //   return data.data || [];
+  // },
 };
 
 export default DeliveryService;
