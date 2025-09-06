@@ -1,4 +1,4 @@
-// src/pages/DeliveryDashboard.jsx (VERSÃO MELHORADA - SEM REFRESH VISUAL)
+// src/pages/DeliveryDashboard.jsx - VERSÃO MODERNIZADA E SURPREENDENTE
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DeliveryService from '../services/deliveryService';
@@ -7,117 +7,193 @@ import { acceptDelivery, completeDelivery } from '../services/orderService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Clock, 
-  Calendar, Bell, Coffee, Timer, Zap, RefreshCw
+  Calendar, Bell, Coffee, Timer, Zap, RefreshCw, TrendingUp,
+  Target, Award, Activity, ChevronRight, ExternalLink, Phone
 } from 'lucide-react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
-// Componente simples para pedidos ativos
-const SimpleActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
-  const getStatusText = (status) => {
+// Componente de Card Estatística Moderno
+const ModernStatCard = ({ title, value, icon: Icon, color, trend, subtitle, onClick }) => (
+  <Card 
+    className={`relative overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-br ${color} border-0`}
+    onClick={onClick}
+  >
+    <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+      <Icon className="w-full h-full" />
+    </div>
+    <CardContent className="p-6 relative z-10">
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        {trend && (
+          <div className="flex items-center text-white/80 text-sm">
+            <TrendingUp className="h-4 w-4 mr-1" />
+            +{trend}%
+          </div>
+        )}
+      </div>
+      <div className="text-3xl font-bold text-white mb-1">{value}</div>
+      <div className="text-white/80 text-sm font-medium">{title}</div>
+      {subtitle && <div className="text-white/60 text-xs mt-1">{subtitle}</div>}
+    </CardContent>
+  </Card>
+);
+
+// Componente de Pedido Ativo Moderno
+const ModernActiveOrderCard = ({ order, onAcceptOrder, onCompleteOrder }) => {
+  const getStatusData = (status) => {
     const statusMap = {
-      'accepted': 'Aceito',
-      'preparing': 'Em Preparo',
-      'ready': 'Pronto para Coleta',
-      'delivering': 'Em Rota de Entrega',
-      'pending': 'Pendente'
+      'pending': { text: 'Aguardando', color: 'bg-yellow-500', pulse: true },
+      'accepted': { text: 'Aceito', color: 'bg-blue-500', pulse: false },
+      'ready': { text: 'Pronto', color: 'bg-purple-500', pulse: true },
+      'delivering': { text: 'Entregando', color: 'bg-green-500', pulse: true }
     };
-    return statusMap[status] || status;
+    return statusMap[status] || { text: status, color: 'bg-gray-500', pulse: false };
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-blue-100 text-blue-800';
-      case 'ready': return 'bg-purple-100 text-purple-800';
-      case 'delivering': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const statusData = getStatusData(order.status);
 
   return (
-    <Card className="shadow-lg border-l-4 border-orange-500 transition-all duration-200">
-      <CardHeader className="pb-3 bg-orange-50">
-        <div className="flex justify-between items-start">
+    <Card className="relative overflow-hidden border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500"></div>
+      
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <CardTitle className="text-lg font-bold text-orange-700">
-              Pedido #{order.id?.substring(0, 8) || 'N/A'}
-            </CardTitle>
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
-              {getStatusText(order.status)}
-            </span>
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-lg font-bold text-gray-800">
+                #{order.id?.substring(0, 8) || 'N/A'}
+              </h3>
+              <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${statusData.color} ${statusData.pulse ? 'animate-pulse' : ''}`}>
+                {statusData.text}
+              </div>
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-green-600">
+            <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
               R$ {order.delivery_fee ? parseFloat(order.delivery_fee).toFixed(2) : '0.00'}
             </div>
             <p className="text-xs text-gray-500">Taxa de entrega</p>
           </div>
         </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4 pt-4">
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <Coffee className="h-4 w-4 text-blue-600 mt-1" />
-            <div>
-              <p className="text-sm font-semibold">{order.restaurant_name || 'Restaurante'}</p>
-              <p className="text-xs text-gray-500">Local de coleta</p>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Coffee className="h-4 w-4 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-800">{order.restaurant_name || 'Restaurante'}</p>
+                <p className="text-sm text-gray-600">Local de coleta</p>
+              </div>
+              <ExternalLink className="h-4 w-4 text-gray-400" />
+            </div>
+            
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <MapPin className="h-4 w-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-800">{order.client_name || 'Cliente'}</p>
+                <p className="text-sm text-gray-600 truncate">{order.delivery_address || 'Endereço de entrega'}</p>
+              </div>
+              <Phone className="h-4 w-4 text-gray-400" />
             </div>
           </div>
           
-          <div className="flex items-start gap-3">
-            <MapPin className="h-4 w-4 text-green-600 mt-1" />
-            <div>
-              <p className="text-sm font-semibold">{order.client_name || 'Cliente'}</p>
-              <p className="text-xs text-gray-500">{order.delivery_address || 'Endereço de entrega'}</p>
-            </div>
+          <div className="flex gap-3 pt-2">
+            {order.status === 'pending' && (
+              <button 
+                onClick={() => onAcceptOrder(order.id)} 
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Zap className="h-4 w-4" />
+                Aceitar Pedido
+              </button>
+            )}
+            {(order.status === 'accepted' || order.status === 'ready' || order.status === 'delivering') && (
+              <button 
+                onClick={() => onCompleteOrder(order.id)} 
+                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Award className="h-4 w-4" />
+                Marcar Entregue
+              </button>
+            )}
           </div>
-        </div>
-        
-        <div className="flex gap-2 pt-2">
-          {order.status === 'pending' && (
-            <button 
-              onClick={() => onAcceptOrder(order.id)} 
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
-            >
-              <Zap className="inline h-4 w-4 mr-1" />
-              Aceitar
-            </button>
-          )}
-          {(order.status === 'accepted' || order.status === 'ready' || order.status === 'delivering') && (
-            <button 
-              onClick={() => onCompleteOrder(order.id)} 
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
-            >
-              Marcar como Entregue
-            </button>
-          )}
         </div>
       </CardContent>
     </Card>
   );
 };
 
-// Componente de loading sutil
-const SubtleLoader = ({ isLoading }) => {
-  if (!isLoading) return null;
+// Componente de Performance Ring
+const PerformanceRing = ({ percentage, label, color }) => {
+  const circumference = 2 * Math.PI * 45;
+  const strokeDasharray = `${percentage * circumference / 100} ${circumference}`;
   
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-500">
-      <RefreshCw className="h-4 w-4 animate-spin" />
-      <span>Atualizando...</span>
+    <div className="flex flex-col items-center">
+      <div className="relative w-24 h-24">
+        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="8"
+            className="text-gray-200"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeDasharray={strokeDasharray}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-out"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xl font-bold text-gray-800">{percentage}%</span>
+        </div>
+      </div>
+      <span className="text-sm text-gray-600 mt-2">{label}</span>
     </div>
   );
 };
 
-export default function EnhancedDeliveryDashboard() {
+// Loading Skeleton Moderno
+const ModernLoader = () => (
+  <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen">
+    <div className="animate-pulse">
+      <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-1/3 mb-6"></div>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 h-64 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+        <div className="h-64 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+      </div>
+    </div>
+  </div>
+);
+
+export default function ModernDeliveryDashboard() {
   const { profile, updateProfile, loading: profileLoading } = useProfile();
   const addToast = useToast();
   
   const [dashboardStats, setDashboardStats] = useState(null);
-  const [initialLoading, setInitialLoading] = useState(true); // Loading apenas na primeira vez
-  const [backgroundLoading, setBackgroundLoading] = useState(false); // Loading sutil para updates
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
 
@@ -127,7 +203,6 @@ export default function EnhancedDeliveryDashboard() {
       return; 
     }
     
-    // Se é update em background e já temos dados, não mostrar loading principal
     if (isBackgroundUpdate && dashboardStats) {
       setBackgroundLoading(true);
     } else if (!dashboardStats) {
@@ -137,9 +212,6 @@ export default function EnhancedDeliveryDashboard() {
     setError('');
     try {
       const response = await DeliveryService.getDashboardStats();
-      console.log('Dashboard data received:', response);
-      
-      // Garantir que temos dados válidos
       const statsData = response?.data || response || {};
       setDashboardStats(statsData);
       setLastUpdated(new Date());
@@ -151,13 +223,9 @@ export default function EnhancedDeliveryDashboard() {
       console.error("Erro ao buscar dados do dashboard:", err);
       const errorMessage = err.message || 'Não foi possível carregar as estatísticas.';
       
-      // Só mostrar erro se for o carregamento inicial
       if (!dashboardStats) {
         setError(errorMessage);
         addToast(errorMessage, 'error');
-      } else {
-        // Update silencioso falhou, mas mantém dados antigos
-        console.warn('Background update failed, keeping existing data');
       }
     } finally {
       setInitialLoading(false);
@@ -167,17 +235,11 @@ export default function EnhancedDeliveryDashboard() {
 
   useEffect(() => {
     if (!profileLoading && profile?.id) {
-      // Primeira chamada
       fetchDashboardData(false);
-      
-      // Updates em background a cada 30 segundos
-      const interval = setInterval(() => {
-        fetchDashboardData(true);
-      }, 30000);
-      
+      const interval = setInterval(() => fetchDashboardData(true), 30000);
       return () => clearInterval(interval);
     }
-  }, [profileLoading, profile?.id]); // Removido fetchDashboardData da dependência para evitar loops
+  }, [profileLoading, profile?.id]);
 
   const toggleAvailability = async () => {
     if (!profile || profileLoading) {
@@ -186,7 +248,6 @@ export default function EnhancedDeliveryDashboard() {
     }
     
     try {
-      addToast("Atualizando disponibilidade...", 'info');
       const newAvailability = !(dashboardStats?.is_available || false);
       const updatedProfile = await DeliveryService.updateDeliveryProfile({ is_available: newAvailability });
       
@@ -196,71 +257,44 @@ export default function EnhancedDeliveryDashboard() {
         is_available: updatedProfile?.is_available || false 
       }));
       
-      addToast(`Você está agora ${newAvailability ? 'ONLINE' : 'OFFLINE'}!`, 'success');
+      addToast(`Agora você está ${newAvailability ? 'ONLINE' : 'OFFLINE'}!`, 'success');
     } catch (err) {
-      console.error("Erro ao atualizar disponibilidade:", err);
       addToast('Erro ao atualizar disponibilidade.', 'error');
     }
   };
 
   const handleAcceptOrder = async (orderId) => {
     try {
-      addToast('Aceitando pedido...', 'info');
       await acceptDelivery(orderId);
       addToast('Pedido aceito com sucesso!', 'success');
-      // Atualizar dados imediatamente após ação
       fetchDashboardData(true);
     } catch (err) {
-      console.error('Erro ao aceitar pedido:', err);
       addToast('Erro ao aceitar pedido.', 'error');
     }
   };
 
   const handleCompleteOrder = async (orderId) => {
     try {
-      addToast('Completando pedido...', 'info');
       await completeDelivery(orderId);
-      addToast('Pedido marcado como entregue!', 'success');
-      // Atualizar dados imediatamente após ação
+      addToast('Pedido entregue com sucesso!', 'success');
       fetchDashboardData(true);
     } catch (err) {
-      console.error('Erro ao completar pedido:', err);
       addToast('Erro ao completar pedido.', 'error');
     }
   };
 
-  const handleManualRefresh = () => {
-    fetchDashboardData(true);
-    addToast('Dados atualizados!', 'info');
-  };
+  if (profileLoading || initialLoading) return <ModernLoader />;
 
-  // Loading inicial completo
-  if (profileLoading || initialLoading) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-300 rounded w-1/3 mb-4"></div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="h-32 bg-gray-300 rounded-lg"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Erro apenas se não temos dados
   if (error && !dashboardStats) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="p-8 max-w-md text-center">
-          <div className="text-4xl mb-4">😕</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Erro no Dashboard</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <Card className="p-8 max-w-md text-center shadow-2xl border-0">
+          <div className="text-6xl mb-4">🚫</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Ops! Algo deu errado</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button 
             onClick={() => fetchDashboardData(false)}
-            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold"
+            className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             Tentar Novamente
           </button>
@@ -270,176 +304,203 @@ export default function EnhancedDeliveryDashboard() {
   }
 
   const isAvailable = dashboardStats?.is_available || false;
+  const todayEarnings = dashboardStats?.todayEarnings || 0;
+  const todayDeliveries = dashboardStats?.todayDeliveries || 0;
+  const avgRating = dashboardStats?.avgRating || 0;
+  const totalDeliveries = dashboardStats?.totalDeliveries || 0;
+  const onlineMinutes = dashboardStats?.onlineMinutes || 0;
+  const dailyGoal = dashboardStats?.dailyGoal || 100;
+
+  const goalProgress = Math.min((todayEarnings / dailyGoal) * 100, 100);
+  const ratingProgress = (avgRating / 5) * 100;
+  const efficiencyProgress = Math.min((todayDeliveries / 10) * 100, 100);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Olá, {profile?.first_name || 'Entregador'}!
-          </h1>
-          <div className="flex items-center gap-4 mt-1">
-            <p className="text-gray-600 flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-            {lastUpdated && (
-              <p className="text-xs text-gray-400">
-                Última atualização: {lastUpdated.toLocaleTimeString('pt-BR')}
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      {/* Header Moderno */}
+      <div className="bg-white/70 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
+        <div className="p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                Olá, {profile?.first_name || 'Entregador'}! 👋
+              </h1>
+              <div className="flex items-center gap-4 mt-2">
+                <p className="text-gray-600 flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4" />
+                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+                {lastUpdated && (
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <Activity className={`h-3 w-3 ${backgroundLoading ? 'animate-pulse' : ''}`} />
+                    Última atualização: {lastUpdated.toLocaleTimeString('pt-BR')}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-center">
+              <button 
+                onClick={() => fetchDashboardData(true)}
+                className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50"
+                disabled={backgroundLoading}
+              >
+                <RefreshCw className={`h-5 w-5 text-gray-600 ${backgroundLoading ? 'animate-spin' : ''}`} />
+              </button>
+              
+              <button className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 relative">
+                <Bell className="h-5 w-5 text-gray-600" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              </button>
+              
+              <button
+                onClick={toggleAvailability}
+                className={`px-6 py-3 rounded-xl text-white font-bold flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+                  isAvailable 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' 
+                    : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
+                }`}
+              >
+                {isAvailable ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
+                {isAvailable ? 'ONLINE' : 'OFFLINE'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Cards de Estatísticas Modernos */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <ModernStatCard
+            title="Ganhos Hoje"
+            value={`R$ ${todayEarnings.toFixed(2)}`}
+            icon={DollarSign}
+            color="from-green-500 to-emerald-600"
+            trend={12}
+            subtitle={`Meta: R$ ${dailyGoal.toFixed(2)}`}
+          />
+          
+          <ModernStatCard
+            title="Entregas Hoje"
+            value={todayDeliveries}
+            icon={Truck}
+            color="from-blue-500 to-indigo-600"
+            trend={8}
+            subtitle="Excelente ritmo!"
+          />
+          
+          <ModernStatCard
+            title="Avaliação Média"
+            value={avgRating.toFixed(1)}
+            icon={Star}
+            color="from-yellow-500 to-orange-500"
+            subtitle="Muito bom!"
+          />
+          
+          <ModernStatCard
+            title="Total Entregas"
+            value={totalDeliveries}
+            icon={Award}
+            color="from-purple-500 to-pink-500"
+            subtitle="desde o início"
+          />
+        </div>
+
+        {/* Seção Principal */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Performance Dashboard */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <Target className="h-6 w-6 text-orange-500" />
+                  Performance de Hoje
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-8 mb-8">
+                  <PerformanceRing 
+                    percentage={Math.round(goalProgress)} 
+                    label="Meta Diária" 
+                    color="#10b981" 
+                  />
+                  <PerformanceRing 
+                    percentage={Math.round(ratingProgress)} 
+                    label="Satisfação" 
+                    color="#f59e0b" 
+                  />
+                  <PerformanceRing 
+                    percentage={Math.round(efficiencyProgress)} 
+                    label="Eficiência" 
+                    color="#3b82f6" 
+                  />
+                </div>
+                
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Tempo Online Hoje</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {Math.floor(onlineMinutes / 60)}h {onlineMinutes % 60}min
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">Status</p>
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
+                        isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+                        {isAvailable ? 'Online' : 'Offline'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Pedidos Ativos Modernos */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-3 py-1 rounded-full font-bold">
+                {dashboardStats?.activeOrders?.length || 0}
+              </div>
+            </div>
+
+            {dashboardStats?.activeOrders && dashboardStats.activeOrders.length > 0 ? (
+              <div className="space-y-4">
+                {dashboardStats.activeOrders.map(order => (
+                  <ModernActiveOrderCard
+                    key={order.id}
+                    order={order}
+                    onAcceptOrder={handleAcceptOrder}
+                    onCompleteOrder={handleCompleteOrder}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+                <div className="text-6xl mb-4">🎯</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Tudo tranquilo por aqui!</h3>
+                <p className="text-gray-600 mb-4">
+                  {isAvailable 
+                    ? 'Aguardando novos pedidos chegarem...' 
+                    : 'Fique online para receber pedidos'
+                  }
+                </p>
+                {!isAvailable && (
+                  <button
+                    onClick={toggleAvailability}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    Ficar Online
+                  </button>
+                )}
+              </Card>
             )}
           </div>
-        </div>
-        
-        <div className="flex gap-3 items-center">
-          <SubtleLoader isLoading={backgroundLoading} />
-          
-          <button 
-            onClick={handleManualRefresh}
-            className="p-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all"
-            disabled={backgroundLoading}
-          >
-            <RefreshCw className={`h-5 w-5 text-gray-600 ${backgroundLoading ? 'animate-spin' : ''}`} />
-          </button>
-          
-          <button className="p-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all">
-            <Bell className="h-5 w-5 text-gray-600" />
-          </button>
-          
-          <button
-            onClick={toggleAvailability}
-            className={`px-6 py-3 rounded-full text-white font-bold flex items-center gap-2 transition-all ${
-              isAvailable 
-                ? 'bg-green-500 hover:bg-green-600 shadow-green-200' 
-                : 'bg-red-500 hover:bg-red-600 shadow-red-200'
-            } shadow-lg hover:shadow-xl`}
-          >
-            {isAvailable ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
-            {isAvailable ? 'ONLINE' : 'OFFLINE'}
-          </button>
-        </div>
-      </div>
-
-      {/* Cards de Estatísticas com animação suave */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card className="bg-green-50 shadow-lg hover:shadow-xl transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ganhos Hoje</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              R$ {(dashboardStats?.todayEarnings || 0).toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Entregas Hoje</CardTitle>
-            <Truck className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700">
-              {dashboardStats?.todayDeliveries || 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-yellow-50 shadow-lg hover:shadow-xl transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avaliação</CardTitle>
-            <Star className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-700">
-              {(dashboardStats?.avgRating || 0).toFixed(1)}
-            </div>
-            <div className="flex gap-0.5 mt-1">
-              {[1,2,3,4,5].map(i => (
-                <Star 
-                  key={i} 
-                  className={`h-3 w-3 ${i <= Math.round(dashboardStats?.avgRating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-purple-50 shadow-lg hover:shadow-xl transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Entregas</CardTitle>
-            <Clock className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-700">
-              {dashboardStats?.totalDeliveries || 0}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">desde o início</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Seção de Pedidos Ativos */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card className="p-6 shadow-lg">
-            <h3 className="text-lg font-bold mb-4">Estatísticas Detalhadas</h3>
-            <div className="text-center py-8">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {Math.floor((dashboardStats?.onlineMinutes || 0) / 60)}h {(dashboardStats?.onlineMinutes || 0) % 60}min
-                  </p>
-                  <p className="text-sm text-gray-600">Tempo Online</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-600">
-                    R$ {(dashboardStats?.dailyGoal || 0).toFixed(2)}
-                  </p>
-                  <p className="text-sm text-gray-600">Meta Diária</p>
-                </div>
-              </div>
-              <div className="mt-4 text-sm text-gray-500">
-                <p>Status: {isAvailable ? 'Online' : 'Offline'} | 
-                Dados: {dashboardStats ? 'Carregados' : 'Indisponíveis'}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
-            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-              {dashboardStats?.activeOrders?.length || 0}
-            </span>
-          </div>
-
-          {dashboardStats?.activeOrders && dashboardStats.activeOrders.length > 0 ? (
-            <div className="space-y-4">
-              {dashboardStats.activeOrders.map(order => (
-                <SimpleActiveOrderCard
-                  key={order.id}
-                  order={order}
-                  onAcceptOrder={handleAcceptOrder}
-                  onCompleteOrder={handleCompleteOrder}
-                />
-              ))}
-            </div>
-          ) : (
-            <Card className="p-6 text-center shadow-lg">
-              <div className="text-4xl mb-4">📦</div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum pedido ativo</h3>
-              <p className="text-gray-500 text-sm">
-                {isAvailable 
-                  ? 'Aguardando novos pedidos...' 
-                  : 'Fique online para receber pedidos'
-                }
-              </p>
-            </Card>
-          )}
         </div>
       </div>
     </div>
