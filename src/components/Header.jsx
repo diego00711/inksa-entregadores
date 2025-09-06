@@ -1,9 +1,8 @@
-// src/components/Header.jsx (ATUALIZADO: Inclui botão para avaliações)
+// src/components/Header.jsx (VERSÃO LIMPA - SEM BOTÃO DE AVALIAÇÕES)
 
 import React from 'react';
-import { Bell, Moon, Star } from 'lucide-react'; // IMPORTADO Star
+import { Bell, Moon } from 'lucide-react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
-import { Link, useLocation } from 'react-router-dom';
 
 function UserAvatar() {
   return (
@@ -15,7 +14,6 @@ function UserAvatar() {
 
 export function Header() {
   const { profile, loading: profileLoading } = useProfile();
-  const location = useLocation();
 
   const hour = new Date().getHours();
   let greeting;
@@ -40,17 +38,13 @@ export function Header() {
         </p>
       </div>
       <div className="flex items-center gap-4">
-        {/* Botão de tema agora é apenas um ícone estático, sem função */}
+        {/* Botão de tema */}
         <button className="p-2 rounded-full hover:bg-muted" title="Trocar tema (desativado)">
             <Moon className="w-5 h-5" />
         </button>
         <button className="p-2 rounded-full hover:bg-muted">
           <Bell className="w-5 h-5" />
         </button>
-        {/* NOVO BOTÃO: Central de Avaliações */}
-        <Link to="/delivery/avaliacoes" className={`p-2 rounded-full hover:bg-yellow-100 ${location.pathname === '/delivery/avaliacoes' ? 'bg-yellow-200' : ''}`} title="Minhas Avaliações">
-          <Star className="w-5 h-5 text-yellow-500" />
-        </Link>
         <UserAvatar />
       </div>
     </header>
