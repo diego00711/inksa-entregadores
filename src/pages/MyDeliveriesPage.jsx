@@ -1,4 +1,4 @@
-// src/pages/MyDeliveriesPage.jsx (VERSÃO COM MAPA E WAZE)
+// src/pages/MyDeliveriesPage.jsx - VERSÃO SIMPLIFICADA FINAL
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx'; 
@@ -21,250 +21,6 @@ import {
     Route
 } from 'lucide-react';
 
-// Componente do Mapa
-const DeliveryMap = ({ deliveries, activeDelivery, onDeliverySelect, userLocation }) => {
-    const mapRef = useRef(null);
-    const [map, setMap] = useState(null);
-    const [userMarker, setUserMarker] = useState(null);
-    const [deliveryMarkers, setDeliveryMarkers] = useState([]);
-
-    useEffect(() => {
-        // Inicializar mapa Leaflet
-        if (!map && mapRef.current) {
-            const L = window.L;
-            const newMap = L.map(mapRef.current).setView([-27.0, -51.0], 13);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(newMap);
-            
-            setMap(newMap);
-        }
-        
-        return () => {
-            if (map) {
-                map.remove();
-            }
-        };
-    }, []);
-
-    // Atualizar localização do usuário
-    useEffect(() => {
-        if (map && userLocation) {
-            if (userMarker) {
-                userMarker.setLatLng([userLocation.lat, userLocation.lng]);
-            } else {
-                const L = window.L;
-                const marker = L.marker([userLocation.lat, userLocation.lng], {
-                    icon: L.divIcon({
-                        className: 'user-location-marker',
-                        html: '<div style="background: #3B82F6; border: 3px solid white; border-radius: 50%; width: 16px; height: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-                        iconSize: [16, 16]
-                    })
-                }).addTo(map);
-                setUserMarker(marker);
-            }
-            map.setView([userLocation.lat, userLocation.lng], 15);
-        }
-    }, [map, userLocation, userMarker]);
-
-    // Adicionar marcadores das entregas
-    useEffect(() => {
-        if (map && deliveries) {
-            // Limpar marcadores existentes
-            deliveryMarkers.forEach(marker => map.removeLayer(marker));
-            
-            const L = window.L;
-            const newMarkers = deliveries
-                .filter(delivery => delivery.deliveryAddress && delivery.deliveryAddress.latitude)
-                .map(delivery => {
-                    const isActive = activeDelivery && activeDelivery.id === delivery.id;
-                    const statusColor = getStatusColor(delivery.status);
-                    
-                    const marker = L.marker([
-                        delivery.deliveryAddress.latitude, 
-                        delivery.deliveryAddress.longitude
-                    ], {
-                        icon: L.divIcon({
-                            className: 'delivery-marker',
-                            html: `<div style="background: ${statusColor}; border: 3px solid white; border-radius: 50%; width: ${isActive ? 24 : 20}px; height: ${isActive ? 24 : 20}px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${delivery.id}</div>`,
-                            iconSize: [isActive ? 24 : 20, isActive ? 24 : 20]
-                        })
-                    }).addTo(map);
-                    
-                    marker.on('click', () => onDeliverySelect(delivery));
-                    
-                    return marker;
-                });
-            
-            setDeliveryMarkers(newMarkers);
-        }
-    }, [map, deliveries, activeDelivery, deliveryMarkers, onDeliverySelect]);
-
-    return (
-        <div className="relative h-full w-full">
-            <div ref={mapRef} className="h-full w-full rounded-lg" />
-            {!map && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    <span className="ml-2">Carregando mapa...</span>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// Função para obter cor baseada no status
-const getStatusColor = (status) => {
-    const colors = {
-        'pending': '#9CA3AF',
-        'accepted': '#3B82F6', 
-        'picked_up': '#F59E0B',
-        'on_the_way': '#8B5CF6',
-        'delivered': '#10B981',
-        'Pronto para Entrega': '#F59E0B',
-        'Entregue': '#10B981'
-    };
-    return colors[status] || '#9CA3AF';
-};
-
-// Componente do Card Flutuante da Entrega Ativa
-const ActiveDeliveryCard = ({ delivery, onNavigate, onCall, onUpdateStatus }) => {
-    if (!delivery) return null;
-
-    const openWaze = (address) => {
-        const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(address.street + ', ' + address.city)}`;
-        window.open(wazeUrl, '_blank');
-    };
-
-    const openGoogleMaps = (address) => {
-        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address.street + ', ' + address.city)}`;
-        window.open(mapsUrl, '_blank');
-    };
-
-    return (
-        <Card className="absolute top-4 right-4 w-80 shadow-lg border-l-4 border-l-primary z-10">
-            <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                    <div>
-                        <h3 className="font-semibold">Entrega #{delivery.id}</h3>
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(delivery.status)}`}>
-                            {getStatusText(delivery.status)}
-                        </span>
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                        <Timer className="w-4 h-4 inline mr-1" />
-                        ~25 min
-                    </div>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                    <div>
-                        <strong>Cliente:</strong> {delivery.customer?.name || 'N/A'}
-                    </div>
-                    <div>
-                        <strong>Endereço:</strong> {delivery.deliveryAddress?.street || 'N/A'}
-                    </div>
-                    <div>
-                        <strong>Valor:</strong> R$ {delivery.totalAmount || '0,00'}
-                    </div>
-                </div>
-
-                <div className="flex gap-2 mt-4">
-                    <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => openWaze(delivery.deliveryAddress)}
-                    >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        Waze
-                    </Button>
-                    <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => openGoogleMaps(delivery.deliveryAddress)}
-                    >
-                        <Route className="w-4 h-4 mr-1" />
-                        Maps
-                    </Button>
-                    <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.open(`tel:${delivery.customer?.phone}`, '_self')}
-                    >
-                        <Phone className="w-4 h-4" />
-                    </Button>
-                </div>
-
-                {delivery.status !== 'delivered' && delivery.status !== 'Entregue' && (
-                    <Button 
-                        className="w-full mt-2" 
-                        size="sm"
-                        onClick={() => {
-                            const nextStatus = getNextStatus(delivery.status);
-                            onUpdateStatus(delivery.id, nextStatus);
-                        }}
-                    >
-                        {getNextStatusText(delivery.status)}
-                    </Button>
-                )}
-            </CardContent>
-        </Card>
-    );
-};
-
-// Funções auxiliares para status
-const getStatusBadgeColor = (status) => {
-    const colors = {
-        'pending': 'bg-gray-100 text-gray-800',
-        'accepted': 'bg-blue-100 text-blue-800',
-        'picked_up': 'bg-yellow-100 text-yellow-800',
-        'on_the_way': 'bg-purple-100 text-purple-800',
-        'delivered': 'bg-green-100 text-green-800',
-        'Pronto para Entrega': 'bg-yellow-100 text-yellow-800',
-        'Entregue': 'bg-green-100 text-green-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-};
-
-const getStatusText = (status) => {
-    const texts = {
-        'pending': 'Pendente',
-        'accepted': 'Aceita',
-        'picked_up': 'Coletada',
-        'on_the_way': 'A caminho',
-        'delivered': 'Entregue',
-        'Pronto para Entrega': 'Pronta',
-        'Entregue': 'Entregue'
-    };
-    return texts[status] || status;
-};
-
-const getNextStatus = (currentStatus) => {
-    const statusFlow = {
-        'pending': 'accepted',
-        'accepted': 'picked_up',
-        'picked_up': 'on_the_way',
-        'on_the_way': 'delivered',
-        'Pronto para Entrega': 'on_the_way'
-    };
-    return statusFlow[currentStatus] || currentStatus;
-};
-
-const getNextStatusText = (currentStatus) => {
-    const texts = {
-        'pending': 'Aceitar Entrega',
-        'accepted': 'Marcar como Coletada',
-        'picked_up': 'Iniciar Entrega',
-        'on_the_way': 'Marcar como Entregue',
-        'Pronto para Entrega': 'Iniciar Entrega'
-    };
-    return texts[currentStatus] || 'Atualizar Status';
-};
-
-// Componente Principal
 export function MyDeliveriesPage() {
     const { loading: profileLoading } = useProfile();
     const [deliveries, setDeliveries] = useState([]);
@@ -275,46 +31,8 @@ export function MyDeliveriesPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalLoading, setIsModalLoading] = useState(false);
     const [isFiltering, setIsFiltering] = useState(false);
-    const [showMap, setShowMap] = useState(true);
+    const [showMap, setShowMap] = useState(false);
     const [userLocation, setUserLocation] = useState(null);
-
-    // Obter localização do usuário
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    });
-                },
-                (error) => {
-                    console.log("Erro ao obter localização:", error);
-                    // Localização padrão (Videira, SC)
-                    setUserLocation({ lat: -27.0060, lng: -51.1570 });
-                }
-            );
-        } else {
-            setUserLocation({ lat: -27.0060, lng: -51.1570 });
-        }
-    }, []);
-
-    // Carregar script do Leaflet
-    useEffect(() => {
-        if (!window.L) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            document.head.appendChild(link);
-
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            script.onload = () => {
-                console.log('Leaflet carregado');
-            };
-            document.head.appendChild(script);
-        }
-    }, []);
 
     useEffect(() => {
         const fetchDeliveries = async () => {
@@ -428,49 +146,55 @@ export function MyDeliveriesPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-0 relative" style={{ height: '500px' }}>
-                            {showMap && mapEnabled ? (
-                                <>
-                                    <DeliveryMap 
-                                        deliveries={filteredDeliveries}
-                                        activeDelivery={activeDelivery}
-                                        onDeliverySelect={handleDeliverySelect}
-                                        userLocation={userLocation}
-                                        isVisible={showMap}
-                                    />
-                                    <ActiveDeliveryCard 
-                                        delivery={activeDelivery}
-                                        onUpdateStatus={handleUpdateStatus}
-                                    />
-                                </>
-                            ) : (
-                                <div className="h-full flex items-center justify-center bg-gray-50">
-                                    <div className="text-center">
-                                        <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                        <p className="text-gray-500 mb-4">
-                                            {mapEnabled ? 'Mapa oculto' : 'Clique em "Ativar Mapa" para ver entregas no mapa'}
-                                        </p>
-                                        {!mapEnabled && (
-                                            <Button 
-                                                onClick={enableMap}
-                                                disabled={leafletLoading}
-                                                className="mb-2"
-                                            >
-                                                {leafletLoading ? (
-                                                    <>
-                                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                                        Carregando mapa...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <MapPin className="w-4 h-4 mr-2" />
-                                                        Ativar Mapa
-                                                    </>
-                                                )}
-                                            </Button>
-                                        )}
-                                    </div>
+                            <div className="h-full flex items-center justify-center bg-gray-50">
+                                <div className="text-center">
+                                    <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                    <p className="text-gray-500 mb-4">
+                                        {showMap ? 'Mapa em desenvolvimento' : 'Clique no ícone do olho para ver o mapa'}
+                                    </p>
+                                    {activeDelivery && (
+                                        <div className="bg-white p-4 rounded-lg shadow-sm border max-w-sm mx-auto">
+                                            <h3 className="font-semibold mb-2">Entrega Ativa #{activeDelivery.id}</h3>
+                                            <p className="text-sm text-gray-600 mb-3">
+                                                {activeDelivery.customer?.name || 'Cliente não informado'}
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    className="flex-1"
+                                                    onClick={() => {
+                                                        const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
+                                                        window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}`, '_blank');
+                                                    }}
+                                                >
+                                                    <ExternalLink className="w-4 h-4 mr-1" />
+                                                    Waze
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    className="flex-1"
+                                                    onClick={() => {
+                                                        const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
+                                                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
+                                                    }}
+                                                >
+                                                    <Route className="w-4 h-4 mr-1" />
+                                                    Maps
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={() => window.open(`tel:${activeDelivery.customer?.phone}`, '_self')}
+                                                >
+                                                    <Phone className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </CardContent>
                     </Card>
 
