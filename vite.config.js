@@ -9,18 +9,25 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  
-  // --- BLOCO ADICIONADO ---
-  // Configuração do servidor de desenvolvimento
+  base: '/',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
   server: {
-    // Configuração do proxy
+    port: 5173,
+    host: true,
     proxy: {
-      // Redireciona qualquer requisição que comece com /api...
       '/api': {
-        // ...para o nosso backend Flask
-        target: 'http://localhost:5000',
-        // Necessário para o backend aceitar a requisição
+        target: process.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
     },
   },
