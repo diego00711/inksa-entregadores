@@ -273,7 +273,6 @@
 }
 /* ================================
    ESTILOS DO MAPA DE ENTREGAS
-   Adicione este bloco no final do seu app.css
    ================================ */
 
 /* Marcadores customizados */
@@ -426,153 +425,182 @@
 /* ================================
    FIM DOS ESTILOS DO MAPA
    ================================ */
-/* Adicione este CSS responsivo ao final do seu app.css */
 
 /* ================================
-   MELHORIAS RESPONSIVAS MOBILE
+   MELHORIAS RESPONSIVAS MOBILE (VERSÃO CORRIGIDA)
    ================================ */
 
-/* Sidebar responsiva */
-@media (max-width: 1024px) {
+/* Garantir que o layout desktop funcione normalmente */
+@media (min-width: 1024px) {
   .sidebar {
-    width: 280px; /* Largura ligeiramente maior no mobile */
-    height: 100vh;
-    position: fixed;
+    position: relative !important;
+    transform: translateX(0) !important;
+  }
+}
+
+/* Melhorias específicas para mobile */
+@media (max-width: 1023px) {
+  /* Header mobile sempre visível */
+  .mobile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    position: sticky;
     top: 0;
-    left: 0;
-    z-index: 50;
-    box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    z-index: 30;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
-  /* Ajustar padding no mobile */
+  /* Botão de menu mobile */
+  .mobile-menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: white;
+  }
+
+  .mobile-menu-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Sidebar mobile otimizada */
   .sidebar {
-    padding: 16px;
+    width: 280px !important;
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 50 !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
+    padding: 16px !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Sidebar aberta no mobile */
+  .sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  /* Ajustar elementos da sidebar no mobile */
   .profile-info .avatar {
-    width: 60px;
-    height: 60px;
+    width: 60px !important;
+    height: 60px !important;
   }
 
   .profile-info .profile-name {
-    font-size: 1rem;
+    font-size: 1rem !important;
   }
 
   .nav-link {
-    padding: 12px 16px;
-    font-size: 0.9rem;
+    padding: 14px 16px !important;
+    font-size: 0.9rem !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Overlay para mobile */
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 40;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .mobile-overlay.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Conteúdo principal no mobile */
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Cards do dashboard responsivos */
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .dashboard-card {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .dashboard-card h3 {
+    font-size: 0.875rem !important;
+  }
+
+  .dashboard-card .big-number {
+    font-size: 1.5rem !important;
+  }
+
+  /* Performance rings menores */
+  .performance-rings {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  .w-24.h-24 {
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+
+  /* Cards de entrega mais compactos */
+  .delivery-card {
+    margin-bottom: 0.75rem !important;
+    padding: 1rem !important;
+  }
+
+  /* Mapas responsivos */
+  .map-container {
+    height: 250px !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .active-delivery-card {
+    position: static !important;
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
   }
 }
 
 /* Para telas muito pequenas */
 @media (max-width: 640px) {
   .sidebar {
-    width: 100vw; /* Tela cheia em celulares pequenos */
-  }
-}
-
-/* Ajustes para o conteúdo principal no mobile */
-@media (max-width: 1024px) {
-  /* Garantir que o conteúdo não fique escondido atrás da sidebar */
-  .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
+    width: 100vw !important;
   }
 
-  /* Ajustar padding do conteúdo no mobile */
-  main.flex-1 {
-    padding: 1rem !important;
+  .dashboard-stats {
+    grid-template-columns: repeat(1, 1fr) !important;
   }
-}
 
-/* Botão de menu mobile */
-.mobile-menu-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.mobile-menu-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Header mobile */
-.mobile-header {
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
-@media (min-width: 1024px) {
-  .mobile-header {
-    display: none;
-  }
-}
-
-/* Overlay para mobile */
-.mobile-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 40;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.mobile-overlay.show {
-  opacity: 1;
-}
-
-/* Animações de transição */
-.sidebar-transition {
-  transition: transform 0.3s ease-in-out;
-}
-
-.sidebar-enter {
-  transform: translateX(-100%);
-}
-
-.sidebar-enter-active {
-  transform: translateX(0);
-}
-
-.sidebar-exit {
-  transform: translateX(0);
-}
-
-.sidebar-exit-active {
-  transform: translateX(-100%);
-}
-
-/* Melhorar responsividade dos cards */
-@media (max-width: 768px) {
-  /* Cards de estatísticas empilhados */
   .grid-cols-2, .grid-cols-4 {
     grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
 
-  .lg\\:grid-cols-2 {
+  .lg\\:grid-cols-2, .lg\\:grid-cols-3 {
     grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
 
-  .lg\\:grid-cols-3 {
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-  }
-
-  /* Ajustar tamanho dos textos */
   .text-3xl {
     font-size: 1.5rem !important;
   }
@@ -581,7 +609,6 @@
     font-size: 1.25rem !important;
   }
 
-  /* Reduzir padding em elementos pequenos */
   .p-6 {
     padding: 1rem !important;
   }
@@ -591,44 +618,83 @@
   }
 }
 
-/* Ajustes específicos para o dashboard moderno */
-@media (max-width: 768px) {
-  /* Performance rings menores no mobile */
-  .w-24.h-24 {
-    width: 4rem !important;
-    height: 4rem !important;
+/* Touch targets otimizados */
+@media (max-width: 1023px) {
+  button, .btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 12px 16px !important;
   }
 
-  /* Cards de entrega mais compactos */
-  .shadow-xl {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  /* Formulários mobile-friendly */
+  input, select, textarea {
+    min-height: 44px !important;
+    font-size: 16px !important; /* Evita zoom no iOS */
+    border-radius: 8px !important;
   }
 
-  /* Botões mais adequados para touch */
-  button {
-    min-height: 44px;
-    min-width: 44px;
+  /* Status badges maiores */
+  .status-badge {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    min-height: 32px !important;
+  }
+
+  /* Melhorar scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Remover highlights de toque indesejados */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Loading spinner mobile */
+  .loading-spinner {
+    width: 32px !important;
+    height: 32px !important;
+    border-width: 3px !important;
   }
 }
 
-/* Melhorar acessibilidade touch */
-@media (max-width: 1024px) {
-  /* Área de toque maior para links */
-  .nav-link {
-    min-height: 48px;
-    display: flex;
-    align-items: center;
+/* Estados de focus melhorados */
+@media (max-width: 1023px) {
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  .nav-link:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
   }
 
-  /* Botões maiores para touch */
-  .btn, button {
-    min-height: 44px;
-    padding: 12px 16px;
+  /* Remover outline em dispositivos touch */
+  @media (hover: none) {
+    button:focus,
+    input:focus,
+    select:focus,
+    textarea:focus,
+    .nav-link:focus {
+      outline: none;
+    }
   }
+}
 
-  /* Espaçamento maior entre elementos clicáveis */
-  .sidebar-nav {
-    gap: 4px;
+/* Animações suaves */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
   }
 }
 
