@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -15,6 +15,11 @@ import {
 export default function DeliveryPortalLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userData, setUserData] = useState({
+    name: 'dudu eduardo',
+    type: 'Entregador',
+    avatar: null
+  });
 
   const navigation = [
     { name: 'Dashboard', href: '/delivery/dashboard', icon: Home },
@@ -25,12 +30,74 @@ export default function DeliveryPortalLayout() {
     { name: 'Meu Perfil', href: '/delivery/meu-perfil', icon: User },
   ];
 
+  // Buscar dados do usuário
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setUserData({
+              name: data.name || 'dudu eduardo',
+              type: data.type || 'Entregador',
+              avatar: data.avatar || data.foto_perfil || null
+            });
+          }
+        }
+      } catch (error) {
+        console.log('Erro ao carregar dados do usuário:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.location.href = '/login';
   };
 
   const closeSidebar = () => setSidebarOpen(false);
+
+  // Função para renderizar avatar
+  const renderAvatar = () => {
+    if (userData.avatar) {
+      return (
+        <img 
+          src={userData.avatar}
+          alt="Avatar do usuário"
+          className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+          onError={(e) => {
+            // Se a imagem falhar, mostrar iniciais
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+      );
+    }
+    
+    // Fallback: iniciais
+    const initials = userData.name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+    return (
+      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+        <span className="text-white font-bold text-sm">{initials}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -52,12 +119,18 @@ export default function DeliveryPortalLayout() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-800">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">IN</span>
+              <div className="relative">
+                {renderAvatar()}
+                {/* Fallback escondido inicialmente */}
+                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
+                  <span className="text-white font-bold text-sm">
+                    {userData.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
+                  </span>
+                </div>
               </div>
               <div>
-                <h2 className="font-semibold">dudu eduardo</h2>
-                <p className="text-sm text-slate-300">Entregador</p>
+                <h2 className="font-semibold">{userData.name}</h2>
+                <p className="text-sm text-slate-300">{userData.type}</p>
               </div>
             </div>
             {/* Close button - mobile only */}
