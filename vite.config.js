@@ -31,16 +31,4 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    port: 5173,
-    host: true,
-    // Proxy só para desenvolvimento local
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-    },
-  },
 })
