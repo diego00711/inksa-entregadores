@@ -700,4 +700,147 @@
 
 /* ================================
    FIM DAS MELHORIAS RESPONSIVAS
+
+   CORREÇÃO DE VIEWPORT MOBILE
+   ================================ */
+
+/* Sobrescrever altura base para mobile */
+@media (max-width: 1023px) {
+  html, body {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height */
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Container principal com altura correta */
+  .min-h-screen {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+  }
+
+  /* Main content com safe areas */
+  main {
+    flex: 1;
+    padding: 1rem !important;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 60px);
+    max-height: calc(100dvh - 60px);
+  }
+
+  /* Header mobile com safe area */
+  .mobile-header {
+    padding-top: calc(12px + env(safe-area-inset-top)) !important;
+    padding-left: calc(16px + env(safe-area-inset-left)) !important;
+    padding-right: calc(16px + env(safe-area-inset-right)) !important;
+  }
+
+  /* Sidebar com safe area */
+  .sidebar {
+    padding-top: calc(16px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Garantir que conteúdo seja visível */
+  .space-y-4 > *:last-child,
+  .space-y-6 > *:last-child {
+    margin-bottom: 2rem !important;
+  }
+
+  /* Cards com espaçamento adequado */
+  .dashboard-card:last-child,
+  .delivery-card:last-child {
+    margin-bottom: 2rem !important;
+  }
+
+  /* Container de scrolling otimizado */
+  .overflow-y-auto {
+    max-height: calc(100vh - 120px) !important;
+    max-height: calc(100dvh - 120px) !important;
+  }
+
+  /* Prevenir corte de conteúdo */
+  .p-4, .p-6 {
+    padding-bottom: 2rem !important;
+  }
+
+  /* Formulários com espaço extra */
+  .form-container,
+  form {
+    padding-bottom: 3rem !important;
+  }
+}
+
+/* Correção específica para iOS */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 1023px) {
+    html, body, #root {
+      height: -webkit-fill-available;
+    }
+
+    main {
+      height: calc(-webkit-fill-available - 60px);
+    }
+  }
+}
+
+/* Prevenir zoom em inputs */
+@media (max-width: 1023px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px !important;
+    transform: scale(1) !important;
+    zoom: 1 !important;
+  }
+}
+
+/* Layout flex mais robusto */
+@media (max-width: 1023px) {
+  .flex-1 {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+  }
+
+  /* Containers específicos */
+  .bg-gray-50 {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+  }
+
+  /* Scrollable sections */
+  .scrollable-content {
+    max-height: calc(100vh - 140px) !important;
+    max-height: calc(100dvh - 140px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* Estados de carregamento mobile */
+@media (max-width: 1023px) {
+  .loading-container {
+    min-height: calc(100vh - 120px) !important;
+    min-height: calc(100dvh - 120px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* ================================
+   FIM DA CORREÇÃO DE VIEWPORT
    ================================ */
