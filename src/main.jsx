@@ -12,8 +12,8 @@ import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
 import { ToastProvider } from './context/ToastContext';
 import './app.css'; 
 
-// PWA - COMENTADO PARA TESTE
-/*
+
+
 // REGISTRO DO SERVICE WORKER - PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
