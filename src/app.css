@@ -844,3 +844,196 @@
 /* ================================
    FIM DA CORREÇÃO DE VIEWPORT
    ================================ */
+/* ================================
+   CORREÇÃO ESPECÍFICA PARA CORTE LATERAL MOBILE
+   ================================ */
+
+/* Garantir que nada corte horizontalmente */
+@media (max-width: 1023px) {
+  /* Container principal sem overflow */
+  .min-h-screen {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Main content com largura total */
+  main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Cards responsivos sem overflow */
+  .dashboard-card, 
+  .delivery-card,
+  .card {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Containers de conteúdo */
+  .p-4, .p-6, .px-4, .px-6 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Grid responsivo sem overflow */
+  .grid, .grid-cols-1, .grid-cols-2, .grid-cols-3 {
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Flex containers */
+  .flex {
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Formulários e inputs */
+  input, select, textarea, .form-control {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Tabelas responsivas */
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  /* Botões em linha */
+  .btn-group, .button-group {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Text que pode quebrar */
+  .text-overflow, .truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Containers com scroll horizontal se necessário */
+  .overflow-x-auto {
+    max-width: 100vw !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Header mobile sem overflow */
+  .mobile-header {
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Content areas específicas */
+  .content-area {
+    width: 100% !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    margin: 0 auto !important;
+  }
+
+  /* Cards grandes que podem ser problemáticos */
+  .w-full {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Espacamento uniforme */
+  .space-x-2 > * + *,
+  .space-x-3 > * + *,
+  .space-x-4 > * + * {
+    margin-left: 0.5rem !important;
+  }
+
+  /* Gap responsivo */
+  .gap-4 {
+    gap: 0.75rem !important;
+  }
+
+  .gap-6 {
+    gap: 1rem !important;
+  }
+}
+
+/* Para telas muito pequenas - ainda mais restritivo */
+@media (max-width: 640px) {
+  * {
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  .container, .max-w-7xl, .max-w-6xl, .max-w-5xl {
+    max-width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Padding ainda menor para telas pequenas */
+  main {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Cards com padding menor */
+  .dashboard-card, .delivery-card {
+    padding: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Grid em coluna única */
+  .grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  /* Texto menor se necessário */
+  .text-sm {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Correção para elementos que podem vazar */
+@media (max-width: 1023px) {
+  /* Elementos absolutos problemáticos */
+  .absolute, .fixed {
+    max-width: 100vw !important;
+  }
+
+  /* Imagens responsivas */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Elementos com largura fixa problemática */
+  .w-96, .w-80, .w-72 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Margem negativa problemática */
+  .-mx-4, .-mx-6 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Wrapper geral */
+  .page-wrapper {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* ================================
+   FIM DA CORREÇÃO DE CORTE LATERAL
+   ================================ */
