@@ -1,56 +1,51 @@
-// src/components/delivery-portal/DeliveryPortalLayout.jsx - VERSÃO RESPONSIVA
+// src/components/delivery-portal/DeliveryPortalLayout.jsx - VERSÃO ULTRA SIMPLES
 
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../Sidebar.jsx';
-import { Menu, X } from 'lucide-react';
 
 export default function DeliveryPortalLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const [showContent, setShowContent] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Overlay para mobile */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f3f4f6' }}>
+      {/* Botão Mobile - só aparece em telas pequenas */}
+      <button 
+        onClick={() => setShowContent(!showContent)}
+        style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          zIndex: 9999,
+          padding: '10px',
+          backgroundColor: '#3b82f6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          display: window.innerWidth <= 768 ? 'block' : 'none'
+        }}
+      >
+        {showContent ? '← Menu' : 'Dashboard →'}
+      </button>
 
       {/* Sidebar */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-50 
-        transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-        lg:translate-x-0 transition-transform duration-300 ease-in-out
-      `}>
+      <div style={{
+        width: window.innerWidth <= 768 ? (showContent ? '0px' : '100%') : '260px',
+        display: window.innerWidth <= 768 ? (showContent ? 'none' : 'block') : 'block',
+        transition: 'all 0.3s ease'
+      }}>
         <Sidebar />
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header Mobile com botão de menu */}
-        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">Inksa Entregadores</h1>
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            {sidebarOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
-        </div>
-
-        {/* Área de Conteúdo */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <Outlet />
-        </main>
-      </div>
+      <main style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: '20px',
+        display: window.innerWidth <= 768 ? (showContent ? 'block' : 'none') : 'block'
+      }}>
+        <Outlet />
+      </main>
     </div>
   );
 }
