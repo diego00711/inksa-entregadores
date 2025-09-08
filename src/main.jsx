@@ -1,5 +1,3 @@
-// Ficheiro: src/main.jsx (VERSÃO FINAL E CORRIGIDA + PWA)
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -9,7 +7,8 @@ import 'leaflet/dist/leaflet.css';
 
 import App from './App';
 import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
-import { ToastProvider } from './context/ToastContext';import './app.css'; 
+import { ToastProvider } from './context/ToastContext';
+import './app.css'; // MANTIDO: usar o app.css que já existe
 
 // REGISTRO DO SERVICE WORKER - PWA
 if ('serviceWorker' in navigator) {
