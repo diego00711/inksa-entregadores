@@ -1,3 +1,5 @@
+// Ficheiro: src/main.jsx (VERSÃO SEM PWA - TESTE)
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -8,8 +10,10 @@ import 'leaflet/dist/leaflet.css';
 import App from './App';
 import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
 import { ToastProvider } from './context/ToastContext';
-import './app.css'; // ✅ CORRETO: usar o app.css que já existe
+import './app.css'; 
 
+// PWA - COMENTADO PARA TESTE
+/*
 // REGISTRO DO SERVICE WORKER - PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -35,6 +39,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', (evt) => {
   console.log('App Entregador foi instalado com sucesso!');
 });
+*/
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
