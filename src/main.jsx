@@ -39,7 +39,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', (evt) => {
   console.log('App Entregador foi instalado com sucesso!');
 });
-*/
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
