@@ -45,10 +45,18 @@ export default function DeliveryPortalLayout() {
           
           if (response.ok) {
             const data = await response.json();
+            
+            // Construir URL do avatar do Supabase se existe
+            let avatarUrl = null;
+            if (data.avatar || data.foto_perfil) {
+              const fileName = data.avatar || data.foto_perfil;
+              avatarUrl = `https://jbritstgkpznuivfupnz.supabase.co/storage/v1/object/public/delivery-avatars/${fileName}`;
+            }
+            
             setUserData({
-              name: data.name || 'dudu eduardo',
-              type: data.type || 'Entregador',
-              avatar: data.avatar || data.foto_perfil || null
+              name: data.name || data.nome || 'dudu eduardo',
+              type: data.type || data.tipo || 'Entregador',
+              avatar: avatarUrl
             });
           }
         }
