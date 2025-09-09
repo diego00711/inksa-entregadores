@@ -71,16 +71,22 @@ export default function DeliveryPortalLayout() {
     fetchUserData();
   }, []);
 
-  // Recarregar dados quando sair da página de perfil
+  // Recarregar dados quando mudar de rota (especialmente saindo do perfil)
   useEffect(() => {
-    if (location.pathname !== '/delivery/meu-perfil') {
-      // Pequeno delay para garantir que as alterações foram salvas
-      const timer = setTimeout(() => {
-        fetchUserData();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+    // Sempre recarregar quando mudar de página
+    fetchUserData();
   }, [location.pathname]);
+
+  // Adicionar evento para recarregar quando a janela ganhar foco
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 Página ganhou foco - recarregando dados');
+      fetchUserData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -155,7 +161,7 @@ export default function DeliveryPortalLayout() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-800">
             <div className="flex items-center space-x-3">
-              <div className="relative">
+              <div className="relative" onClick={handleManualRefresh} title="Clique para atualizar avatar">
                 {renderAvatar()}
               </div>
               <div>
