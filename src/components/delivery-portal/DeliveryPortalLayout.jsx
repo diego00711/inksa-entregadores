@@ -110,37 +110,27 @@ export default function DeliveryPortalLayout() {
   const renderAvatar = () => {
     console.log('🎨 Renderizando avatar:', userData.avatar);
     
-    if (userData.avatar) {
-      return (
+    // Sempre tentar mostrar a imagem primeiro
+    const avatarUrl = userData.avatar || 'https://jbritstgkpznuivfupnz.supabase.co/storage/v1/object/public/delivery-avatars/public/f85108d3-b07e-4eb4-bfbe-c7d070cd1b44_1757438580.jpg';
+    
+    return (
+      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange-500 bg-gray-200">
         <img 
-          src={userData.avatar}
+          src={avatarUrl}
           alt="Avatar do usuário"
-          className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
-          onLoad={() => console.log('✅ Avatar carregado com sucesso')}
+          className="w-full h-full object-cover"
+          onLoad={() => console.log('✅ Avatar carregado:', avatarUrl)}
           onError={(e) => {
-            console.error('❌ Erro ao carregar avatar:', userData.avatar);
-            // Mostra o fallback se a imagem falhar
+            console.error('❌ Erro ao carregar avatar:', avatarUrl);
+            // Se falhar, mostrar iniciais
             e.target.style.display = 'none';
-            const fallback = e.target.nextElementSibling;
-            if (fallback) {
-              fallback.style.display = 'flex';
-            }
+            e.target.parentNode.innerHTML = `
+              <div class="w-full h-full bg-orange-500 flex items-center justify-center">
+                <span class="text-white font-bold text-sm">DE</span>
+              </div>
+            `;
           }}
         />
-      );
-    }
-    
-    // Fallback: iniciais do nome
-    const initials = userData.name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-
-    return (
-      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-        <span className="text-white font-bold text-sm">{initials}</span>
       </div>
     );
   };
