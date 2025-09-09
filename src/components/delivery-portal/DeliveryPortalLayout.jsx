@@ -56,7 +56,32 @@ export default function DeliveryPortalLayout() {
             avatar: profileData.avatar_url || null
           });
           
-          console.log('🖼️ Avatar URL:', profileData.avatar_url);
+          console.log('🖼️ Avatar URL do perfil:', profileData.avatar_url);
+          
+          // Se não tem avatar_url na resposta, mas sabemos que existe no banco, fazer busca específica
+          if (!profileData.avatar_url) {
+            console.log('⚠️ Avatar não encontrado na resposta, tentando buscar diretamente...');
+            try {
+              const avatarResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/avatar`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              if (avatarResponse.ok) {
+                const avatarResult = await avatarResponse.json();
+                console.log('🎯 Avatar encontrado via endpoint específico:', avatarResult.avatar_url);
+                
+                setUserData(prev => ({
+                  ...prev,
+                  avatar: avatarResult.avatar_url
+                }));
+              }
+            } catch (avatarError) {
+              console.log('❌ Erro ao buscar avatar específico:', avatarError);
+            }
+          }
         } else {
           console.error('❌ Erro na resposta:', response.status);
         }
@@ -142,7 +167,10 @@ export default function DeliveryPortalLayout() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-800">
             <div className="flex items-center space-x-3">
-              <div className="relative">
+              <div className="relative cursor-pointer" onClick={() => {
+                console.log('🔄 Recarregando dados manualmente...');
+                fetchUserData();
+              }} title="Clique para recarregar avatar">
                 {renderAvatar()}
                 {/* Fallback oculto que aparece em caso de erro */}
                 <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
@@ -154,6 +182,12 @@ export default function DeliveryPortalLayout() {
               <div>
                 <h2 className="font-semibold">{userData.name}</h2>
                 <p className="text-sm text-slate-300">{userData.type}</p>
+                <button 
+                  onClick={fetchUserData}
+                  className="text-xs text-orange-400 hover:text-orange-300"
+                >
+                  🔄 Recarregar
+                </button>
               </div>
             </div>
             {/* Close button - mobile only */}
