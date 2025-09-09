@@ -30,82 +30,56 @@ export default function DeliveryPortalLayout() {
     { name: 'Meu Perfil', href: '/delivery/meu-perfil', icon: User },
   ];
 
-  // Buscar dados do usuário
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          // CORREÇÃO 1: Endpoint correto
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+  // Função para buscar dados do usuário
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log('🔍 Buscando dados do usuário...');
+        
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('📋 Dados recebidos:', result);
+          
+          const profileData = result.data;
+          
+          setUserData({
+            name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'dudu eduardo',
+            type: 'Entregador',
+            avatar: profileData.avatar_url || null
           });
           
-          if (response.ok) {
-            const result = await response.json();
-            
-            // CORREÇÃO 2: Mapeamento correto dos dados
-            const profileData = result.data; // O backend retorna { data: {...} }
-            
-            setUserData({
-              name: profileData.first_name + ' ' + (profileData.last_name || '') || 'dudu eduardo',
-              type: 'Entregador',
-              avatar: profileData.avatar_url || null // Campo correto do backend
-            });
-          }
+          console.log('🖼️ Avatar URL:', profileData.avatar_url);
+        } else {
+          console.error('❌ Erro na resposta:', response.status);
         }
-      } catch (error) {
-        console.log('Erro ao carregar dados do usuário:', error);
       }
-    };
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados do usuário:', error);
+    }
+  };
 
+  // Buscar dados do usuário ao montar o componente
+  useEffect(() => {
     fetchUserData();
   }, []);
 
-  // CORREÇÃO 3: Atualizar dados quando voltar da tela de perfil
+  // Recarregar dados quando sair da página de perfil
   useEffect(() => {
-    // Recarregar dados quando navegar para qualquer rota
-    const handleRouteChange = () => {
-      if (location.pathname === '/delivery/meu-perfil') {
-        // Aguardar um pouco e recarregar dados após sair do perfil
-        const timer = setTimeout(() => {
-          fetchUserData();
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
-    };
-
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            const profileData = result.data;
-            
-            setUserData({
-              name: profileData.first_name + ' ' + (profileData.last_name || '') || 'dudu eduardo',
-              type: 'Entregador',
-              avatar: profileData.avatar_url || null
-            });
-          }
-        }
-      } catch (error) {
-        console.log('Erro ao recarregar dados do usuário:', error);
-      }
-    };
-
-    handleRouteChange();
+    if (location.pathname !== '/delivery/meu-perfil') {
+      // Pequeno delay para garantir que as alterações foram salvas
+      const timer = setTimeout(() => {
+        fetchUserData();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -115,27 +89,38 @@ export default function DeliveryPortalLayout() {
 
   const closeSidebar = () => setSidebarOpen(false);
 
-  // CORREÇÃO 4: Função renderAvatar melhorada
+  // Função para renderizar o avatar
   const renderAvatar = () => {
+    console.log('🎨 Renderizando avatar:', userData.avatar);
+    
     if (userData.avatar) {
       return (
-        <img 
-          src={userData.avatar}
-          alt="Avatar do usuário"
-          className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
-          onError={(e) => {
-            // Se a imagem falhar, esconder e mostrar fallback
-            e.target.style.display = 'none';
-            const fallback = e.target.nextElementSibling;
-            if (fallback) {
-              fallback.style.display = 'flex';
-            }
-          }}
-        />
+        <>
+          <img 
+            src={userData.avatar}
+            alt="Avatar do usuário"
+            className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+            onLoad={() => console.log('✅ Avatar carregado com sucesso')}
+            onError={(e) => {
+              console.error('❌ Erro ao carregar avatar:', userData.avatar);
+              e.target.style.display = 'none';
+              const fallback = e.target.nextElementSibling;
+              if (fallback) {
+                fallback.style.display = 'flex';
+              }
+            }}
+          />
+          {/* Fallback oculto inicialmente */}
+          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
+            <span className="text-white font-bold text-sm">
+              {userData.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
+            </span>
+          </div>
+        </>
       );
     }
     
-    // Fallback: iniciais
+    // Fallback: iniciais do nome
     const initials = userData.name
       .split(' ')
       .map(word => word.charAt(0))
@@ -172,12 +157,6 @@ export default function DeliveryPortalLayout() {
             <div className="flex items-center space-x-3">
               <div className="relative">
                 {renderAvatar()}
-                {/* Fallback para erro de imagem */}
-                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
-                  <span className="text-white font-bold text-sm">
-                    {userData.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
-                  </span>
-                </div>
               </div>
               <div>
                 <h2 className="font-semibold">{userData.name}</h2>
