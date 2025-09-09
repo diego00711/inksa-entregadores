@@ -1,201 +1,163 @@
-// Ficheiro: src/pages/GamificationPage.jsx (VERSÃO FINAL COM MAIS ROBUSTEZ)
+// Ficheiro: src/pages/GamificationPage.jsx (PÁGINA EM CONSTRUÇÃO)
 
-import React, { useState, useEffect, useCallback } from 'react';
-import DeliveryService from '../services/deliveryService';
-import { useProfile } from '../context/DeliveryProfileContext';
-import { useToast } from '../context/ToastContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Award, TrendingUp, User } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Trophy, Award, Star, Zap, Target, Gift, Wrench, Clock } from 'lucide-react';
 
 export default function GamificationPage() {
-    const { profile, loading: profileLoading } = useProfile();
-    const addToast = useToast();
-
-    const [gamificationStats, setGamificationStats] = useState(null);
-    const [userBadges, setUserBadges] = useState([]);
-    const [rankings, setRankings] = useState([]);
-
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-
-    const fetchGamificationData = useCallback(async () => {
-        if (profileLoading || !profile?.user_id) {
-            return;
-        }
-        setLoading(true);
-        setError('');
-        try {
-            const [statsData, badgesData, rankingsData] = await Promise.all([
-                DeliveryService.getGamificationStats(profile.user_id),
-                DeliveryService.getUserBadges(profile.user_id),
-                DeliveryService.getGlobalRankings('delivery')
-            ]);
-            
-            // <<< MUDANÇA FINAL: Acessar os dados de forma mais segura >>>
-            // Assumindo que o seu DeliveryService já retorna o objeto de dados da API.
-            setGamificationStats(statsData || null);
-            setUserBadges(badgesData?.badges || []);
-            setRankings(rankingsData || []);
-
-        } catch (err) {
-            console.error("Erro ao buscar dados de gamificação:", err);
-            const errorMessage = err.response?.data?.message || err.message || 'Não foi possível carregar as estatísticas de gamificação.';
-            setError(errorMessage);
-            addToast(errorMessage, 'error');
-        } finally {
-            setLoading(false);
-        }
-    }, [profile, profileLoading, addToast]);
-
-    useEffect(() => {
-        if (profile?.user_id) {
-            fetchGamificationData();
-        }
-    }, [profile, fetchGamificationData]);
-    
-    const calculateProgress = () => {
-        if (!gamificationStats || !gamificationStats.total_points || !gamificationStats.points_to_next_level || gamificationStats.points_to_next_level <= 0) {
-            return 100;
-        }
-        const pointsInCurrentLevel = gamificationStats.total_points - (gamificationStats.next_level_points_required - gamificationStats.points_to_next_level);
-        const pointsNeededForLevel = gamificationStats.next_level_points_required - (gamificationStats.next_level_points_required - gamificationStats.points_to_next_level);
-        
-        return (pointsInCurrentLevel / pointsNeededForLevel) * 100;
-    };
-
-
-    if (profileLoading || loading) {
-        return <div className="p-6">A carregar gamificação...</div>;
-    }
-
-    if (error) {
-        return <div className="p-6 text-red-500">Erro: {error}</div>;
-    }
-    
-    const { total_points = 0, level_name = 'Iniciante', points_to_next_level = 0 } = gamificationStats || {};
-
     return (
-        <div className="gamification-container p-6 min-h-screen bg-background text-foreground">
-            <h1 className="text-3xl font-bold mb-2">Seu Progresso de Gamificação</h1>
-            <p className="text-gray-600 mb-6">Acompanhe seus pontos, nível e conquistas!</p>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-                <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">Total de Pontos</CardTitle>
-                        <Trophy className="h-5 w-5 text-yellow-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-yellow-700">{total_points}</div>
-                        <p className="text-xs text-gray-500 mt-1">Pontos ganhos até agora</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">Nível Atual</CardTitle>
-                        <Award className="h-5 w-5 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-blue-700">{level_name}</div>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200 col-span-full lg:col-span-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">Progresso para o Próximo Nível</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-purple-500" />
-                    </CardHeader>
-                    <CardContent>
-                        {points_to_next_level > 0 ? (
-                            <>
-                                <Progress value={calculateProgress()} className="w-full h-2 bg-gray-200 rounded-full" />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Faltam {points_to_next_level} pontos para o próximo nível.
-                                </p>
-                            </>
-                        ) : (
-                            <p className="text-xs text-gray-500 mt-1">Você atingiu o nível máximo!</p>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            <h2 className="text-2xl font-bold mb-5 border-b pb-2">Suas Conquistas (Badges)</h2>
-            {userBadges.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {userBadges.map(badge => (
-                        <Card key={badge.id} className="shadow-lg text-center p-4">
-                            <CardContent className="flex flex-col items-center justify-center">
-                                {badge.icon_url ? (
-                                    <img src={badge.icon_url} alt={badge.name} className="h-16 w-16 mb-2" />
-                                ) : (
-                                    <Award className="h-16 w-16 mb-2 text-yellow-600" />
-                                )}
-                                <h3 className="font-semibold text-lg text-gray-800">{badge.name}</h3>
-                                <p className="text-sm text-gray-600">{badge.description}</p>
-                                <p className="text-xs text-gray-500 mt-1">Ganhado em: {new Date(badge.earned_at).toLocaleDateString()}</p>
-                            </CardContent>
-                        </Card>
-                    ))}
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-6">
+            <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <div className="flex justify-center mb-4">
+                        <div className="relative">
+                            <Wrench className="w-16 h-16 text-orange-500 animate-bounce" />
+                            <div className="absolute -top-2 -right-2">
+                                <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                                    <span className="text-xs font-bold text-yellow-800">!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                        Gamificação em Construção
+                    </h1>
+                    <p className="text-lg text-gray-600 mb-4">
+                        Estamos preparando algo incrível para você!
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        <span>Em desenvolvimento</span>
+                    </div>
                 </div>
-            ) : (
-                <p className="text-center text-gray-600 p-8 bg-white rounded-lg shadow-sm">
-                    Nenhum emblema conquistado ainda. Continue ganhando pontos!
-                </p>
-            )}
 
-            <h2 className="text-2xl font-bold mt-8 mb-5 border-b pb-2">Ranking de Entregadores</h2>
-            {rankings.length > 0 ? (
-                <Card className="shadow-lg p-4">
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full leading-normal">
-                                <thead>
-                                    <tr className="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">#</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Entregador</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Pontos</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Nível</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rankings.map((entry, index) => (
-                                        <tr key={entry.user_id} className="hover:bg-gray-50">
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {index + 1}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                <div className="flex items-center">
-                                                    <div className="flex-shrink-0 w-8 h-8 mr-3">
-                                                        <User className="h-8 w-8 rounded-full text-gray-500" /> 
-                                                    </div>
-                                                    <div className="ml-3">
-                                                        <p className="text-gray-900 whitespace-no-wrap">
-                                                            {entry.profile_name}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {entry.total_points}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {entry.level_name || 'N/A'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                {/* Preview do que está vindo */}
+                <Card className="shadow-xl mb-8">
+                    <CardContent className="p-8">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                            O que está chegando
+                        </h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* Sistema de Pontos */}
+                            <div className="text-center p-4 bg-gradient-to-b from-yellow-100 to-yellow-200 rounded-lg">
+                                <Trophy className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
+                                <h3 className="font-bold text-gray-800 mb-2">Sistema de Pontos</h3>
+                                <p className="text-sm text-gray-600">
+                                    Ganhe pontos a cada entrega realizada e suba de nível
+                                </p>
+                            </div>
+
+                            {/* Badges e Conquistas */}
+                            <div className="text-center p-4 bg-gradient-to-b from-blue-100 to-blue-200 rounded-lg">
+                                <Award className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                                <h3 className="font-bold text-gray-800 mb-2">Badges</h3>
+                                <p className="text-sm text-gray-600">
+                                    Desbloqueie emblemas especiais por suas conquistas
+                                </p>
+                            </div>
+
+                            {/* Ranking */}
+                            <div className="text-center p-4 bg-gradient-to-b from-purple-100 to-purple-200 rounded-lg">
+                                <Star className="w-12 h-12 text-purple-600 mx-auto mb-3" />
+                                <h3 className="font-bold text-gray-800 mb-2">Ranking</h3>
+                                <p className="text-sm text-gray-600">
+                                    Compete com outros entregadores no ranking global
+                                </p>
+                            </div>
+
+                            {/* Desafios */}
+                            <div className="text-center p-4 bg-gradient-to-b from-green-100 to-green-200 rounded-lg">
+                                <Target className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                                <h3 className="font-bold text-gray-800 mb-2">Desafios</h3>
+                                <p className="text-sm text-gray-600">
+                                    Complete desafios diários e semanais especiais
+                                </p>
+                            </div>
+
+                            {/* Recompensas */}
+                            <div className="text-center p-4 bg-gradient-to-b from-red-100 to-red-200 rounded-lg">
+                                <Gift className="w-12 h-12 text-red-600 mx-auto mb-3" />
+                                <h3 className="font-bold text-gray-800 mb-2">Recompensas</h3>
+                                <p className="text-sm text-gray-600">
+                                    Troque seus pontos por prêmios e benefícios
+                                </p>
+                            </div>
+
+                            {/* Bônus */}
+                            <div className="text-center p-4 bg-gradient-to-b from-indigo-100 to-indigo-200 rounded-lg">
+                                <Zap className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
+                                <h3 className="font-bold text-gray-800 mb-2">Bônus</h3>
+                                <p className="text-sm text-gray-600">
+                                    Ganhe bônus por performance e pontualidade
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
-            ) : (
-                <p className="text-center text-gray-600 p-8 bg-white rounded-lg shadow-sm">
-                    Ranking indisponível no momento ou sem dados.
-                </p>
-            )}
+
+                {/* Progresso simulado */}
+                <Card className="shadow-lg mb-8">
+                    <CardContent className="p-6">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                            Progresso de Desenvolvimento
+                        </h3>
+                        
+                        <div className="space-y-4">
+                            {/* Backend */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Backend & API</span>
+                                    <span className="text-sm text-green-600">85%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                                </div>
+                            </div>
+
+                            {/* Frontend */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Interface do Usuário</span>
+                                    <span className="text-sm text-yellow-600">60%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+                                </div>
+                            </div>
+
+                            {/* Testes */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Testes & Ajustes</span>
+                                    <span className="text-sm text-blue-600">30%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Mensagem motivacional */}
+                <Card className="shadow-lg bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
+                    <CardContent className="p-6 text-center">
+                        <Trophy className="w-12 h-12 mx-auto mb-4 text-yellow-200" />
+                        <h3 className="text-xl font-bold mb-2">Continue fazendo entregas!</h3>
+                        <p className="text-yellow-100">
+                            Enquanto preparamos a gamificação, continue acumulando experiência. 
+                            Quando o sistema estiver pronto, você receberá retroativamente todos os pontos das suas entregas!
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* Footer */}
+                <div className="text-center mt-8 text-gray-500 text-sm">
+                    <p>🚀 Em breve: Sistema completo de gamificação Inksa Delivery</p>
+                </div>
+            </div>
         </div>
     );
 }
