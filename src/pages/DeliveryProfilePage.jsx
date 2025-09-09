@@ -1,4 +1,4 @@
-// Ficheiro: src/pages/DeliveryProfilePage.jsx (VERSÃO TURBINADA E CORRIGIDA)
+// Ficheiro: src/pages/DeliveryProfilePage.jsx (VERSÃO CORRIGIDA - TODOS OS BUGS)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DeliveryService from '../services/deliveryService';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
-import { CameraIcon } from 'lucide-react'; // Importa um ícone para a câmera/foto
+import { CameraIcon, MapPin } from 'lucide-react';
 
 export default function DeliveryProfilePage() {
     const { profile: contextProfile, updateProfile: updateContextProfile, loading: profileLoading } = useProfile();
@@ -20,12 +20,10 @@ export default function DeliveryProfilePage() {
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
-        email: '',
         phone: '',
         cpf: '',
         birth_date: '',
         vehicle_type: '',
-        is_available: false,
         address_street: '',
         address_number: '',
         address_complement: '',
@@ -33,38 +31,33 @@ export default function DeliveryProfilePage() {
         address_city: '',
         address_state: '',
         address_zipcode: '',
-        latitude: '',
-        longitude: '',
         bank_name: '',
         bank_agency: '',
         bank_account_number: '',
         bank_account_type: '',
         pix_key: '',
         payout_frequency: 'weekly',
-        mp_account_id: '',
-        avatar_url: '' // Adiciona avatar_url ao formData
+        avatar_url: ''
     });
 
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    // ✅ NOVO: Estados para a gestão da imagem do perfil
+    // Estados para a gestão da imagem do perfil
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
 
-    // Carregar dados do perfil e inicializar a previewUrl
+    // Carregar dados do perfil
     useEffect(() => {
         if (!profileLoading && contextProfile) {
             setFormData({
                 first_name: contextProfile.first_name || '',
                 last_name: contextProfile.last_name || '',
-                email: contextProfile.email || '',
                 phone: contextProfile.phone || '',
                 cpf: contextProfile.cpf || '',
                 birth_date: contextProfile.birth_date ? format(parseISO(contextProfile.birth_date), 'yyyy-MM-dd') : '',
                 vehicle_type: contextProfile.vehicle_type || '',
-                is_available: contextProfile.is_available ?? false,
                 address_street: contextProfile.address_street || '',
                 address_number: contextProfile.address_number || '',
                 address_complement: contextProfile.address_complement || '',
@@ -72,18 +65,15 @@ export default function DeliveryProfilePage() {
                 address_city: contextProfile.address_city || '',
                 address_state: contextProfile.address_state || '',
                 address_zipcode: contextProfile.address_zipcode || '',
-                latitude: contextProfile.latitude || '',
-                longitude: contextProfile.longitude || '',
                 bank_name: contextProfile.bank_name || '',
                 bank_agency: contextProfile.bank_agency || '',
                 bank_account_number: contextProfile.bank_account_number || '',
                 bank_account_type: contextProfile.bank_account_type || '',
                 pix_key: contextProfile.pix_key || '',
                 payout_frequency: contextProfile.payout_frequency || 'weekly',
-                mp_account_id: contextProfile.mp_account_id || '',
-                avatar_url: contextProfile.avatar_url || '' // Inicializa com a URL existente
+                avatar_url: contextProfile.avatar_url || ''
             });
-            setPreviewUrl(contextProfile.avatar_url || null); // Define a URL de preview inicial
+            setPreviewUrl(contextProfile.avatar_url || null);
             setLoading(false);
         } else if (!profileLoading && !contextProfile) {
             addToast("Perfil não encontrado. Faça login.", "error");
@@ -100,20 +90,20 @@ export default function DeliveryProfilePage() {
         setFormData(prev => ({ ...prev, [id]: value }));
     }, []);
 
-    // ✅ NOVO: Função para manipular a seleção de arquivo de imagem
+    // Função para manipular a seleção de arquivo de imagem
     const handleFileChange = (event) => {
         if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-            setSelectedFile(file); // Armazena o arquivo
-            setPreviewUrl(URL.createObjectURL(file)); // Cria URL para preview imediato
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
         } else {
             setSelectedFile(null);
-            setPreviewUrl(formData.avatar_url || null); // Volta para a URL original ou nulo
+            setPreviewUrl(formData.avatar_url || null);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // ✅ CORREÇÃO: Função de submit que funciona com botão do header
+    const handleSave = async () => {
         setIsSaving(true);
         addToast("Salvando perfil...", "info");
 
@@ -122,34 +112,29 @@ export default function DeliveryProfilePage() {
             if (dataToSubmit.birth_date) {
                 dataToSubmit.birth_date = new Date(dataToSubmit.birth_date).toISOString().split('T')[0];
             }
-            delete dataToSubmit.email;
-            delete dataToSubmit.is_available;
-            delete dataToSubmit.avatar_url; // Remove avatar_url, pois será enviado via upload separado
+            
+            // Remove campos que não devem ser enviados
+            delete dataToSubmit.avatar_url;
 
             let updatedProfile = null;
 
-            // ✅ Lógica para enviar o arquivo de imagem SE um novo arquivo foi selecionado
+            // Upload de imagem se selecionada
             if (selectedFile) {
                 try {
                     const avatarUrl = await DeliveryService.uploadDeliveryAvatar(selectedFile);
-                    // Atualiza o formData com a nova URL do avatar antes de enviar outros dados do perfil
-                    dataToSubmit.avatar_url = avatarUrl; // O backend vai atualizar este campo
-                    updatedProfile = await DeliveryService.updateDeliveryProfile(dataToSubmit);
+                    addToast("Foto de perfil atualizada!", "success");
                 } catch (uploadError) {
-                    addToast("Erro ao fazer upload da imagem. Tentando salvar o restante do perfil.", "warning");
+                    addToast("Erro ao fazer upload da imagem.", "warning");
                     console.error("Erro no upload da imagem:", uploadError);
-                    // Continua para salvar o resto do perfil mesmo se o upload falhar
-                    updatedProfile = await DeliveryService.updateDeliveryProfile(dataToSubmit); 
                 }
-            } else {
-                // Se nenhum arquivo novo foi selecionado, apenas atualiza o perfil normal
-                updatedProfile = await DeliveryService.updateDeliveryProfile(dataToSubmit);
             }
-            
-            updateContextProfile(updatedProfile); // Atualiza o contexto global
+
+            // Salvar perfil
+            updatedProfile = await DeliveryService.updateDeliveryProfile(dataToSubmit);
+            updateContextProfile(updatedProfile);
             addToast("Perfil atualizado com sucesso!", "success");
             setIsEditing(false);
-            setSelectedFile(null); // Limpa o arquivo selecionado após o upload/salvamento
+            setSelectedFile(null);
         } catch (error) {
             addToast(error.message || "Erro ao salvar perfil.", "error");
             console.error("Erro ao salvar perfil:", error);
@@ -158,12 +143,60 @@ export default function DeliveryProfilePage() {
         }
     };
 
+    // ✅ CORREÇÃO: Função de submit do form
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        await handleSave();
+    };
+
+    // ✅ CORREÇÃO: Função para buscar coordenadas automaticamente
+    const handleGeocodeAddress = async () => {
+        const { address_street, address_number, address_city, address_state } = formData;
+        
+        if (!address_street || !address_city) {
+            addToast("Preencha pelo menos a rua e cidade para buscar coordenadas", "warning");
+            return;
+        }
+
+        const fullAddress = `${address_street}, ${address_number}, ${address_city}, ${address_state}`;
+        
+        try {
+            addToast("Buscando coordenadas...", "info");
+            
+            // Usando API gratuita do OpenStreetMap Nominatim
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
+            );
+            
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                
+                // Atualizar latitude e longitude automaticamente
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: lat,
+                    longitude: lon
+                }));
+                
+                addToast("Coordenadas encontradas automaticamente!", "success");
+            } else {
+                addToast("Não foi possível encontrar as coordenadas do endereço", "warning");
+            }
+        } catch (error) {
+            console.error("Erro ao buscar coordenadas:", error);
+            addToast("Erro ao buscar coordenadas do endereço", "error");
+        }
+    };
+
     if (profileLoading || loading) {
-        return <div className="page-container text-center py-10">A carregar perfil...</div>;
+        return <div className="page-container text-center py-10">Carregando perfil...</div>;
     }
 
     return (
         <div className="profile-container p-6 bg-gray-50 min-h-screen">
+            {/* ✅ CORREÇÃO: Header com botão funcional */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Meu Perfil</h1>
                 {!isEditing ? (
@@ -172,8 +205,21 @@ export default function DeliveryProfilePage() {
                     </Button>
                 ) : (
                     <div className="flex gap-2">
-                        <Button onClick={() => setIsEditing(false)} variant="outline">Cancelar</Button>
-                        <Button type="submit" disabled={isSaving} className="bg-green-500 hover:bg-green-600 text-white">
+                        <Button 
+                            onClick={() => {
+                                setIsEditing(false);
+                                setSelectedFile(null);
+                                setPreviewUrl(formData.avatar_url || null);
+                            }} 
+                            variant="outline"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button 
+                            onClick={handleSave} 
+                            disabled={isSaving} 
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                        >
                             {isSaving ? "Salvando..." : "Salvar Alterações"}
                         </Button>
                     </div>
@@ -185,14 +231,14 @@ export default function DeliveryProfilePage() {
                 <Card className="shadow-lg">
                     <CardHeader><CardTitle className="text-xl font-semibold">Informações Pessoais</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* ✅ NOVO: Campo para Foto de Perfil */}
+                        {/* Campo para Foto de Perfil */}
                         <div className="flex flex-col items-center col-span-full md:col-span-1">
                             <Label htmlFor="avatar_upload" className="cursor-pointer mb-2 font-medium text-gray-700">Foto de Perfil</Label>
                             <div className="relative w-36 h-36 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100">
                                 {previewUrl ? (
                                     <img src={previewUrl} alt="Foto de Perfil" className="w-full h-full object-cover" />
                                 ) : (
-                                    <CameraIcon className="h-16 w-16 text-gray-400" /> // Ícone de câmera se não houver foto
+                                    <CameraIcon className="h-16 w-16 text-gray-400" />
                                 )}
                                 {isEditing && (
                                     <label htmlFor="avatar_upload" className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-sm cursor-pointer hover:bg-opacity-60 transition-opacity">
@@ -210,12 +256,11 @@ export default function DeliveryProfilePage() {
                             {!isEditing && !previewUrl && (
                                 <p className="text-sm text-gray-500 mt-2">Nenhuma foto de perfil.</p>
                             )}
-                            {!isEditing && previewUrl && (
-                                <p className="text-sm text-gray-500 mt-2">Clique em "Editar Perfil" para alterar.</p>
+                            {isEditing && (
+                                <p className="text-sm text-gray-500 mt-2">Clique na foto para alterar</p>
                             )}
                         </div>
 
-                        {/* Campos de texto existentes, pode ajustar o grid para melhor layout */}
                         <div>
                             <Label htmlFor="first_name">Nome</Label>
                             <Input id="first_name" value={formData.first_name} onChange={handleChange} disabled={!isEditing} />
@@ -225,10 +270,6 @@ export default function DeliveryProfilePage() {
                             <Input id="last_name" value={formData.last_name} onChange={handleChange} disabled={!isEditing} />
                         </div>
                         <div>
-                            <Label htmlFor="email">Email</Label>
-                            <Input id="email" value={formData.email} disabled />
-                        </div>
-                        <div>
                             <Label htmlFor="phone">Telefone</Label>
                             <Input id="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} />
                         </div>
@@ -236,16 +277,32 @@ export default function DeliveryProfilePage() {
                             <Label htmlFor="cpf">CPF</Label>
                             <Input id="cpf" value={formData.cpf} onChange={handleChange} disabled={!isEditing} />
                         </div>
-                        <div>
+                        <div className="col-span-full md:col-span-1">
                             <Label htmlFor="birth_date">Data de Nascimento</Label>
                             <Input id="birth_date" type="date" value={formData.birth_date} onChange={handleChange} disabled={!isEditing} />
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Endereço */}
+                {/* ✅ CORREÇÃO: Endereço com busca automática de coordenadas */}
                 <Card className="shadow-lg">
-                    <CardHeader><CardTitle className="text-xl font-semibold">Endereço</CardTitle></CardHeader>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-xl font-semibold">Endereço</CardTitle>
+                            {isEditing && (
+                                <Button 
+                                    type="button" 
+                                    onClick={handleGeocodeAddress}
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                >
+                                    <MapPin className="w-4 h-4" />
+                                    Buscar Coordenadas
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <Label htmlFor="address_street">Rua</Label>
@@ -271,18 +328,23 @@ export default function DeliveryProfilePage() {
                             <Label htmlFor="address_state">Estado</Label>
                             <Input id="address_state" value={formData.address_state} onChange={handleChange} disabled={!isEditing} />
                         </div>
-                        <div>
+                        <div className="col-span-full md:col-span-1">
                             <Label htmlFor="address_zipcode">CEP</Label>
                             <Input id="address_zipcode" value={formData.address_zipcode} onChange={handleChange} disabled={!isEditing} />
                         </div>
-                        <div>
-                            <Label htmlFor="latitude">Latitude</Label>
-                            <Input id="latitude" value={formData.latitude} disabled />
-                        </div>
-                        <div>
-                            <Label htmlFor="longitude">Longitude</Label>
-                            <Input id="longitude" value={formData.longitude} disabled />
-                        </div>
+                        
+                        {/* ✅ CORREÇÃO: Coordenadas ocultas mas mostradas como informação */}
+                        {(formData.latitude || formData.longitude) && (
+                            <div className="col-span-full">
+                                <div className="bg-gray-100 p-3 rounded-lg">
+                                    <p className="text-sm font-medium text-gray-700 mb-1">Coordenadas (preenchido automaticamente)</p>
+                                    <p className="text-xs text-gray-600">
+                                        Lat: {formData.latitude || 'Não definido'} | 
+                                        Lng: {formData.longitude || 'Não definido'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -292,11 +354,11 @@ export default function DeliveryProfilePage() {
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="vehicle_type">Tipo de Veículo</Label>
-                            <Select id="vehicle_type" value={formData.vehicle_type} onValueChange={(value) => handleSelectChange('vehicle_type', value)} disabled={!isEditing}>
+                            <Select value={formData.vehicle_type} onValueChange={(value) => handleSelectChange('vehicle_type', value)} disabled={!isEditing}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione o tipo de veículo" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white"> {/* ✅ CORRIGIDO: Fundo branco */}
+                                <SelectContent className="bg-white">
                                     <SelectItem value="moto">Moto</SelectItem>
                                     <SelectItem value="carro">Carro</SelectItem>
                                     <SelectItem value="bicicleta">Bicicleta</SelectItem>
@@ -325,11 +387,11 @@ export default function DeliveryProfilePage() {
                         </div>
                         <div>
                             <Label htmlFor="bank_account_type">Tipo de Conta</Label>
-                            <Select id="bank_account_type" value={formData.bank_account_type} onValueChange={(value) => handleSelectChange('bank_account_type', value)} disabled={!isEditing}>
+                            <Select value={formData.bank_account_type} onValueChange={(value) => handleSelectChange('bank_account_type', value)} disabled={!isEditing}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione o tipo de conta" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white"> {/* ✅ CORRIGIDO: Fundo branco */}
+                                <SelectContent className="bg-white">
                                     <SelectItem value="corrente">Corrente</SelectItem>
                                     <SelectItem value="poupanca">Poupança</SelectItem>
                                 </SelectContent>
@@ -341,11 +403,11 @@ export default function DeliveryProfilePage() {
                         </div>
                         <div>
                             <Label htmlFor="payout_frequency">Frequência de Recebimento</Label>
-                            <Select id="payout_frequency" value={formData.payout_frequency} onValueChange={(value) => handleSelectChange('payout_frequency', value)} disabled={!isEditing}>
+                            <Select value={formData.payout_frequency} onValueChange={(value) => handleSelectChange('payout_frequency', value)} disabled={!isEditing}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione a frequência" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white"> {/* ✅ CORRIGIDO: Fundo branco */}
+                                <SelectContent className="bg-white">
                                     <SelectItem value="weekly">Semanal</SelectItem>
                                     <SelectItem value="biweekly">Quinzenal</SelectItem>
                                     <SelectItem value="monthly">Mensal</SelectItem>
@@ -354,15 +416,6 @@ export default function DeliveryProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-
-                {isEditing && (
-                    <div className="flex justify-end gap-2">
-                         <Button onClick={() => setIsEditing(false)} variant="outline">Cancelar</Button>
-                        <Button type="submit" disabled={isSaving} className="bg-green-500 hover:bg-green-600 text-white">
-                            {isSaving ? "Salvando..." : "Salvar Alterações"}
-                        </Button>
-                    </div>
-                )}
             </form>
         </div>
     );
