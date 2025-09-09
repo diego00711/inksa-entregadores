@@ -36,7 +36,8 @@ export default function DeliveryPortalLayout() {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
+          // CORREÇÃO 1: Endpoint correto
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -44,19 +45,15 @@ export default function DeliveryPortalLayout() {
           });
           
           if (response.ok) {
-            const data = await response.json();
+            const result = await response.json();
             
-            // Construir URL do avatar do Supabase se existe
-            let avatarUrl = null;
-            if (data.avatar || data.foto_perfil) {
-              const fileName = data.avatar || data.foto_perfil;
-              avatarUrl = `https://jbritstgkpznuivfupnz.supabase.co/storage/v1/object/public/delivery-avatars/${fileName}`;
-            }
+            // CORREÇÃO 2: Mapeamento correto dos dados
+            const profileData = result.data; // O backend retorna { data: {...} }
             
             setUserData({
-              name: data.name || data.nome || 'dudu eduardo',
-              type: data.type || data.tipo || 'Entregador',
-              avatar: avatarUrl
+              name: profileData.first_name + ' ' + (profileData.last_name || '') || 'dudu eduardo',
+              type: 'Entregador',
+              avatar: profileData.avatar_url || null // Campo correto do backend
             });
           }
         }
@@ -68,6 +65,49 @@ export default function DeliveryPortalLayout() {
     fetchUserData();
   }, []);
 
+  // CORREÇÃO 3: Atualizar dados quando voltar da tela de perfil
+  useEffect(() => {
+    // Recarregar dados quando navegar para qualquer rota
+    const handleRouteChange = () => {
+      if (location.pathname === '/delivery/meu-perfil') {
+        // Aguardar um pouco e recarregar dados após sair do perfil
+        const timer = setTimeout(() => {
+          fetchUserData();
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            const profileData = result.data;
+            
+            setUserData({
+              name: profileData.first_name + ' ' + (profileData.last_name || '') || 'dudu eduardo',
+              type: 'Entregador',
+              avatar: profileData.avatar_url || null
+            });
+          }
+        }
+      } catch (error) {
+        console.log('Erro ao recarregar dados do usuário:', error);
+      }
+    };
+
+    handleRouteChange();
+  }, [location.pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.location.href = '/login';
@@ -75,7 +115,7 @@ export default function DeliveryPortalLayout() {
 
   const closeSidebar = () => setSidebarOpen(false);
 
-  // Função para renderizar avatar
+  // CORREÇÃO 4: Função renderAvatar melhorada
   const renderAvatar = () => {
     if (userData.avatar) {
       return (
@@ -84,9 +124,12 @@ export default function DeliveryPortalLayout() {
           alt="Avatar do usuário"
           className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
           onError={(e) => {
-            // Se a imagem falhar, mostrar iniciais
+            // Se a imagem falhar, esconder e mostrar fallback
             e.target.style.display = 'none';
-            e.target.nextSibling.style.display = 'flex';
+            const fallback = e.target.nextElementSibling;
+            if (fallback) {
+              fallback.style.display = 'flex';
+            }
           }}
         />
       );
@@ -129,7 +172,7 @@ export default function DeliveryPortalLayout() {
             <div className="flex items-center space-x-3">
               <div className="relative">
                 {renderAvatar()}
-                {/* Fallback escondido inicialmente */}
+                {/* Fallback para erro de imagem */}
                 <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
                   <span className="text-white font-bold text-sm">
                     {userData.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
