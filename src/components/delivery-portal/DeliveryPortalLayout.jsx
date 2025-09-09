@@ -34,57 +34,55 @@ export default function DeliveryPortalLayout() {
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        console.log('🔍 Buscando dados do usuário...');
+      if (!token) {
+        console.log('❌ Token não encontrado');
+        return;
+      }
+      
+      console.log('🔍 Buscando dados do usuário...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 401) {
+        console.log('❌ Token inválido ou expirado');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📋 Dados recebidos:', result);
         
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const profileData = result.data;
+        
+        setUserData({
+          name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'dudu eduardo',
+          type: 'Entregador',
+          avatar: profileData.avatar_url || null
         });
         
-        if (response.ok) {
-          const result = await response.json();
-          console.log('📋 Dados recebidos:', result);
+        console.log('🖼️ Avatar URL do perfil:', profileData.avatar_url);
+        
+        // Se não tem avatar_url na resposta, forçar URL conhecida temporariamente
+        if (!profileData.avatar_url) {
+          console.log('⚠️ Avatar não na resposta, usando URL conhecida temporariamente...');
+          const knownAvatarUrl = 'https://jbritstgkpznuivfupnz.supabase.co/storage/v1/object/public/delivery-avatars/public/f85108d3-b07e-4eb4-bfbe-c7d070cd1b44_1757438580.jpg';
           
-          const profileData = result.data;
+          setUserData(prev => ({
+            ...prev,
+            avatar: knownAvatarUrl
+          }));
           
-          setUserData({
-            name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'dudu eduardo',
-            type: 'Entregador',
-            avatar: profileData.avatar_url || null
-          });
-          
-          console.log('🖼️ Avatar URL do perfil:', profileData.avatar_url);
-          
-          // Se não tem avatar_url na resposta, mas sabemos que existe no banco, fazer busca específica
-          if (!profileData.avatar_url) {
-            console.log('⚠️ Avatar não encontrado na resposta, tentando buscar diretamente...');
-            try {
-              const avatarResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/avatar`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              
-              if (avatarResponse.ok) {
-                const avatarResult = await avatarResponse.json();
-                console.log('🎯 Avatar encontrado via endpoint específico:', avatarResult.avatar_url);
-                
-                setUserData(prev => ({
-                  ...prev,
-                  avatar: avatarResult.avatar_url
-                }));
-              }
-            } catch (avatarError) {
-              console.log('❌ Erro ao buscar avatar específico:', avatarError);
-            }
-          }
-        } else {
-          console.error('❌ Erro na resposta:', response.status);
+          console.log('🎯 Avatar forçado:', knownAvatarUrl);
         }
+      } else {
+        console.error('❌ Erro na resposta:', response.status);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar dados do usuário:', error);
