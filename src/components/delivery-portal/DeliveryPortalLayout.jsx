@@ -35,7 +35,13 @@ export default function DeliveryPortalLayout() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.log('❌ Token não encontrado');
+        // Aguardar um pouco antes de mostrar erro, pode estar carregando
+        setTimeout(() => {
+          const retryToken = localStorage.getItem('token');
+          if (!retryToken) {
+            console.log('⚠️ Token não encontrado após retry');
+          }
+        }, 1000);
         return;
       }
       
