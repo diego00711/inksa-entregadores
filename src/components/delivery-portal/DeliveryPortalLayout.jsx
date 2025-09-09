@@ -71,22 +71,10 @@ export default function DeliveryPortalLayout() {
     fetchUserData();
   }, []);
 
-  // Recarregar dados quando mudar de rota (especialmente saindo do perfil)
+  // Recarregar dados quando navegar entre páginas
   useEffect(() => {
-    // Sempre recarregar quando mudar de página
     fetchUserData();
   }, [location.pathname]);
-
-  // Adicionar evento para recarregar quando a janela ganhar foco
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('🔄 Página ganhou foco - recarregando dados');
-      fetchUserData();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -101,28 +89,21 @@ export default function DeliveryPortalLayout() {
     
     if (userData.avatar) {
       return (
-        <>
-          <img 
-            src={userData.avatar}
-            alt="Avatar do usuário"
-            className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
-            onLoad={() => console.log('✅ Avatar carregado com sucesso')}
-            onError={(e) => {
-              console.error('❌ Erro ao carregar avatar:', userData.avatar);
-              e.target.style.display = 'none';
-              const fallback = e.target.nextElementSibling;
-              if (fallback) {
-                fallback.style.display = 'flex';
-              }
-            }}
-          />
-          {/* Fallback oculto inicialmente */}
-          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
-            <span className="text-white font-bold text-sm">
-              {userData.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
-            </span>
-          </div>
-        </>
+        <img 
+          src={userData.avatar}
+          alt="Avatar do usuário"
+          className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+          onLoad={() => console.log('✅ Avatar carregado com sucesso')}
+          onError={(e) => {
+            console.error('❌ Erro ao carregar avatar:', userData.avatar);
+            // Mostra o fallback se a imagem falhar
+            e.target.style.display = 'none';
+            const fallback = e.target.nextElementSibling;
+            if (fallback) {
+              fallback.style.display = 'flex';
+            }
+          }}
+        />
       );
     }
     
@@ -161,8 +142,14 @@ export default function DeliveryPortalLayout() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-800">
             <div className="flex items-center space-x-3">
-              <div className="relative" onClick={handleManualRefresh} title="Clique para atualizar avatar">
+              <div className="relative">
                 {renderAvatar()}
+                {/* Fallback oculto que aparece em caso de erro */}
+                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hidden">
+                  <span className="text-white font-bold text-sm">
+                    {userData.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
+                  </span>
+                </div>
               </div>
               <div>
                 <h2 className="font-semibold">{userData.name}</h2>
