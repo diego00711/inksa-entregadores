@@ -79,7 +79,7 @@ const DeliveryService = {
     return data.avatar_url || data;
   },
 
-  // ✅ FUNÇÃO DESCOMENTADA E CORRIGIDA
+  // ✅ FUNÇÃO PARA BUSCAR PEDIDOS PENDENTES (DISPONÍVEIS)
   async getPendingOrders() {
     const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/pending`, {
       method: 'GET',
@@ -89,9 +89,40 @@ const DeliveryService = {
     return data.data || [];
   },
 
+  // ✅ FUNÇÃO PARA BUSCAR ENTREGAS POR STATUS
+  async getDeliveriesByStatus(status = 'all') {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders?status=${status}`, {
+      method: 'GET',
+      headers: createAuthHeaders(),
+    });
+    const data = await processResponse(response);
+    return data.data || [];
+  },
+
+  // ✅ FUNÇÃO PARA BUSCAR DETALHES DE UM PEDIDO
+  async getOrderDetail(orderId) {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}`, {
+      method: 'GET',
+      headers: createAuthHeaders(),
+    });
+    const data = await processResponse(response);
+    return data.data || data;
+  },
+
   // ✅ FUNÇÃO PARA ACEITAR PEDIDO
   async acceptDelivery(orderId) {
     const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}/accept`, {
+      method: 'POST',
+      headers: createAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+    const data = await processResponse(response);
+    return data.data || data;
+  },
+
+  // ✅ FUNÇÃO PARA COMPLETAR ENTREGA
+  async completeDelivery(orderId) {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}/complete`, {
       method: 'POST',
       headers: createAuthHeaders(),
       body: JSON.stringify({}),
