@@ -5,26 +5,6 @@ import { DELIVERY_API_URL, processResponse, createAuthHeaders } from './api';
 const DELIVERY_USER_DATA_KEY = 'deliveryUser';
 
 const DeliveryService = {
-  /**
-   * ✅ NOVO: Busca as entregas disponíveis (pedidos com status 'ready').
-   * Chama o novo endpoint que criamos no backend.
-   */
-  async getAvailableDeliveries() {
-    try {
-      const response = await fetch(`${DELIVERY_API_URL}/api/orders/available`, {
-        method: 'GET',
-        headers: createAuthHeaders(),
-      });
-      const data = await processResponse(response);
-      // A API retorna um array diretamente, então podemos retorná-lo.
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error('Erro ao buscar entregas disponíveis:', error);
-      // Retorna um array vazio em caso de erro para não quebrar a UI.
-      return [];
-    }
-  },
-
   async getDeliveryProfile() {
     const response = await fetch(`${DELIVERY_API_URL}/api/delivery/profile`, {
       method: 'GET',
@@ -97,6 +77,27 @@ const DeliveryService = {
       localStorage.setItem(DELIVERY_USER_DATA_KEY, JSON.stringify(updatedUserData));
     }
     return data.avatar_url || data;
+  },
+
+  // ✅ FUNÇÃO DESCOMENTADA E CORRIGIDA
+  async getPendingOrders() {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/pending`, {
+      method: 'GET',
+      headers: createAuthHeaders(),
+    });
+    const data = await processResponse(response);
+    return data.data || [];
+  },
+
+  // ✅ FUNÇÃO PARA ACEITAR PEDIDO
+  async acceptDelivery(orderId) {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}/accept`, {
+      method: 'POST',
+      headers: createAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+    const data = await processResponse(response);
+    return data.data || data;
   },
 };
 
