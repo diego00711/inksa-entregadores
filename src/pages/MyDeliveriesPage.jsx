@@ -38,12 +38,13 @@ export function MyDeliveriesPage() {
         const fetchDeliveries = async () => {
             try {
                 setPageLoading(true);
-                const data = await DeliveryService.getDeliveriesByStatus('all'); 
+                // CORREÇÃO: Usando getPendingOrders() ao invés de getDeliveriesByStatus()
+                const data = await DeliveryService.getPendingOrders(); 
                 setDeliveries(data);
                 
                 // Definir entrega ativa (primeira em andamento)
                 const ongoingDelivery = data.find(d => 
-                    ['accepted', 'picked_up', 'on_the_way', 'Pronto para Entrega'].includes(d.status)
+                    ['accepted', 'picked_up', 'on_the_way', 'ready', 'Pronto para Entrega'].includes(d.status)
                 );
                 setActiveDelivery(ongoingDelivery);
             } catch (error) {
@@ -57,7 +58,7 @@ export function MyDeliveriesPage() {
 
     const filteredDeliveries = useMemo(() => {
         if (activeFilter === 'all') return deliveries;
-        const ongoingStatus = ['accepted', 'picked_up', 'on_the_way', 'Pronto para Entrega'];
+        const ongoingStatus = ['accepted', 'picked_up', 'on_the_way', 'ready', 'Pronto para Entrega'];
         if (activeFilter === 'ongoing') {
             return deliveries.filter(d => ongoingStatus.includes(d.status));
         }
