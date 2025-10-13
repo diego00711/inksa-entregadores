@@ -1,84 +1,175 @@
-// src/components/DeliveryCard.jsx (Com clique apenas no botão)
+// src/components/DeliveryCard.jsx - VERSÃO CORRIGIDA
 
 import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
-import { Button } from '@/components/ui/button.jsx';
-import { MapPin, ShoppingBag, Info } from 'lucide-react'; 
+import { MapPin, Package, DollarSign, Clock, ChevronRight } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
-// ... (a lógica de statusConfig continua a mesma) ...
-const statusConfig = {
-  pending: { text: 'Novo Pedido', variant: 'destructive' },
-  accepted: { text: 'Aceito', variant: 'default' },
-  picked_up: { text: 'Em Rota', variant: 'default' },
-  on_the_way: { text: 'A Caminho', variant: 'default' },
-  delivered: { text: 'Entregue', variant: 'secondary' },
-  default: { text: 'Desconhecido', variant: 'outline' }
+// ✅ Helper para converter valores monetários (string ou number)
+const toNumber = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value) || 0;
+    return 0;
 };
 
+// ✅ Helper para formatar moeda
+const formatCurrency = (value) => {
+    const num = toNumber(value);
+    return num.toFixed(2);
+};
 
-export function DeliveryCard({ delivery, onClick }) { // A prop 'onClick' agora será usada apenas pelo botão
-  // ... (toda a lógica de fallback de dados continua a mesma) ...
-  const orderId = delivery?.id?.substring(0, 8) || 'N/A';
-  const fee = delivery?.delivery_fee ?? 0;
-  const distance = delivery?.total_distance ? `${delivery.total_distance.toFixed(1)} km` : 'N/A';
-  const restaurantAddress = delivery?.restaurant_address || 'Endereço do restaurante não informado';
-  const clientAddress = delivery?.delivery_address || 'Endereço do cliente não informado';
-  const currentStatus = statusConfig[delivery?.status] || statusConfig.default;
+// ✅ Formatar data
+const formatDate = (dateString) => {
+    if (!dateString) return 'Data não disponível';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return 'Data inválida';
+    }
+};
 
-  return (
-    // ✅ CORREÇÃO 1: Removido o 'onClick' e a classe 'cursor-pointer' do Card.
-    <Card className="flex flex-col rounded-lg border bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-      {/* O CardHeader e o CardContent permanecem exatamente os mesmos */}
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-bold text-gray-800">Pedido #{orderId}</CardTitle>
-          <Badge variant={currentStatus.variant}>{currentStatus.text}</Badge>
-        </div>
-      </CardHeader>
+// ✅ Status badge
+const StatusBadge = ({ status }) => {
+    const statusMap = {
+        'pending': { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800' },
+        'accepted': { label: 'Aceito', className: 'bg-blue-100 text-blue-800' },
+        'ready': { label: 'Pronto', className: 'bg-green-100 text-green-800' },
+        'preparing': { label: 'Preparando', className: 'bg-orange-100 text-orange-800' },
+        'delivering': { label: 'Em Rota', className: 'bg-purple-100 text-purple-800' },
+        'delivered': { label: 'Entregue', className: 'bg-gray-100 text-gray-800' }
+    };
+    
+    const statusInfo = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    
+    return (
+        <Badge className={`${statusInfo.className} font-medium`}>
+            {statusInfo.label}
+        </Badge>
+    );
+};
 
-      <CardContent className="flex-grow space-y-4">
-        <div className="flex justify-around text-center border-t border-b py-4">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Valor da Corrida</p>
-            <p className="text-xl font-bold text-green-600">R$ {fee.toFixed(2)}</p>
-          </div>
-          <div className="w-px bg-gray-200"></div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Distância Total</p>
-            <p className="text-xl font-bold text-gray-800">{distance}</p>
-          </div>
-        </div>
-
-        <div className="space-y-1 relative">
-          <div className="absolute left-[10px] top-2 bottom-2 w-0.5 bg-gray-200"></div>
-          <div className="flex items-start gap-3 relative z-10">
-            <div className="bg-white p-1 rounded-full"><ShoppingBag className="h-5 w-5 text-orange-500" /></div>
-            <div>
-              <p className="font-semibold text-gray-700">Coleta</p>
-              <p className="text-sm text-gray-600">{restaurantAddress}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 relative z-10 pt-3">
-            <div className="bg-white p-1 rounded-full"><MapPin className="h-5 w-5 text-blue-500" /></div>
-            <div>
-              <p className="font-semibold text-gray-700">Entrega</p>
-              <p className="text-sm text-gray-600">{clientAddress}</p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-
-      <CardFooter>
-        {/* ✅ CORREÇÃO 1: O onClick agora está apenas neste botão. */}
-        <Button 
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
-          onClick={onClick} // Ação de clique é passada aqui
+export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
+    // ✅ Extrair e tratar dados
+    const deliveryFee = formatCurrency(delivery.delivery_fee);
+    const totalAmount = formatCurrency(delivery.total_amount);
+    const restaurantName = delivery.restaurant_name || 'Restaurante não informado';
+    const restaurantAddress = delivery.restaurant_address || 'Endereço não disponível';
+    const deliveryAddress = delivery.delivery_address || 'Endereço de entrega não disponível';
+    const clientName = delivery.client_name || delivery.customer?.name || 'Cliente';
+    const orderId = delivery.id ? delivery.id.substring(0, 8) : 'N/A';
+    
+    return (
+        <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-orange-300 border-2"
+            onClick={onClick}
         >
-          <Info className="mr-2 h-4 w-4" />
-          Ver Detalhes
-        </Button>
-      </CardFooter>
-    </Card>
-  );
+            <CardContent className="p-4">
+                {/* Header com ID e Status */}
+                <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-orange-500" />
+                        <span className="font-semibold text-sm text-gray-700">
+                            #{orderId}
+                        </span>
+                    </div>
+                    {delivery.status && <StatusBadge status={delivery.status} />}
+                </div>
+
+                {/* Restaurante */}
+                <div className="mb-3 pb-3 border-b border-gray-100">
+                    <div className="flex items-start gap-2 mb-1">
+                        <MapPin className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-800 text-sm truncate">
+                                {restaurantName}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                                {restaurantAddress}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Cliente e Endereço de Entrega */}
+                {!isAvailable && (
+                    <div className="mb-3 pb-3 border-b border-gray-100">
+                        <div className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-800 text-sm truncate">
+                                    {clientName}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">
+                                    {deliveryAddress}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Para pedidos disponíveis, mostrar endereço de entrega */}
+                {isAvailable && deliveryAddress && (
+                    <div className="mb-3 pb-3 border-b border-gray-100">
+                        <div className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-500 font-medium mb-0.5">Entregar em:</p>
+                                <p className="text-sm text-gray-700 truncate">
+                                    {deliveryAddress}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Footer com valores e data */}
+                <div className="flex justify-between items-center">
+                    <div className="flex gap-4">
+                        <div>
+                            <p className="text-xs text-gray-500 mb-0.5">Taxa</p>
+                            <div className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3 text-green-600" />
+                                <span className="font-bold text-sm text-green-600">
+                                    R$ {deliveryFee}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 mb-0.5">Total</p>
+                            <div className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3 text-gray-600" />
+                                <span className="font-semibold text-sm text-gray-700">
+                                    R$ {totalAmount}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {delivery.created_at && (
+                        <div className="text-right">
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <Clock className="h-3 w-3" />
+                                <span>{formatDate(delivery.created_at)}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Indicador de ação */}
+                <div className="flex justify-end mt-2 pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-xs text-orange-600 font-medium">
+                        <span>{isAvailable ? 'Ver detalhes' : 'Gerenciar'}</span>
+                        <ChevronRight className="h-4 w-4" />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
