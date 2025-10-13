@@ -45,12 +45,16 @@ export function MyDeliveriesPage() {
                 
                 // ✅ CORREÇÃO 2: Buscar pedidos disponíveis com TOKEN CORRETO
                 try {
-                    const token = localStorage.getItem('token'); // ✅ NOME CORRETO DO TOKEN
+                    // ✅ CORREÇÃO FINAL: Buscar pelo nome correto do token
+                    const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
                     
                     if (!token) {
                         console.error("❌ Token não encontrado no localStorage");
+                        console.log("Itens disponíveis:", Object.keys(localStorage));
                         return;
                     }
+                    
+                    console.log("✅ Token encontrado e validado");
                     
                     const apiUrl = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
                     console.log('🔍 Buscando pedidos disponíveis em:', `${apiUrl}/api/orders/available`);
