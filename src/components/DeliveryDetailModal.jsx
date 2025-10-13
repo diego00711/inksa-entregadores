@@ -1,114 +1,250 @@
-// Ficheiro: src/components/DeliveryDetailModal.jsx (VERSÃO FINAL COM MAPA CONECTADO)
+// src/components/DeliveryDetailModal.jsx - VERSÃO CORRIGIDA
 
-import React, { useState, useEffect } from 'react'; 
-import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogOverlay, DialogClose } from '@/components/ui/dialog';
+import React, { useState } from 'react';
+import { X, MapPin, Package, DollarSign, Clock, Phone, Navigation, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { MapDisplay } from './MapDisplay';
+import { acceptDelivery } from '../services/orderService';
+import { useToast } from '../context/ToastContext';
 
-const actionConfig = {
-  accepted: { text: 'Confirmar Coleta', nextStatus: 'picked_up' },
-  picked_up: { text: 'Iniciar Rota de Entrega', nextStatus: 'on_the_way' },
-  on_the_way: { text: 'Finalizar Entrega', nextStatus: 'delivered' },
+// ✅ Helper para converter valores monetários
+const toNumber = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value) || 0;
+    return 0;
 };
 
-export function DeliveryDetailModal({ order, onClose, isLoading, onUpdateStatus }) {
-  const [internalOrder, setInternalOrder] = useState(null);
+const formatCurrency = (value) => {
+    const num = toNumber(value);
+    return num.toFixed(2);
+};
 
-  useEffect(() => {
-    if (order && typeof order === 'object') {
-      setInternalOrder(order);
+// ✅ Helper para parsear itens do pedido
+const parseItems = (items) => {
+    if (!items) return [];
+    
+    // Se já for array, retorna
+    if (Array.isArray(items)) return items;
+    
+    // Se for string JSON, parseia
+    if (typeof items === 'string') {
+        try {
+            const parsed = JSON.parse(items);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.error('Erro ao parsear itens:', e);
+            return [];
+        }
     }
-  }, [order]);
+    
+    return [];
+};
 
-  const handleActionClick = () => {
-    if (!internalOrder) return;
-    const action = actionConfig[internalOrder.status];
-    if (action) {
-      onUpdateStatus(internalOrder.id, action.nextStatus);
-      onClose();
+// ✅ Helper para parsear endereço
+const parseAddress = (address) => {
+    if (!address) return 'Endereço não disponível';
+    
+    // Se for string JSON, parseia
+    if (typeof address === 'string') {
+        try {
+            const parsed = JSON.parse(address);
+            return `${parsed.street || ''}, ${parsed.number || ''}, ${parsed.neighborhood || ''}, ${parsed.city || ''}`.replace(/,\s*,/g, ',').trim();
+        } catch (e) {
+            return address; // Retorna a string original se não for JSON
+        }
     }
-  };
+    
+    // Se for objeto
+    if (typeof address === 'object') {
+        return `${address.street || ''}, ${address.number || ''}, ${address.neighborhood || ''}, ${address.city || ''}`.replace(/,\s*,/g, ',').trim();
+    }
+    
+    return 'Endereço não disponível';
+};
 
-  const currentAction = internalOrder ? actionConfig[internalOrder.status] : null;
+export function DeliveryDetailModal({ order, onClose, isLoading, onUpdateStatus, isAvailable = false }) {
+    const addToast = useToast();
+    const [accepting, setAccepting] = useState(false);
 
-  // ✅ 1. LÓGICA FINAL PARA AS COORDENADAS
-  // Usando os nomes que vimos na sua consola.
-  
-  const pickupCoords = internalOrder?.restaurant_latitude && internalOrder?.restaurant_longitude
-    ? [internalOrder.restaurant_latitude, internalOrder.restaurant_longitude]
-    : null;
+    if (!order) return null;
 
-  // Adicionamos uma verificação para garantir que a lat e lng não sejam 0
-  const deliveryCoords = internalOrder?.client_latitude && internalOrder?.client_longitude && internalOrder.client_latitude !== 0
-    ? [internalOrder.client_latitude, internalOrder.client_longitude]
-    : null;
+    // ✅ Parsear itens e endereços
+    const items = parseItems(order.items);
+    const deliveryAddress = parseAddress(order.delivery_address);
+    const restaurantAddress = order.restaurant_address || 'Endereço do restaurante não disponível';
+    
+    // ✅ Calcular valores
+    const subtotal = toNumber(order.total_amount_items || order.total_amount - order.delivery_fee);
+    const deliveryFee = toNumber(order.delivery_fee);
+    const total = toNumber(order.total_amount);
 
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogOverlay className="fixed inset-0 bg-black/60 z-40" />
-      
-      <DialogContent className="bg-white sm:max-w-3xl p-0 flex flex-col max-h-[90vh] z-50">
-        <DialogHeader className="p-6 pb-4 border-b flex-shrink-0">
-          <DialogTitle className="text-2xl font-bold text-gray-800">Detalhes do Pedido</DialogTitle>
-        </DialogHeader>
-        
-        <div className="flex-grow overflow-y-auto p-6 space-y-6">
-            {isLoading ? (
-                <div className="flex justify-center items-center h-full min-h-[200px]"><Loader2 className="h-10 w-10 animate-spin text-orange-500" /></div>
-            ) : internalOrder ? (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                            <h3 className="font-bold text-lg border-b pb-2">Informações da Entrega</h3>
-                            <p><strong>Status:</strong> <span className="font-semibold">{internalOrder.status || 'N/A'}</span></p>
-                            <p><strong>Endereço de Coleta:</strong> {internalOrder.restaurant_address}</p>
-                            <p><strong>Endereço de Entrega:</strong> {internalOrder.delivery_address}</p>
-                        </div>
-                        <div className="space-y-3">
-                            <h3 className="font-bold text-lg border-b pb-2">Itens do Pedido</h3>
-                            <ul className="space-y-2">
-                            {internalOrder.items?.length > 0 ? (
-                                internalOrder.items.map((item, index) => (
-                                <li key={index} className="flex justify-between text-sm">
-                                    <span>{item.quantity || 1}x {item.name}</span>
-                                    <span className="font-medium">R$ {item.price?.toFixed(2) || '0.00'}</span>
-                                </li>
-                                ))
-                            ) : ( <li>Nenhum item encontrado.</li> )}
-                            </ul>
-                            <div className="space-y-2 pt-4 border-t">
-                                <p className="flex justify-between"><span>Subtotal:</span> <span>R$ {internalOrder.subtotal?.toFixed(2) || '0.00'}</span></p>
-                                <p className="flex justify-between"><span>Taxa de Entrega:</span> <span>R$ {internalOrder.delivery_fee?.toFixed(2) || '0.00'}</span></p>
-                                <p className="flex justify-between font-bold text-xl pt-2 border-t mt-2">
-                                <span>Total do Pedido:</span> 
-                                <span>R$ {internalOrder.total_amount?.toFixed(2) || '0.00'}</span>
-                                </p>
+    // ✅ Handler para aceitar pedido
+    const handleAcceptOrder = async () => {
+        try {
+            setAccepting(true);
+            await acceptDelivery(order.id);
+            addToast('Pedido aceito com sucesso! 🎉', 'success');
+            if (onUpdateStatus) {
+                onUpdateStatus(order.id, 'accepted');
+            }
+            onClose();
+        } catch (error) {
+            console.error('Erro ao aceitar pedido:', error);
+            addToast('Erro ao aceitar pedido. Tente novamente.', 'error');
+        } finally {
+            setAccepting(false);
+        }
+    };
+
+    return (
+        <Dialog open={true} onOpenChange={onClose}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <Package className="h-5 w-5 text-orange-500" />
+                        Detalhes do Pedido
+                    </DialogTitle>
+                    <button
+                        onClick={onClose}
+                        className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </DialogHeader>
+
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                    </div>
+                ) : (
+                    <div className="space-y-6 pt-4">
+                        {/* Informações da Entrega */}
+                        <div>
+                            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                                <MapPin className="h-5 w-5 text-orange-500" />
+                                Informações da Entrega
+                            </h3>
+                            
+                            <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+                                {order.status && (
+                                    <div>
+                                        <p className="text-sm text-gray-600 font-medium">Status:</p>
+                                        <p className="text-gray-800">{order.status}</p>
+                                    </div>
+                                )}
+                                
+                                <div>
+                                    <p className="text-sm text-gray-600 font-medium flex items-center gap-1">
+                                        <MapPin className="h-4 w-4 text-orange-500" />
+                                        Endereço de Coleta:
+                                    </p>
+                                    <p className="text-gray-800">{restaurantAddress}</p>
+                                </div>
+                                
+                                <div>
+                                    <p className="text-sm text-gray-600 font-medium flex items-center gap-1">
+                                        <MapPin className="h-4 w-4 text-green-500" />
+                                        Endereço de Entrega:
+                                    </p>
+                                    <p className="text-gray-800">{deliveryAddress}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                        <h3 className="font-bold text-lg border-b pb-2">Mapa da Rota</h3>
-                        <div className="h-72 w-full bg-gray-200 rounded-md">
-                            {/* ✅ 2. MAPA CONECTADO AOS DADOS CORRETOS */}
-                            <MapDisplay 
-                                pickupCoords={pickupCoords} 
-                                deliveryCoords={deliveryCoords}
-                            />
+
+                        {/* Itens do Pedido */}
+                        <div>
+                            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                                <Package className="h-5 w-5 text-orange-500" />
+                                Itens do Pedido
+                            </h3>
+                            
+                            {items.length > 0 ? (
+                                <div className="space-y-2">
+                                    {items.map((item, index) => (
+                                        <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                            <div className="flex-1">
+                                                <p className="font-medium text-gray-800">{item.name || 'Item'}</p>
+                                                <p className="text-sm text-gray-600">Qtd: {item.quantity || 1}</p>
+                                            </div>
+                                            <p className="font-semibold text-gray-800">
+                                                R$ {formatCurrency(item.price * (item.quantity || 1))}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-600 text-center py-4 bg-gray-50 rounded-lg">
+                                    Nenhum item encontrado.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Valores */}
+                        <div className="border-t pt-4">
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Subtotal:</span>
+                                    <span className="font-semibold">R$ {formatCurrency(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Taxa de Entrega:</span>
+                                    <span className="font-semibold text-green-600">R$ {formatCurrency(deliveryFee)}</span>
+                                </div>
+                                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                                    <span>Total do Pedido:</span>
+                                    <span className="text-orange-600">R$ {formatCurrency(total)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mapa da Rota */}
+                        {order.restaurant_address && order.delivery_address && (
+                            <div>
+                                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                                    <Navigation className="h-5 w-5 text-orange-500" />
+                                    Mapa da Rota
+                                </h3>
+                                <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
+                                    <p className="text-gray-600">Mapa em desenvolvimento</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Botões de Ação */}
+                        <div className="flex gap-3 pt-4 border-t">
+                            {/* ✅ BOTÃO ACEITAR - Só aparece se isAvailable === true */}
+                            {isAvailable && (
+                                <Button
+                                    onClick={handleAcceptOrder}
+                                    disabled={accepting}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-6 text-base"
+                                >
+                                    {accepting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                            Aceitando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="mr-2 h-5 w-5" />
+                                            Aceitar Pedido
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+                            
+                            <Button
+                                onClick={onClose}
+                                variant="outline"
+                                className="flex-1 py-6 text-base"
+                            >
+                                Fechar
+                            </Button>
                         </div>
                     </div>
-                </>
-            ) : (
-                <div className="p-6 text-center"><p className="text-red-500">Não foi possível carregar os detalhes do pedido.</p></div>
-            )}
-        </div>
-
-        <DialogFooter className="p-4 border-t bg-gray-50 flex-shrink-0">
-          <DialogClose asChild><Button variant="outline">Fechar</Button></DialogClose>
-          {currentAction && (<Button className="bg-orange-500 hover:bg-orange-600" onClick={handleActionClick}>{currentAction.text}</Button>)}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+                )}
+            </DialogContent>
+        </Dialog>
+    );
 }
