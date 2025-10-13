@@ -1,6 +1,6 @@
-// src/pages/MyDeliveriesPage.jsx - VERSÃO SIMPLIFICADA FINAL
+// src/pages/MyDeliveriesPage.jsx - VERSÃO CORRIGIDA
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx'; 
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx'; 
@@ -11,41 +11,59 @@ import { Header } from '../components/Header.jsx';
 import { 
     Loader2, 
     PackageSearch, 
-    MapPin, 
-    Navigation, 
-    Timer,
+    MapPin,
     Phone,
     Eye,
     EyeOff,
     ExternalLink,
-    Route
+    Route,
+    Package
 } from 'lucide-react';
 
 export function MyDeliveriesPage() {
     const { loading: profileLoading } = useProfile();
-    const [deliveries, setDeliveries] = useState([]);
+    const [availableOrders, setAvailableOrders] = useState([]); // ✅ NOVO: Pedidos disponíveis
+    const [myDeliveries, setMyDeliveries] = useState([]); // ✅ NOVO: Minhas entregas aceitas
     const [pageLoading, setPageLoading] = useState(true);
-    const [activeFilter, setActiveFilter] = useState('all');
+    const [activeFilter, setActiveFilter] = useState('available'); // ✅ MUDADO: Começa em 'available'
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [activeDelivery, setActiveDelivery] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalLoading, setIsModalLoading] = useState(false);
     const [isFiltering, setIsFiltering] = useState(false);
     const [showMap, setShowMap] = useState(false);
-    const [userLocation, setUserLocation] = useState(null);
 
     useEffect(() => {
         const fetchDeliveries = async () => {
             try {
                 setPageLoading(true);
-                // CORREÇÃO: Usando getDashboardStats() que já funciona
+                
+                // ✅ CORREÇÃO 1: Buscar estatísticas do dashboard
                 const statsData = await DeliveryService.getDashboardStats();
-                const data = statsData.activeOrders || [];
-                setDeliveries(data);
+                const myActiveOrders = statsData.activeOrders || [];
+                setMyDeliveries(myActiveOrders);
+                
+                // ✅ CORREÇÃO 2: Buscar pedidos disponíveis (ainda não aceitos)
+                // Você precisa criar essa função no deliveryService.js
+                try {
+                    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com'}/api/orders/available`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('deliveryAuthToken')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const availableData = await response.json();
+                        setAvailableOrders(availableData || []);
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar pedidos disponíveis:", error);
+                }
                 
                 // Definir entrega ativa (primeira em andamento)
-                const ongoingDelivery = data.find(d => 
-                    ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing', 'Pronto para Entrega'].includes(d.status)
+                const ongoingDelivery = myActiveOrders.find(d => 
+                    ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing'].includes(d.status)
                 );
                 setActiveDelivery(ongoingDelivery);
             } catch (error) {
@@ -57,17 +75,28 @@ export function MyDeliveriesPage() {
         fetchDeliveries();
     }, []);
 
+    // ✅ CORREÇÃO 3: Filtrar baseado no filtro ativo
     const filteredDeliveries = useMemo(() => {
-        if (activeFilter === 'all') return deliveries;
-        const ongoingStatus = ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing', 'Pronto para Entrega'];
+        if (activeFilter === 'available') {
+            return availableOrders;
+        }
+        
+        if (activeFilter === 'all') {
+            return myDeliveries;
+        }
+        
+        const ongoingStatus = ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing'];
+        
         if (activeFilter === 'ongoing') {
-            return deliveries.filter(d => ongoingStatus.includes(d.status));
+            return myDeliveries.filter(d => ongoingStatus.includes(d.status));
         }
+        
         if (activeFilter === 'delivered') {
-            return deliveries.filter(d => d.status === 'delivered' || d.status === 'Entregue');
+            return myDeliveries.filter(d => d.status === 'delivered');
         }
-        return deliveries;
-    }, [deliveries, activeFilter]);
+        
+        return myDeliveries;
+    }, [availableOrders, myDeliveries, activeFilter]);
 
     const handleFilterClick = (filter) => {
         setIsFiltering(true);
@@ -76,7 +105,7 @@ export function MyDeliveriesPage() {
     };
     
     const handleUpdateStatus = (orderId, newStatus) => {
-        setDeliveries(currentDeliveries =>
+        setMyDeliveries(currentDeliveries =>
             currentDeliveries.map(d =>
                 d.id === orderId ? { ...d, status: newStatus } : d
             )
@@ -95,8 +124,13 @@ export function MyDeliveriesPage() {
         setIsModalOpen(true);
         setIsModalLoading(true);
         try {
-            const orderDetails = await DeliveryService.getOrderDetail(order.id);
-            setSelectedOrder(orderDetails);
+            // Se for um pedido disponível, não tem detalhes ainda
+            if (activeFilter === 'available') {
+                setSelectedOrder(order);
+            } else {
+                const orderDetails = await DeliveryService.getOrderDetail(order.id);
+                setSelectedOrder(orderDetails);
+            }
         } catch (error) {
             console.error("Erro ao buscar detalhes do pedido:", error);
             setIsModalOpen(false);
@@ -165,7 +199,7 @@ export function MyDeliveriesPage() {
                                             <div className="bg-white p-4 rounded-lg shadow-sm border max-w-sm mx-auto">
                                                 <h3 className="font-semibold mb-2">Entrega Ativa #{activeDelivery.id}</h3>
                                                 <p className="text-sm text-gray-600 mb-3">
-                                                    {activeDelivery.customer?.name || 'Cliente não informado'}
+                                                    {activeDelivery.customer?.name || activeDelivery.client_name || 'Cliente não informado'}
                                                 </p>
                                                 <div className="flex gap-2">
                                                     <Button 
@@ -173,7 +207,7 @@ export function MyDeliveriesPage() {
                                                         variant="outline" 
                                                         className="flex-1"
                                                         onClick={() => {
-                                                            const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
+                                                            const address = activeDelivery.deliveryAddress?.street || activeDelivery.delivery_address;
                                                             window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}`, '_blank');
                                                         }}
                                                     >
@@ -185,7 +219,7 @@ export function MyDeliveriesPage() {
                                                         variant="outline" 
                                                         className="flex-1"
                                                         onClick={() => {
-                                                            const address = activeDelivery.deliveryAddress?.street + ', ' + activeDelivery.deliveryAddress?.city;
+                                                            const address = activeDelivery.deliveryAddress?.street || activeDelivery.delivery_address;
                                                             window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
                                                         }}
                                                     >
@@ -212,8 +246,24 @@ export function MyDeliveriesPage() {
                     <Card className="shadow-sm">
                         <CardHeader>
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <CardTitle className="text-lg font-bold">Histórico de Entregas</CardTitle>
-                                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                                <CardTitle className="text-lg font-bold">
+                                    {activeFilter === 'available' ? 'Pedidos Disponíveis' : 'Histórico de Entregas'}
+                                </CardTitle>
+                                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg overflow-x-auto">
+                                    <Button 
+                                        size="sm" 
+                                        variant={activeFilter === 'available' ? 'default' : 'ghost'} 
+                                        onClick={() => handleFilterClick('available')}
+                                        className="whitespace-nowrap"
+                                    >
+                                        <Package className="w-4 h-4 mr-1" />
+                                        Disponíveis
+                                        {availableOrders.length > 0 && (
+                                            <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                                {availableOrders.length}
+                                            </span>
+                                        )}
+                                    </Button>
                                     <Button size="sm" variant={activeFilter === 'all' ? 'default' : 'ghost'} onClick={() => handleFilterClick('all')}>Todas</Button>
                                     <Button size="sm" variant={activeFilter === 'ongoing' ? 'default' : 'ghost'} onClick={() => handleFilterClick('ongoing')}>Em Andamento</Button>
                                     <Button size="sm" variant={activeFilter === 'delivered' ? 'default' : 'ghost'} onClick={() => handleFilterClick('delivered')}>Concluídas</Button>
@@ -235,11 +285,12 @@ export function MyDeliveriesPage() {
                                                     ? 'ring-2 ring-primary' 
                                                     : ''
                                             }`}
-                                            onClick={() => handleDeliverySelect(delivery)}
+                                            onClick={() => activeFilter !== 'available' && handleDeliverySelect(delivery)}
                                         >
                                             <DeliveryCard 
                                                 delivery={delivery} 
-                                                onClick={() => handleCardClick(delivery)} 
+                                                onClick={() => handleCardClick(delivery)}
+                                                isAvailable={activeFilter === 'available'} 
                                             />
                                         </div>
                                     ))}
@@ -248,7 +299,11 @@ export function MyDeliveriesPage() {
                                 <div className="flex flex-col items-center justify-center gap-4 h-full">
                                     <PackageSearch className="w-16 h-16 text-muted-foreground/50" />
                                     <h3 className="text-xl font-semibold">Nenhuma entrega encontrada</h3>
-                                    <p className="text-muted-foreground text-center">Tente selecionar outro filtro ou aguarde por novas oportunidades.</p>
+                                    <p className="text-muted-foreground text-center">
+                                        {activeFilter === 'available' 
+                                            ? 'Não há pedidos disponíveis no momento. Aguarde por novas oportunidades!' 
+                                            : 'Tente selecionar outro filtro ou aguarde por novas oportunidades.'}
+                                    </p>
                                 </div>
                             )}
                         </CardContent>
@@ -262,6 +317,7 @@ export function MyDeliveriesPage() {
                     onClose={handleCloseModal}
                     isLoading={isModalLoading}
                     onUpdateStatus={handleUpdateStatus}
+                    isAvailable={activeFilter === 'available'}
                 />
             )}
         </div>
