@@ -1,10 +1,8 @@
 // src/components/DeliveryDetailModal.jsx - VERSÃO CORRIGIDA
 
 import React, { useState } from 'react';
-import { X, MapPin, Package, DollarSign, Clock, Phone, Navigation, CheckCircle } from 'lucide-react';
+import { X, MapPin, Package, DollarSign, Clock, Phone, Navigation, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
 import { acceptDelivery } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
 
@@ -98,27 +96,39 @@ export function DeliveryDetailModal({ order, onClose, isLoading, onUpdateStatus,
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                        <Package className="h-5 w-5 text-orange-500" />
-                        Detalhes do Pedido
-                    </DialogTitle>
-                    <button
-                        onClick={onClose}
-                        className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                </DialogHeader>
+        <>
+            {/* ✅ Backdrop escuro */}
+            <div 
+                className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"
+                onClick={onClose}
+            />
+            
+            {/* ✅ Modal com fundo sólido branco */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div 
+                    className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Header */}
+                    <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Package className="h-5 w-5 text-orange-500" />
+                            Detalhes do Pedido
+                        </h2>
+                        <button
+                            onClick={onClose}
+                            className="rounded-full p-2 hover:bg-gray-100 transition-colors"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
 
                 {isLoading ? (
                     <div className="flex justify-center items-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
                     </div>
                 ) : (
-                    <div className="space-y-6 pt-4">
+                    <div className="p-6 space-y-6">{/* Conteúdo do modal */}
                         {/* Informações da Entrega */}
                         <div>
                             <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
@@ -199,14 +209,34 @@ export function DeliveryDetailModal({ order, onClose, isLoading, onUpdateStatus,
                         </div>
 
                         {/* Mapa da Rota */}
-                        {order.restaurant_address && order.delivery_address && (
+                        {(restaurantAddress || deliveryAddress) && (
                             <div>
                                 <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                                     <Navigation className="h-5 w-5 text-orange-500" />
                                     Mapa da Rota
                                 </h3>
-                                <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-                                    <p className="text-gray-600">Mapa em desenvolvimento</p>
+                                <div className="bg-gray-100 rounded-lg p-6 flex flex-col items-center justify-center gap-4">
+                                    <p className="text-gray-600">Abrir navegação:</p>
+                                    <div className="flex gap-3">
+                                        <Button
+                                            onClick={() => {
+                                                window.open(`https://waze.com/ul?q=${encodeURIComponent(deliveryAddress)}`, '_blank');
+                                            }}
+                                            className="bg-[#00D8FF] hover:bg-[#00C4E6] text-white"
+                                        >
+                                            <Navigation className="mr-2 h-4 w-4" />
+                                            Abrir no Waze
+                                        </Button>
+                                        <Button
+                                            onClick={() => {
+                                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deliveryAddress)}`, '_blank');
+                                            }}
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            <MapPin className="mr-2 h-4 w-4" />
+                                            Abrir no Maps
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -244,7 +274,8 @@ export function DeliveryDetailModal({ order, onClose, isLoading, onUpdateStatus,
                         </div>
                     </div>
                 )}
-            </DialogContent>
-        </Dialog>
+                </div>
+            </div>
+        </>
     );
 }
