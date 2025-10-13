@@ -1,4 +1,4 @@
-// src/services/orderService.js - VERSÃO CORRIGIDA
+// src/services/orderService.js - VERSÃO FINAL E CORRIGIDA
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
@@ -38,16 +38,14 @@ const fetchWithAuth = async (url, options = {}) => {
     return response.json();
 };
 
-// ✅ Aceitar pedido (atualiza status para 'accepted')
+// ✅ CORREÇÃO CRÍTICA: Aceitar pedido usando endpoint /accept com POST
 export const acceptDelivery = async (orderId) => {
     try {
         console.log('🚀 Aceitando pedido:', orderId);
         
-        const response = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                new_status: 'accepted'
-            })
+        // ✅ MUDANÇA: Endpoint correto /accept com POST
+        const response = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, {
+            method: 'POST'  // ✅ POST, não PUT!
         });
         
         console.log('✅ Pedido aceito com sucesso:', response);
@@ -78,7 +76,7 @@ export const completeDelivery = async (orderId) => {
     }
 };
 
-// ✅ Buscar pedidos para avaliar (cliente)
+// ✅ Buscar pedidos para avaliar (entregador)
 export const getOrdersToReview = async () => {
     try {
         return await fetchWithAuth(`${API_URL}/api/orders/pending-delivery-review`);
