@@ -27,8 +27,8 @@ const authService = {
     async login(email, password) {
         console.log('🔐 Iniciando login do entregador...', { email });
         
-        // ✅ CORREÇÃO 1: Endpoint correto para login de entregador
-        const response = await fetch(`${API_BASE_URL}/api/delivery/auth/login`, {
+        // ✅ CORREÇÃO: Usa a rota genérica de login que já existe
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -38,7 +38,7 @@ const authService = {
         const responseData = await processResponse(response);
         console.log('📥 Response data:', responseData);
 
-        // ✅ CORREÇÃO 2: Verifica diferentes formatos de resposta da API
+        // ✅ Verifica diferentes formatos de resposta da API
         let token, user;
         
         // Formato 1: { status: 'success', data: { token, user } }
@@ -58,6 +58,12 @@ const authService = {
         }
         
         if (token) {
+            // ✅ Valida se é um entregador
+            if (user.user_type !== 'delivery') {
+                console.error('❌ Usuário não é um entregador:', user.user_type);
+                throw new Error('Acesso negado. Este login é apenas para entregadores.');
+            }
+            
             // ✅ Salva o token e usuário
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
@@ -77,11 +83,14 @@ const authService = {
     async register(userData) {
         console.log('📝 Registrando novo entregador...');
         
-        // ✅ Endpoint correto para registro de entregador
-        const response = await fetch(`${API_BASE_URL}/api/delivery/auth/register`, {
+        // ✅ CORREÇÃO: Usa a rota genérica de registro que já existe
+        const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData),
+            body: JSON.stringify({
+                ...userData,
+                user_type: 'delivery' // ✅ Especifica que é entregador
+            }),
         });
         
         const responseData = await processResponse(response);
