@@ -1,4 +1,4 @@
-// src/pages/MyDeliveriesPage.jsx - VERSÃO CORRIGIDA
+// src/pages/MyDeliveriesPage.jsx - VERSÃO CORRIGIDA E FUNCIONAL
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx'; 
@@ -22,10 +22,10 @@ import {
 
 export function MyDeliveriesPage() {
     const { loading: profileLoading } = useProfile();
-    const [availableOrders, setAvailableOrders] = useState([]); // ✅ NOVO: Pedidos disponíveis
-    const [myDeliveries, setMyDeliveries] = useState([]); // ✅ NOVO: Minhas entregas aceitas
+    const [availableOrders, setAvailableOrders] = useState([]);
+    const [myDeliveries, setMyDeliveries] = useState([]);
     const [pageLoading, setPageLoading] = useState(true);
-    const [activeFilter, setActiveFilter] = useState('available'); // ✅ MUDADO: Começa em 'available'
+    const [activeFilter, setActiveFilter] = useState('available');
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [activeDelivery, setActiveDelivery] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,22 +43,49 @@ export function MyDeliveriesPage() {
                 const myActiveOrders = statsData.activeOrders || [];
                 setMyDeliveries(myActiveOrders);
                 
-                // ✅ CORREÇÃO 2: Buscar pedidos disponíveis (ainda não aceitos)
-                // Você precisa criar essa função no deliveryService.js
+                // ✅ CORREÇÃO 2: Buscar pedidos disponíveis com TOKEN CORRETO
                 try {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com'}/api/orders/available`, {
+                    const token = localStorage.getItem('token'); // ✅ NOME CORRETO DO TOKEN
+                    
+                    if (!token) {
+                        console.error("❌ Token não encontrado no localStorage");
+                        return;
+                    }
+                    
+                    const apiUrl = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+                    console.log('🔍 Buscando pedidos disponíveis em:', `${apiUrl}/api/orders/available`);
+                    
+                    const response = await fetch(`${apiUrl}/api/orders/available`, {
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('deliveryAuthToken')}`,
+                            'Authorization': `Bearer ${token}`, // ✅ USANDO O TOKEN CORRETO
                             'Content-Type': 'application/json'
                         }
                     });
                     
+                    console.log('📊 Status da resposta:', response.status);
+                    
                     if (response.ok) {
                         const availableData = await response.json();
+                        console.log('✅ Pedidos disponíveis recebidos:', availableData);
+                        console.log('📦 Total de pedidos disponíveis:', availableData.length);
                         setAvailableOrders(availableData || []);
+                    } else {
+                        // ✅ CORREÇÃO 3: Melhor tratamento de erro
+                        const errorText = await response.text();
+                        console.error('❌ Erro ao buscar pedidos disponíveis:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorText
+                        });
+                        
+                        // Se for erro 401 (não autorizado), limpar token
+                        if (response.status === 401) {
+                            console.error('🔒 Token inválido ou expirado');
+                            localStorage.removeItem('token');
+                        }
                     }
                 } catch (error) {
-                    console.error("Erro ao buscar pedidos disponíveis:", error);
+                    console.error("❌ Erro de rede ao buscar pedidos disponíveis:", error);
                 }
                 
                 // Definir entrega ativa (primeira em andamento)
@@ -66,16 +93,18 @@ export function MyDeliveriesPage() {
                     ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing'].includes(d.status)
                 );
                 setActiveDelivery(ongoingDelivery);
+                
             } catch (error) {
-                console.error("Erro ao buscar as entregas:", error);
+                console.error("❌ Erro geral ao buscar as entregas:", error);
             } finally {
                 setPageLoading(false);
             }
         };
+        
         fetchDeliveries();
     }, []);
 
-    // ✅ CORREÇÃO 3: Filtrar baseado no filtro ativo
+    // ✅ CORREÇÃO 4: Filtrar baseado no filtro ativo
     const filteredDeliveries = useMemo(() => {
         if (activeFilter === 'available') {
             return availableOrders;
