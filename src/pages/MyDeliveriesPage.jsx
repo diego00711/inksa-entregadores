@@ -1,4 +1,4 @@
-// src/pages/MyDeliveriesPage.jsx - VERSÃO CORRIGIDA E FUNCIONAL
+// src/pages/MyDeliveriesPage.jsx - COM BUSCA DE PICKUP_CODE
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx'; 
@@ -33,68 +33,108 @@ export function MyDeliveriesPage() {
     const [isFiltering, setIsFiltering] = useState(false);
     const [showMap, setShowMap] = useState(false);
 
+    // ✅ NOVA FUNÇÃO: Buscar detalhes completos do pedido com pickup_code
+    const fetchOrderWithPickupCode = async (orderId) => {
+        try {
+            const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+            
+            const response = await fetch(`${apiUrl}/api/orders/${orderId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const orderData = await response.json();
+                return orderData;
+            }
+            return null;
+        } catch (error) {
+            console.error(`Erro ao buscar detalhes do pedido ${orderId}:`, error);
+            return null;
+        }
+    };
+
     useEffect(() => {
         const fetchDeliveries = async () => {
             try {
                 setPageLoading(true);
                 
-                // ✅ CORREÇÃO 1: Buscar estatísticas do dashboard
+                // Buscar estatísticas do dashboard
                 const statsData = await DeliveryService.getDashboardStats();
-                const myActiveOrders = statsData.activeOrders || [];
-                setMyDeliveries(myActiveOrders);
+                let myActiveOrders = statsData.activeOrders || [];
                 
-                // ✅ CORREÇÃO 2: Buscar pedidos disponíveis com TOKEN CORRETO
+                // ✅ NOVO: Buscar pickup_code para cada pedido ativo
+                console.log('🔍 Buscando pickup_code para pedidos ativos...');
+                const ordersWithPickupCode = await Promise.all(
+                    myActiveOrders.map(async (order) => {
+                        // Se já tem pickup_code, não precisa buscar
+                        if (order.pickup_code) {
+                            console.log(`✅ Pedido ${order.id.substring(0, 8)} já tem pickup_code:`, order.pickup_code);
+                            return order;
+                        }
+                        
+                        // Buscar detalhes completos
+                        console.log(`📡 Buscando detalhes do pedido ${order.id.substring(0, 8)}...`);
+                        const fullOrder = await fetchOrderWithPickupCode(order.id);
+                        
+                        if (fullOrder && fullOrder.pickup_code) {
+                            console.log(`✅ Pickup code encontrado para ${order.id.substring(0, 8)}:`, fullOrder.pickup_code);
+                            return { ...order, pickup_code: fullOrder.pickup_code };
+                        }
+                        
+                        console.log(`⚠️ Pickup code não encontrado para ${order.id.substring(0, 8)}`);
+                        return order;
+                    })
+                );
+                
+                setMyDeliveries(ordersWithPickupCode);
+                
+                // Buscar pedidos disponíveis
                 try {
-                    // ✅ CORREÇÃO FINAL: Buscar pelo nome correto do token
                     const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
                     
                     if (!token) {
                         console.error("❌ Token não encontrado no localStorage");
-                        console.log("Itens disponíveis:", Object.keys(localStorage));
                         return;
                     }
-                    
-                    console.log("✅ Token encontrado e validado");
                     
                     const apiUrl = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
                     console.log('🔍 Buscando pedidos disponíveis em:', `${apiUrl}/api/orders/available`);
                     
                     const response = await fetch(`${apiUrl}/api/orders/available`, {
                         headers: {
-                            'Authorization': `Bearer ${token}`, // ✅ USANDO O TOKEN CORRETO
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         }
                     });
                     
-                    console.log('📊 Status da resposta:', response.status);
-                    
                     if (response.ok) {
                         const availableData = await response.json();
-                        console.log('✅ Pedidos disponíveis recebidos:', availableData);
-                        console.log('📦 Total de pedidos disponíveis:', availableData.length);
+                        console.log('✅ Pedidos disponíveis recebidos:', availableData.length);
                         setAvailableOrders(availableData || []);
                     } else {
-                        // ✅ CORREÇÃO 3: Melhor tratamento de erro
                         const errorText = await response.text();
                         console.error('❌ Erro ao buscar pedidos disponíveis:', {
                             status: response.status,
-                            statusText: response.statusText,
                             error: errorText
                         });
                         
-                        // Se for erro 401 (não autorizado), limpar token
                         if (response.status === 401) {
                             console.error('🔒 Token inválido ou expirado');
                             localStorage.removeItem('token');
+                            localStorage.removeItem('deliveryAuthToken');
                         }
                     }
                 } catch (error) {
                     console.error("❌ Erro de rede ao buscar pedidos disponíveis:", error);
                 }
                 
-                // Definir entrega ativa (primeira em andamento)
-                const ongoingDelivery = myActiveOrders.find(d => 
-                    ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing'].includes(d.status)
+                // Definir entrega ativa
+                const ongoingDelivery = ordersWithPickupCode.find(d => 
+                    ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
                 );
                 setActiveDelivery(ongoingDelivery);
                 
@@ -106,9 +146,16 @@ export function MyDeliveriesPage() {
         };
         
         fetchDeliveries();
+        
+        // ✅ Refresh automático a cada 30 segundos
+        const intervalId = setInterval(() => {
+            console.log('🔄 Atualizando pedidos...');
+            fetchDeliveries();
+        }, 30000);
+        
+        return () => clearInterval(intervalId);
     }, []);
 
-    // ✅ CORREÇÃO 4: Filtrar baseado no filtro ativo
     const filteredDeliveries = useMemo(() => {
         if (activeFilter === 'available') {
             return availableOrders;
@@ -118,7 +165,7 @@ export function MyDeliveriesPage() {
             return myDeliveries;
         }
         
-        const ongoingStatus = ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing'];
+        const ongoingStatus = ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'];
         
         if (activeFilter === 'ongoing') {
             return myDeliveries.filter(d => ongoingStatus.includes(d.status));
@@ -157,7 +204,6 @@ export function MyDeliveriesPage() {
         setIsModalOpen(true);
         setIsModalLoading(true);
         try {
-            // Se for um pedido disponível, não tem detalhes ainda
             if (activeFilter === 'available') {
                 setSelectedOrder(order);
             } else {
@@ -230,7 +276,18 @@ export function MyDeliveriesPage() {
                                                 {showMap ? 'Mapa em desenvolvimento' : 'Clique no ícone do olho para ver o mapa'}
                                             </p>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border max-w-sm mx-auto">
-                                                <h3 className="font-semibold mb-2">Entrega Ativa #{activeDelivery.id}</h3>
+                                                <h3 className="font-semibold mb-2">Entrega Ativa #{activeDelivery.id.substring(0,8)}...</h3>
+                                                
+                                                {/* ✅ Mostrar pickup_code no mapa também */}
+                                                {activeDelivery.pickup_code && (
+                                                    <div className="mb-3 bg-purple-50 p-2 rounded border border-purple-200">
+                                                        <p className="text-xs text-purple-700 mb-1">Código de Retirada:</p>
+                                                        <p className="text-lg font-bold text-purple-800 tracking-widest">
+                                                            {activeDelivery.pickup_code}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
                                                 <p className="text-sm text-gray-600 mb-3">
                                                     {activeDelivery.customer?.name || activeDelivery.client_name || 'Cliente não informado'}
                                                 </p>
@@ -264,7 +321,7 @@ export function MyDeliveriesPage() {
                                                         variant="outline"
                                                         onClick={() => window.open(`tel:${activeDelivery.customer?.phone}`, '_self')}
                                                     >
-                                                        <Phone className="w-4 h-4" />
+                                                        <Phone className="w-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </div>
