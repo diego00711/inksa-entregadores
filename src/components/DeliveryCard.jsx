@@ -1,24 +1,21 @@
-// src/components/DeliveryCard.jsx - VERSÃO CORRIGIDA
+// src/components/DeliveryCard.jsx - COM CÓDIGO DE RETIRADA VISÍVEL
 
 import React from 'react';
-import { MapPin, Package, DollarSign, Clock, ChevronRight } from 'lucide-react';
+import { MapPin, Package, DollarSign, Clock, ChevronRight, KeyRound } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-// ✅ Helper para converter valores monetários (string ou number)
 const toNumber = (value) => {
     if (typeof value === 'number') return value;
     if (typeof value === 'string') return parseFloat(value) || 0;
     return 0;
 };
 
-// ✅ Helper para formatar moeda
 const formatCurrency = (value) => {
     const num = toNumber(value);
     return num.toFixed(2);
 };
 
-// ✅ Formatar data
 const formatDate = (dateString) => {
     if (!dateString) return 'Data não disponível';
     try {
@@ -35,7 +32,6 @@ const formatDate = (dateString) => {
     }
 };
 
-// ✅ Status badge
 const StatusBadge = ({ status }) => {
     const statusMap = {
         'pending': { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800' },
@@ -56,7 +52,6 @@ const StatusBadge = ({ status }) => {
 };
 
 export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
-    // ✅ Extrair e tratar dados
     const deliveryFee = formatCurrency(delivery.delivery_fee);
     const totalAmount = formatCurrency(delivery.total_amount);
     const restaurantName = delivery.restaurant_name || 'Restaurante não informado';
@@ -64,6 +59,10 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
     const deliveryAddress = delivery.delivery_address || 'Endereço de entrega não disponível';
     const clientName = delivery.client_name || delivery.customer?.name || 'Cliente';
     const orderId = delivery.id ? delivery.id.substring(0, 8) : 'N/A';
+    
+    // ✅ NOVO: Extrair pickup_code
+    const pickupCode = delivery.pickup_code;
+    const hasPickupCode = pickupCode && !isAvailable;
     
     return (
         <Card 
@@ -81,6 +80,32 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
                     </div>
                     {delivery.status && <StatusBadge status={delivery.status} />}
                 </div>
+
+                {/* ✅ NOVO: Código de Retirada - Destaque Principal */}
+                {hasPickupCode && (
+                    <div className="mb-3 pb-3 border-b-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-3 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-purple-600 p-2 rounded-full">
+                                    <KeyRound className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-purple-700 uppercase tracking-wide">
+                                        Código de Retirada
+                                    </p>
+                                    <p className="text-sm text-purple-600 font-normal">
+                                        Mostre ao restaurante
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="bg-white px-4 py-2 rounded-lg border-2 border-purple-300 shadow-md">
+                                <span className="text-2xl font-bold text-purple-700 tracking-widest">
+                                    {pickupCode}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Restaurante */}
                 <div className="mb-3 pb-3 border-b border-gray-100">
