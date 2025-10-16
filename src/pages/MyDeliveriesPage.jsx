@@ -1,4 +1,4 @@
-// src/pages/MyDeliveriesPage.jsx - COM BUSCA DE PICKUP_CODE
+// src/pages/MyDeliveriesPage.jsx - CORRIGIDO COM accepted_by_delivery
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx'; 
@@ -33,7 +33,7 @@ export function MyDeliveriesPage() {
     const [isFiltering, setIsFiltering] = useState(false);
     const [showMap, setShowMap] = useState(false);
 
-    // ✅ NOVA FUNÇÃO: Buscar detalhes completos do pedido com pickup_code
+    // ✅ Buscar detalhes completos do pedido com pickup_code
     const fetchOrderWithPickupCode = async (orderId) => {
         try {
             const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
@@ -66,17 +66,15 @@ export function MyDeliveriesPage() {
                 const statsData = await DeliveryService.getDashboardStats();
                 let myActiveOrders = statsData.activeOrders || [];
                 
-                // ✅ NOVO: Buscar pickup_code para cada pedido ativo
+                // ✅ Buscar pickup_code para cada pedido ativo
                 console.log('🔍 Buscando pickup_code para pedidos ativos...');
                 const ordersWithPickupCode = await Promise.all(
                     myActiveOrders.map(async (order) => {
-                        // Se já tem pickup_code, não precisa buscar
                         if (order.pickup_code) {
                             console.log(`✅ Pedido ${order.id.substring(0, 8)} já tem pickup_code:`, order.pickup_code);
                             return order;
                         }
                         
-                        // Buscar detalhes completos
                         console.log(`📡 Buscando detalhes do pedido ${order.id.substring(0, 8)}...`);
                         const fullOrder = await fetchOrderWithPickupCode(order.id);
                         
@@ -132,9 +130,9 @@ export function MyDeliveriesPage() {
                     console.error("❌ Erro de rede ao buscar pedidos disponíveis:", error);
                 }
                 
-                // Definir entrega ativa
+                // ✅ CORRIGIDO: Incluir 'accepted_by_delivery' na lista de status ativos
                 const ongoingDelivery = ordersWithPickupCode.find(d => 
-                    ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
+                    ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
                 );
                 setActiveDelivery(ongoingDelivery);
                 
@@ -165,7 +163,8 @@ export function MyDeliveriesPage() {
             return myDeliveries;
         }
         
-        const ongoingStatus = ['pending', 'accepted', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'];
+        // ✅ CORRIGIDO: Incluir 'accepted_by_delivery' nos status em andamento
+        const ongoingStatus = ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'];
         
         if (activeFilter === 'ongoing') {
             return myDeliveries.filter(d => ongoingStatus.includes(d.status));
