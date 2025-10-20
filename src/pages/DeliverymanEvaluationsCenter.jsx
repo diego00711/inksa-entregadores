@@ -1,10 +1,10 @@
-// src/pages/DeliverymanEvaluationsCenter.jsx (VERSÃO FINAL COM LAYOUT)
+// src/pages/DeliverymanEvaluationsCenter.jsx - VERSÃO ATUALIZADA
 
 import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, MessageSquare, User, Clock, Award, TrendingUp } from 'lucide-react';
-import { useProfile } from '@/context/DeliveryProfileContext.jsx';
+import { useProfile } from '../context/DeliveryProfileContext'; // Ajuste o caminho conforme necessário
 import { getMyDeliveryReviews } from '../services/reviewService';
-import { getOrdersToReview } from '../services/orderService';
+import useDeliveredOrders from '../hooks/useDeliveredOrders';
 import ClientReviewForm from '../components/ClientReviewForm';
 
 // Card para uma avaliação recebida (com mais estilo)
@@ -32,8 +32,10 @@ export default function DeliverymanEvaluationsCenter() {
   const { profile, loading: loadingProfile } = useProfile();
   const [receivedReviews, setReceivedReviews] = useState(null);
   const [loadingReceived, setLoadingReceived] = useState(true);
-  const [ordersToReview, setOrdersToReview] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  
+  // ✅ CORREÇÃO: Adiciona refetch ao hook
+  const { orders: ordersToReview, loading: loadingOrders, refetch } = useDeliveredOrders(profile?.id);
+  
   const [highlightOrderId, setHighlightOrderId] = useState(null);
 
   useEffect(() => {
@@ -46,18 +48,12 @@ export default function DeliverymanEvaluationsCenter() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    if (profile) {
-      setLoadingOrders(true);
-      getOrdersToReview()
-        .then(data => setOrdersToReview(data))
-        .catch(err => console.error("Erro ao buscar pedidos para avaliar:", err))
-        .finally(() => setLoadingOrders(false));
-    }
-  }, [profile]);
-
   if (loadingProfile) {
-    return <div className="p-6">Carregando perfil...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -115,7 +111,7 @@ export default function DeliverymanEvaluationsCenter() {
           <div className="p-6">
             {loadingOrders ? (
               <p className="text-center text-gray-500">Carregando pedidos para avaliar...</p>
-            ) : ordersToReview.length > 0 ? (
+            ) : ordersToReview?.length > 0 ? (
               <div className="space-y-4">
                 {ordersToReview.map(order => (
                   <div key={order.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -124,7 +120,7 @@ export default function DeliverymanEvaluationsCenter() {
                         <p className="font-bold text-gray-800">Pedido para {order.client_name}</p>
                         <p className="text-sm text-gray-500 flex items-center gap-1.5">
                           <Clock className="h-4 w-4" />
-                          Entregue em: {new Date(order.completed_at).toLocaleDateString('pt-BR')}
+                          Entregue em: {new Date(order.delivered_at || order.completed_at).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                       <button
@@ -146,7 +142,7 @@ export default function DeliverymanEvaluationsCenter() {
                           onSuccess={() => {
                             alert('Avaliação enviada com sucesso!');
                             setHighlightOrderId(null);
-                            getOrdersToReview().then(setOrdersToReview);
+                            refetch(); // ✅ ATUALIZA A LISTA
                           }}
                         />
                       </div>
