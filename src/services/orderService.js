@@ -1,12 +1,12 @@
-// src/services/orderService.js – VERSÃO COMPLETA (OK p/ código de entrega)
+// inksa-entregadores/src/services/orderService.js
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
-// Token do entregador (fallback para 'token' se necessário)
+// Helper – token
 const getAuthToken = () =>
   localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
 
-// Wrapper de fetch autenticado
+// Helper – fetch autenticado
 const fetchWithAuth = async (url, options = {}) => {
   const token = getAuthToken();
   if (!token) throw new Error('Token de autenticação não encontrado');
@@ -30,60 +30,81 @@ const fetchWithAuth = async (url, options = {}) => {
     });
     throw new Error(`Erro HTTP! Status: ${response.status}`);
   }
+
+  // a API pode devolver {data: ...} ou direto o objeto/array
   return response.json();
 };
 
-// Aceitar pedido (entregador)
+// === Ações do entregador ===
+
+// Aceitar pedido
 export const acceptDelivery = async (orderId) => {
   console.log('🚀 Aceitando pedido:', orderId);
-  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, {
+  const res = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, {
     method: 'POST',
   });
-  console.log('✅ Pedido aceito:', data);
-  return data;
+  console.log('✅ Pedido aceito:', res);
+  return res;
 };
 
-// Retirar pedido (precisa do pickup_code)
+// Retirar pedido (com código de retirada)
 export const pickupOrder = async (orderId, pickupCode) => {
   console.log('📦 Retirando pedido:', orderId);
-  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/pickup`, {
+  const res = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/pickup`, {
     method: 'POST',
-    body: JSON.stringify({ pickup_code: String(pickupCode || '').toUpperCase() }),
+    body: JSON.stringify({ pickup_code: pickupCode }),
   });
-  console.log('✅ Pedido retirado:', data);
-  return data;
+  console.log('✅ Pedido retirado:', res);
+  return res;
 };
 
-// Finalizar entrega (precisa do delivery_code do cliente)
+// Completar entrega (com código de entrega)
 export const completeDelivery = async (orderId, deliveryCode) => {
-  console.log('🏁 Finalizando entrega:', orderId);
-  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/complete`, {
+  console.log('🏁 Completando entrega:', orderId);
+  const res = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/complete`, {
     method: 'POST',
-    body: JSON.stringify({ delivery_code: String(deliveryCode || '').toUpperCase() }),
+    body: JSON.stringify({ delivery_code: deliveryCode }),
   });
-  console.log('✅ Entrega completada:', data);
-  return data;
+  console.log('✅ Entrega completada:', res);
+  return res;
 };
 
-// Pedidos para avaliar (entregador)
+// Pedidos a avaliar (entregador)
 export const getOrdersToReview = async (signal) => {
+  console.log('🔍 [Entregador] Buscando pedidos para avaliar...');
   const token = getAuthToken();
   if (!token) throw new Error('Token de autenticação não encontrado');
 
-  const res = await fetch(`${API_URL}/api/orders/pending-delivery-review`, {
+  const url = `${API_URL}/api/orders/pending-delivery-review`;
+  const response = await fetch(url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
     signal,
   });
-  if (!res.ok) throw new Error(`Erro HTTP! Status: ${res.status}`);
-  const json = await res.json();
-  return Array.isArray(json) ? json : [];
+  if (!response.ok) throw new Error(`Erro HTTP! Status: ${response.status}`);
+
+  const data = await response.json();
+  const orders = Array.isArray(data) ? data : [];
+  console.log(`✅ [Entregador] ${orders.length} pedidos pendentes encontrados`);
+  return orders;
 };
 
-// Detalhes do pedido
-export const getOrderDetail = async (orderId) =>
-  fetchWithAuth(`${API_URL}/api/orders/${orderId}`);
+// Detalhe do pedido
+export const getOrderDetail = async (orderId) => {
+  return fetchWithAuth(`${API_URL}/api/orders/${orderId}`);
+};
 
 // Pedidos disponíveis para aceitar
-export const getAvailableOrders = async () =>
-  fetchWithAuth(`${API_URL}/api/orders/available`);
+export const getAvailableOrders = async () => {
+  return fetchWithAuth(`${API_URL}/api/orders/available`);
+};
+
+/* === NOVO ===
+ * Obter somente o pickup_code de um pedido
+ * (útil para componentes que querem exibir o código sem carregar tudo)
+ */
+export const getPickupCode = async (orderId) => {
+  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}`);
+  // aceita tanto {pickup_code: 'XXXX'} quanto {data: {pickup_code: 'XXXX'}}
+  return (data && (data.pickup_code || data?.data?.pickup_code)) || null;
+};
