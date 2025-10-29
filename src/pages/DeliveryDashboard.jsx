@@ -1,14 +1,13 @@
-// src/pages/DeliveryDashboard.jsx - VERSÃO APRIMORADA (polling inteligente + pickup code)
+// src/pages/DeliveryDashboard.jsx - VERSÃO APRIMORADA (fluxo com códigos OK)
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import DeliveryService from '../services/deliveryService';
-import { acceptDelivery, completeDelivery } from '../services/orderService';
+import { acceptDelivery, completeDelivery, pickupOrder } from '../services/orderService';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Clock,
-  Calendar, Bell, Target, Award, Activity, RefreshCw, ExternalLink,
-  Phone, Navigation, KeyRound, Zap, CheckCircle
+  DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Calendar, Bell, Target, Award,
+  Activity, RefreshCw, ExternalLink, Phone, Navigation, KeyRound, Zap, CheckCircle
 } from 'lucide-react';
 
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
@@ -16,7 +15,6 @@ import { useToast } from '../context/ToastContext.jsx';
 
 /* ------------------------- helpers ------------------------- */
 
-// debounce simples sem libs
 const useDebouncedCallback = (fn, delay = 600) => {
   const timer = useRef(null);
   return useCallback((...args) => {
@@ -25,7 +23,6 @@ const useDebouncedCallback = (fn, delay = 600) => {
   }, [fn, delay]);
 };
 
-// formatação segura
 const toNumber = (v) => (typeof v === 'number' ? v : parseFloat(v || '0')) || 0;
 
 /* ------------------------- UI atoms ------------------------- */
@@ -91,7 +88,7 @@ const PerformanceRing = memo(({ percentage, label, color }) => {
 
 /* --------------------- Active order card --------------------- */
 
-const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) => {
+const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onPickupOrder, onCompleteOrder }) => {
   const status = order?.status;
   const badge = useMemo(() => {
     const map = {
@@ -99,13 +96,13 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
       accepted: { t: 'Aceito', cls: 'bg-blue-500' },
       ready: { t: 'Pronto', cls: 'bg-purple-500' },
       accepted_by_delivery: { t: 'Aguardando Retirada', cls: 'bg-fuchsia-600' },
-      delivering: { t: 'Entregando', cls: 'bg-green-600' },
+      delivering: { t: 'Em Rota', cls: 'bg-green-600' },
       delivered: { t: 'Entregue', cls: 'bg-gray-500' }
     };
     return map[status] || { t: status || '—', cls: 'bg-gray-500' };
   }, [status]);
 
-  const showPickup = status === 'accepted_by_delivery' && order?.pickup_code;
+  const showPickupCode = (status === 'accepted_by_delivery' || status === 'ready') && order?.pickup_code;
 
   return (
     <Card className="relative overflow-hidden border-0 shadow-xl bg-white/90 backdrop-blur-sm">
@@ -124,7 +121,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
           </div>
         </div>
 
-        {showPickup && (
+        {showPickupCode && (
           <div className="mb-4 p-4 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -176,7 +173,17 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
               </button>
             )}
 
-            {(status === 'accepted' || status === 'ready' || status === 'accepted_by_delivery' || status === 'delivering') && (
+            {(status === 'ready' || status === 'accepted_by_delivery') && (
+              <button
+                onClick={() => onPickupOrder(order.id)}
+                className="flex-1 bg-gradient-to-r from-fuchsia-600 to-purple-700 hover:from-fuchsia-700 hover:to-purple-800 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                <KeyRound className="h-4 w-4" />
+                Confirmar Retirada
+              </button>
+            )}
+
+            {status === 'delivering' && (
               <button
                 onClick={() => onCompleteOrder(order.id)}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
@@ -243,7 +250,6 @@ export default function ModernDeliveryDashboard() {
     }
   }, [profileLoading, profile?.id, dashboardStats, updateProfile, addToast]);
 
-  // polling com pausa quando a aba está oculta
   useEffect(() => {
     if (profileLoading || !profile?.id) return;
     let intervalId;
@@ -292,18 +298,40 @@ export default function ModernDeliveryDashboard() {
       await acceptDelivery(orderId);
       addToast('Pedido aceito com sucesso!', 'success');
       fetchDashboardData(true);
-    } catch {
+    } catch (err) {
       addToast('Erro ao aceitar pedido.', 'error');
     }
   };
 
-  const handleCompleteOrder = async (orderId) => {
+  // ✅ pede o pickup_code e chama o endpoint correto
+  const handlePickupOrder = async (orderId) => {
+    const code = prompt('Digite o CÓDIGO DE RETIRADA (4 letras):')?.trim().toUpperCase();
+    if (!code || code.length < 4) {
+      addToast('Código de retirada inválido.', 'warning');
+      return;
+    }
     try {
-      await completeDelivery(orderId);
-      addToast('Pedido entregue com sucesso!', 'success');
+      await pickupOrder(orderId, code);
+      addToast('Retirada confirmada! Pedido está em rota. 🚀', 'success');
       fetchDashboardData(true);
-    } catch {
-      addToast('Erro ao completar pedido.', 'error');
+    } catch (err) {
+      addToast('Erro ao confirmar retirada. Verifique o código e tente novamente.', 'error');
+    }
+  };
+
+  // ✅ pede o delivery_code e chama o endpoint correto
+  const handleCompleteOrder = async (orderId) => {
+    const code = prompt('Digite o CÓDIGO DE ENTREGA (4 letras):')?.trim().toUpperCase();
+    if (!code || code.length < 4) {
+      addToast('Código de entrega inválido.', 'warning');
+      return;
+    }
+    try {
+      await completeDelivery(orderId, code);
+      addToast('Pedido entregue com sucesso! 🎉', 'success');
+      fetchDashboardData(true);
+    } catch (err) {
+      addToast('Erro ao completar entrega. Verifique o código e tente novamente.', 'error');
     }
   };
 
@@ -356,7 +384,6 @@ export default function ModernDeliveryDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      {/* progress bar fina durante background load */}
       {backgroundLoading && <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-red-400 animate-pulse" />}
 
       {/* Header */}
@@ -451,9 +478,8 @@ export default function ModernDeliveryDashboard() {
           />
         </div>
 
-        {/* Main grid */}
+        {/* Active orders */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Performance */}
           <div className="lg:col-span-2">
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
               <CardHeader className="pb-6">
@@ -464,9 +490,9 @@ export default function ModernDeliveryDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-8 mb-8">
-                  <PerformanceRing percentage={goalProgress} label="Meta Diária" color="#10b981" />
-                  <PerformanceRing percentage={ratingProgress} label="Satisfação" color="#f59e0b" />
-                  <PerformanceRing percentage={efficiencyProgress} label="Eficiência" color="#3b82f6" />
+                  <PerformanceRing percentage={Math.min((todayEarnings / (dailyGoal || 1)) * 100, 100)} label="Meta Diária" color="#10b981" />
+                  <PerformanceRing percentage={Math.min((avgRating / 5) * 100, 100)} label="Satisfação" color="#f59e0b" />
+                  <PerformanceRing percentage={Math.min((todayDeliveries / 10) * 100, 100)} label="Eficiência" color="#3b82f6" />
                 </div>
 
                 <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-xl">
@@ -494,7 +520,6 @@ export default function ModernDeliveryDashboard() {
             </Card>
           </div>
 
-          {/* Pedidos ativos */}
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
@@ -510,6 +535,7 @@ export default function ModernDeliveryDashboard() {
                     key={order.id}
                     order={order}
                     onAcceptOrder={handleAcceptOrder}
+                    onPickupOrder={handlePickupOrder}
                     onCompleteOrder={handleCompleteOrder}
                   />
                 ))}
