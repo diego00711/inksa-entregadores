@@ -1,100 +1,89 @@
-// inksa-entregadores/src/services/orderService.js - VERSÃO COM VALIDAÇÃO DO TOKEN + NO-CACHE
+// src/services/orderService.js – VERSÃO COMPLETA (OK p/ código de entrega)
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
-// Lê token salvo (prioriza o do entregador)
+// Token do entregador (fallback para 'token' se necessário)
 const getAuthToken = () =>
   localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
 
-// Decodifica JWT (sem verificar assinatura) só para inspecionar user_type
-const decodeJwt = (jwt) => {
-  try {
-    const [, payload] = jwt.split('.');
-    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-  } catch {
-    return {};
-  }
-};
-
-// Garante que o token é de ENTREGADOR
-const assertDeliveryToken = () => {
-  const token = getAuthToken();
-  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
-  const payload = decodeJwt(token);
-  if (payload?.user_type !== 'delivery') {
-    // Evita confusão de usar token do restaurante/cliente no app do entregador
-    throw new Error('Sessão inválida: este login não é de ENTREGADOR.');
-  }
-  return token;
-};
-
-// Fetch com auth + no-cache e tratamento de 401/403
+// Wrapper de fetch autenticado
 const fetchWithAuth = async (url, options = {}) => {
-  const token = assertDeliveryToken();
+  const token = getAuthToken();
+  if (!token) throw new Error('Token de autenticação não encontrado');
 
   const response = await fetch(url, {
-    method: 'GET',
-    cache: 'no-store',          // evita SW/Cache
-    credentials: 'omit',
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'Cache-Control': 'no-store',
-      Pragma: 'no-cache',
-      Expires: '0',
-      ...options.headers,
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
     },
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    if (response.status === 401) {
-      throw new Error('Não autorizado. Faça login novamente.');
-    }
-    if (response.status === 403) {
-      throw new Error('Acesso negado. Confirme que está logado como ENTREGADOR.');
-    }
-    throw new Error(`Erro ${response.status}: ${text || response.statusText}`);
+    const errorText = await response.text().catch(() => '');
+    console.error('Erro na requisição:', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText,
+    });
+    throw new Error(`Erro HTTP! Status: ${response.status}`);
   }
-
-  // tenta JSON, se não der, retorna texto
-  try {
-    return await response.json();
-  } catch {
-    return {};
-  }
+  return response.json();
 };
 
-// ----- AÇÕES DO ENTREGADOR -----
-
+// Aceitar pedido (entregador)
 export const acceptDelivery = async (orderId) => {
   console.log('🚀 Aceitando pedido:', orderId);
-  const url = `${API_URL}/api/orders/${orderId}/accept?t=${Date.now()}`;
-  return await fetchWithAuth(url, { method: 'POST', body: JSON.stringify({}) });
+  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, {
+    method: 'POST',
+  });
+  console.log('✅ Pedido aceito:', data);
+  return data;
 };
 
+// Retirar pedido (precisa do pickup_code)
 export const pickupOrder = async (orderId, pickupCode) => {
-  console.log('📦 Confirmando RETIRADA:', orderId);
-  const url = `${API_URL}/api/orders/${orderId}/pickup?t=${Date.now()}`;
-  return await fetchWithAuth(url, {
+  console.log('📦 Retirando pedido:', orderId);
+  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/pickup`, {
     method: 'POST',
-    body: JSON.stringify({ pickup_code: String(pickupCode || '').trim().toUpperCase() }),
+    body: JSON.stringify({ pickup_code: String(pickupCode || '').toUpperCase() }),
   });
+  console.log('✅ Pedido retirado:', data);
+  return data;
 };
 
+// Finalizar entrega (precisa do delivery_code do cliente)
 export const completeDelivery = async (orderId, deliveryCode) => {
-  console.log('🏁 Marcando ENTREGUE:', orderId);
-  const url = `${API_URL}/api/orders/${orderId}/complete?t=${Date.now()}`;
-  return await fetchWithAuth(url, {
+  console.log('🏁 Finalizando entrega:', orderId);
+  const data = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/complete`, {
     method: 'POST',
-    body: JSON.stringify({ delivery_code: String(deliveryCode || '').trim().toUpperCase() }),
+    body: JSON.stringify({ delivery_code: String(deliveryCode || '').toUpperCase() }),
   });
+  console.log('✅ Entrega completada:', data);
+  return data;
 };
 
-// Info auxiliar
-export const getOrderDetail = async (orderId) =>
-  await fetchWithAuth(`${API_URL}/api/orders/${orderId}?t=${Date.now()}`);
+// Pedidos para avaliar (entregador)
+export const getOrdersToReview = async (signal) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Token de autenticação não encontrado');
 
+  const res = await fetch(`${API_URL}/api/orders/pending-delivery-review`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  if (!res.ok) throw new Error(`Erro HTTP! Status: ${res.status}`);
+  const json = await res.json();
+  return Array.isArray(json) ? json : [];
+};
+
+// Detalhes do pedido
+export const getOrderDetail = async (orderId) =>
+  fetchWithAuth(`${API_URL}/api/orders/${orderId}`);
+
+// Pedidos disponíveis para aceitar
 export const getAvailableOrders = async () =>
-  await fetchWithAuth(`${API_URL}/api/orders/available?t=${Date.now()}`);
+  fetchWithAuth(`${API_URL}/api/orders/available`);
