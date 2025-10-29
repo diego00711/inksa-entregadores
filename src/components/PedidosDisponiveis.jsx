@@ -1,21 +1,51 @@
-// src/components/PedidosDisponiveis.jsx (VERSÃO FINAL E CORRIGIDA)
+// src/components/PedidosDisponiveis.jsx
 import React, { useState, useEffect } from 'react';
-// ✅ CORREÇÃO 1: Importar o serviço correto para aceitar a entrega.
-// A função acceptDelivery não está em DeliveryService, mas sim em orderService do entregador.
-// Vamos criar um novo serviço para isso para manter a organização.
-import { acceptDelivery } from '../services/orderService'; // Supondo que esta função exista
-import DeliveryService from '../services/deliveryService'; // Para buscar os pedidos
+import DeliveryService from '../services/deliveryService';
+import { acceptDelivery } from '../services/orderService';
+
+const StatusBadge = ({ status }) => {
+  const mapPT = {
+    ready: 'Pronto',
+    accepted_by_delivery: 'Aguardando Retirada',
+  };
+  const color = {
+    ready: 'bg-purple-100 text-purple-800',
+    accepted_by_delivery: 'bg-pink-100 text-pink-800',
+  }[status] || 'bg-gray-100 text-gray-800';
+
+  return (
+    <span className={`px-2 py-1 text-xs rounded-full font-semibold ${color}`}>
+      {mapPT[status] || status}
+    </span>
+  );
+};
 
 const CardPedido = ({ pedido, onAceitar }) => (
-  <div style={{ border: '1px solid #ccc', padding: '16px', margin: '8px', borderRadius: '8px' }}>
-    {/* ✅ CORREÇÃO 2: Usar os nomes de campos corretos que vêm da API */}
-    <h3>ID do Pedido: {pedido.id.substring(0, 8)}</h3>
-    <p><strong>Endereço de Coleta:</strong> {pedido.restaurant_address}</p>
-    <p><strong>Taxa de Entrega:</strong> R$ {pedido.delivery_fee ? pedido.delivery_fee.toFixed(2) : '0.00'}</p>
-    <p><strong>Valor Total:</strong> R$ {pedido.total_amount ? pedido.total_amount.toFixed(2) : '0.00'}</p>
-    
-    {/* ✅ CORREÇÃO 3: Passar o ID correto para a função de aceitar */}
-    <button onClick={() => onAceitar(pedido.id)} style={{ padding: '10px 20px', background: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>
+  <div className="border border-gray-200 rounded-lg p-4 m-2 shadow-sm">
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="font-bold text-gray-800">Pedido #{String(pedido.id).slice(0, 8)}</h3>
+      <StatusBadge status={pedido.status} />
+    </div>
+
+    <p className="text-sm text-gray-700">
+      <strong>Restaurante:</strong> {pedido.restaurant_name || 'Restaurante'}
+    </p>
+    <p className="text-sm text-gray-700">
+      <strong>Endereço de Coleta:</strong> {pedido.restaurant_address}
+    </p>
+    <p className="text-sm text-gray-700">
+      <strong>Taxa de Entrega:</strong>{' '}
+      {Number(pedido.delivery_fee || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+    </p>
+    <p className="text-sm text-gray-700 mb-3">
+      <strong>Valor Total:</strong>{' '}
+      {Number(pedido.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+    </p>
+
+    <button
+      onClick={() => onAceitar(pedido.id)}
+      className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+    >
       Aceitar Pedido
     </button>
   </div>
@@ -25,57 +55,43 @@ export function PedidosDisponiveis() {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchPedidos = async () => {
+    try {
+      const data = await DeliveryService.getAvailableDeliveries();
+      if (Array.isArray(data)) setPedidos(data);
+    } catch (error) {
+      console.error('Erro ao buscar pedidos disponíveis:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAceitarPedido = async (pedidoId) => {
     try {
-      // ✅ CORREÇÃO 4: Usar a função importada correta para aceitar o pedido.
-      // Precisamos criar um endpoint para isso no backend e uma função no serviço.
-      // Por agora, vamos assumir que `acceptDelivery` existe e funciona.
-      // Se não funcionar, o próximo passo é criar `POST /api/orders/{orderId}/accept`
       await acceptDelivery(pedidoId);
-
-      setPedidos(currentPedidos =>
-        currentPedidos.filter(p => p.id !== pedidoId)
-      );
-
-      alert('Pedido aceito com sucesso! Você já pode iniciar a entrega.');
-
+      // Remove da lista local
+      setPedidos((list) => list.filter((p) => p.id !== pedidoId));
+      alert('Pedido aceito com sucesso! Vá ao restaurante para retirar.');
     } catch (error) {
-      console.error("Erro ao aceitar pedido:", error);
-      alert(`Erro: ${error.message}`);
+      console.error('Erro ao aceitar pedido:', error);
+      alert(`Erro ao aceitar: ${error?.response?.data?.error || error.message}`);
     }
   };
 
   useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        const data = await DeliveryService.getAvailableDeliveries();
-        // A API já retorna um array, então a verificação é mais simples
-        if (Array.isArray(data)) {
-          setPedidos(data);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar pedidos disponíveis:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPedidos();
-    const intervalId = setInterval(fetchPedidos, 10000); 
+    const intervalId = setInterval(fetchPedidos, 10000);
     return () => clearInterval(intervalId);
   }, []);
 
-  if (loading) {
-    return <div>A procurar por novas entregas...</div>;
-  }
+  if (loading) return <div>Procurando novas entregas...</div>;
 
   return (
-    <div>
-      <h2>Pedidos Disponíveis para Entrega</h2>
+    <div className="p-2">
+      <h2 className="text-lg font-bold mb-2">Pedidos Disponíveis para Entrega</h2>
       {pedidos.length === 0 ? (
-        <p>Nenhum pedido disponível no momento. A aguardar...</p>
+        <p className="text-sm text-gray-600">Nenhum pedido disponível no momento. Aguardando...</p>
       ) : (
-        // ✅ CORREÇÃO 5: Usar o ID correto como chave do map
         pedidos.map((pedido) => (
           <CardPedido key={pedido.id} pedido={pedido} onAceitar={handleAceitarPedido} />
         ))
@@ -83,3 +99,5 @@ export function PedidosDisponiveis() {
     </div>
   );
 }
+
+export default PedidosDisponiveis;
