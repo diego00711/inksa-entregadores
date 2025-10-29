@@ -1,104 +1,100 @@
-// inksa-entregadores/src/services/orderService.js
+// inksa-entregadores/src/services/orderService.js - VERSÃO COM VALIDAÇÃO DO TOKEN + NO-CACHE
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
-// ✅ Helper para pegar o token
-const getAuthToken = () => {
-  return localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
+// Lê token salvo (prioriza o do entregador)
+const getAuthToken = () =>
+  localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
+
+// Decodifica JWT (sem verificar assinatura) só para inspecionar user_type
+const decodeJwt = (jwt) => {
+  try {
+    const [, payload] = jwt.split('.');
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch {
+    return {};
+  }
 };
 
-// ✅ Helper para fazer requisições (com erros mais claros)
-// - Não força Content-Type em GET
-// - Loga o corpo do erro quando existir
-const fetchWithAuth = async (url, options = {}) => {
+// Garante que o token é de ENTREGADOR
+const assertDeliveryToken = () => {
   const token = getAuthToken();
-  if (!token) throw new Error('Token de autenticação não encontrado');
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+  const payload = decodeJwt(token);
+  if (payload?.user_type !== 'delivery') {
+    // Evita confusão de usar token do restaurante/cliente no app do entregador
+    throw new Error('Sessão inválida: este login não é de ENTREGADOR.');
+  }
+  return token;
+};
 
-  const method = (options.method || 'GET').toUpperCase();
-  const baseHeaders = method === 'GET' ? {} : { 'Content-Type': 'application/json' };
+// Fetch com auth + no-cache e tratamento de 401/403
+const fetchWithAuth = async (url, options = {}) => {
+  const token = assertDeliveryToken();
 
   const response = await fetch(url, {
+    method: 'GET',
+    cache: 'no-store',          // evita SW/Cache
+    credentials: 'omit',
     ...options,
     headers: {
-      ...baseHeaders,
-      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Cache-Control': 'no-store',
+      Pragma: 'no-cache',
+      Expires: '0',
       ...options.headers,
     },
   });
 
   if (!response.ok) {
-    let detail;
-    try {
-      detail = await response.json(); // tenta JSON ({"error": "...", ...})
-    } catch {
-      detail = await response.text(); // fallback texto
+    const text = await response.text().catch(() => '');
+    if (response.status === 401) {
+      throw new Error('Não autorizado. Faça login novamente.');
     }
-    console.error('Erro na requisição:', {
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      detail,
-    });
-    const msg =
-      (detail && (detail.error || detail.message)) ||
-      `Erro HTTP! Status: ${response.status}`;
-    throw new Error(msg);
+    if (response.status === 403) {
+      throw new Error('Acesso negado. Confirme que está logado como ENTREGADOR.');
+    }
+    throw new Error(`Erro ${response.status}: ${text || response.statusText}`);
   }
 
-  return response.json();
+  // tenta JSON, se não der, retorna texto
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
 };
 
-// ✅ Aceitar pedido usando endpoint /accept (POST)
+// ----- AÇÕES DO ENTREGADOR -----
+
 export const acceptDelivery = async (orderId) => {
-  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, { method: 'POST' });
+  console.log('🚀 Aceitando pedido:', orderId);
+  const url = `${API_URL}/api/orders/${orderId}/accept?t=${Date.now()}`;
+  return await fetchWithAuth(url, { method: 'POST', body: JSON.stringify({}) });
 };
 
-// ✅ Retirar pedido (com código de retirada) — envia em MAIÚSCULAS
 export const pickupOrder = async (orderId, pickupCode) => {
-  const code = String(pickupCode || '').trim().toUpperCase();
-  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/pickup`, {
+  console.log('📦 Confirmando RETIRADA:', orderId);
+  const url = `${API_URL}/api/orders/${orderId}/pickup?t=${Date.now()}`;
+  return await fetchWithAuth(url, {
     method: 'POST',
-    body: JSON.stringify({ pickup_code: code }),
+    body: JSON.stringify({ pickup_code: String(pickupCode || '').trim().toUpperCase() }),
   });
 };
 
-// ✅ Completar entrega (com código de entrega) — envia em MAIÚSCULAS
 export const completeDelivery = async (orderId, deliveryCode) => {
-  const code = String(deliveryCode || '').trim().toUpperCase();
-  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/complete`, {
+  console.log('🏁 Marcando ENTREGUE:', orderId);
+  const url = `${API_URL}/api/orders/${orderId}/complete?t=${Date.now()}`;
+  return await fetchWithAuth(url, {
     method: 'POST',
-    body: JSON.stringify({ delivery_code: code }),
+    body: JSON.stringify({ delivery_code: String(deliveryCode || '').trim().toUpperCase() }),
   });
 };
 
-// ✅ Buscar pedidos que o entregador ainda precisa avaliar
-export const getOrdersToReview = async (signal) => {
-  const token = getAuthToken();
-  if (!token) throw new Error('Token de autenticação não encontrado');
+// Info auxiliar
+export const getOrderDetail = async (orderId) =>
+  await fetchWithAuth(`${API_URL}/api/orders/${orderId}?t=${Date.now()}`);
 
-  const response = await fetch(`${API_URL}/api/orders/pending-delivery-review`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-    signal,
-  });
-
-  if (!response.ok) throw new Error(`Erro HTTP! Status: ${response.status}`);
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
-};
-
-// ✅ Obter detalhes do pedido
-export const getOrderDetail = async (orderId) => {
-  return fetchWithAuth(`${API_URL}/api/orders/${orderId}`);
-};
-
-// ✅ Buscar pedidos disponíveis para aceitar
-export const getAvailableOrders = async () => {
-  return fetchWithAuth(`${API_URL}/api/orders/available`);
-};
-
-// ✅ NOVO: Buscar o CÓDIGO DE RETIRADA (apenas após aceitar)
-// Segurança no backend garante que só o entregador atribuído ou restaurante/cliente veem
-export const getPickupCode = async (orderId) => {
-  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/pickup-code`);
-};
+export const getAvailableOrders = async () =>
+  await fetchWithAuth(`${API_URL}/api/orders/available?t=${Date.now()}`);
