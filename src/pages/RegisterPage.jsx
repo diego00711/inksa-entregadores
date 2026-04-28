@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import DeliveryService from '../services/deliveryService';
+import authService from '../services/authService';
 
 // Importações de UI
 import { Button } from '@/components/ui/button.jsx';
@@ -39,7 +39,12 @@ export default function RegisterPage() {
     setErrorMessage('');
 
     try {
-      await DeliveryService.register(formData.name, formData.email, formData.password, formData.phone);
+      await authService.register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+      });
       // Após o registro bem-sucedido, redireciona para a página de login
       navigate('/login');
     } catch (err) {

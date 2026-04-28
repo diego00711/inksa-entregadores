@@ -158,6 +158,26 @@ const DeliveryService = {
     return data;
   },
 
+  // ---- Auth auxiliar -----------------------------------------------
+
+  async forgotPassword(email) {
+    const response = await fetch(`${DELIVERY_API_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return processResponse(response);
+  },
+
+  async resetPassword(token, password) {
+    const response = await fetch(`${DELIVERY_API_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+    return processResponse(response);
+  },
+
   // ---- Rotas antigas opcionais (se alguma tela usa) ----------------
   // Mantidas como NO-OPs/aliases para não quebrar importações antigas.
   async getPendingOrders() {
