@@ -2,9 +2,7 @@
 
 import { DELIVERY_API_URL as API_URL } from './api';
 
-// Helper – token
-const getAuthToken = () =>
-  localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
+const getAuthToken = () => localStorage.getItem('deliveryAuthToken');
 
 // Helper – fetch autenticado
 const fetchWithAuth = async (url, options = {}) => {
@@ -22,13 +20,9 @@ const fetchWithAuth = async (url, options = {}) => {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
-    console.error('Erro na requisição:', {
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      error: errorText,
-    });
-    throw new Error(`Erro HTTP! Status: ${response.status}`);
+    let msg = `Erro ${response.status}`;
+    try { msg = JSON.parse(errorText)?.error || JSON.parse(errorText)?.message || msg; } catch { /* noop */ }
+    throw new Error(msg);
   }
 
   // a API pode devolver {data: ...} ou direto o objeto/array
@@ -37,14 +31,8 @@ const fetchWithAuth = async (url, options = {}) => {
 
 // === Ações do entregador ===
 
-// Aceitar pedido
 export const acceptDelivery = async (orderId) => {
-  console.log('🚀 Aceitando pedido:', orderId);
-  const res = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, {
-    method: 'POST',
-  });
-  console.log('✅ Pedido aceito:', res);
-  return res;
+  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, { method: 'POST' });
 };
 
 // Retirar pedido (com código de retirada)
@@ -60,33 +48,22 @@ export const pickupOrder = async (orderId, pickupCode) => {
 
 // Completar entrega (com código de entrega)
 export const completeDelivery = async (orderId, deliveryCode) => {
-  console.log('🏁 Completando entrega:', orderId);
-  const res = await fetchWithAuth(`${API_URL}/api/orders/${orderId}/complete`, {
+  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/complete`, {
     method: 'POST',
     body: JSON.stringify({ delivery_code: deliveryCode }),
   });
-  console.log('✅ Entrega completada:', res);
-  return res;
 };
 
-// Pedidos a avaliar (entregador)
 export const getOrdersToReview = async (signal) => {
-  console.log('🔍 [Entregador] Buscando pedidos para avaliar...');
   const token = getAuthToken();
   if (!token) throw new Error('Token de autenticação não encontrado');
-
-  const url = `${API_URL}/api/orders/pending-delivery-review`;
-  const response = await fetch(url, {
-    method: 'GET',
+  const response = await fetch(`${API_URL}/api/orders/pending-delivery-review`, {
     headers: { Authorization: `Bearer ${token}` },
     signal,
   });
-  if (!response.ok) throw new Error(`Erro HTTP! Status: ${response.status}`);
-
+  if (!response.ok) throw new Error(`Erro ${response.status}`);
   const data = await response.json();
-  const orders = Array.isArray(data) ? data : [];
-  console.log(`✅ [Entregador] ${orders.length} pedidos pendentes encontrados`);
-  return orders;
+  return Array.isArray(data) ? data : [];
 };
 
 // Detalhe do pedido

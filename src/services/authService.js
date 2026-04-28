@@ -25,18 +25,13 @@ const processResponse = async (response) => {
 
 const authService = {
     async login(email, password) {
-        console.log('🔐 Iniciando login do entregador...', { email });
-        
-        // ✅ CORREÇÃO: Usa a rota genérica de login que já existe
         const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
         });
 
-        console.log('📡 Response status:', response.status);
         const responseData = await processResponse(response);
-        console.log('📥 Response data:', responseData);
 
         // ✅ Verifica diferentes formatos de resposta da API
         let token, user;
@@ -58,32 +53,18 @@ const authService = {
         }
         
         if (token) {
-            // ✅ Valida se é um entregador
             if (user.user_type !== 'delivery') {
-                console.error('❌ Usuário não é um entregador:', user.user_type);
                 throw new Error('Acesso negado. Este login é apenas para entregadores.');
             }
-            
-            // ✅ Salva o token e usuário
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-            
-            console.log('✅ Token salvo com sucesso!');
-            console.log('✅ Token:', token.substring(0, 20) + '...');
-            console.log('✅ User:', user);
-            
             return { token, user, success: true };
         }
 
-        // Se não encontrou o token em nenhum formato
-        console.error('❌ Token não encontrado na resposta:', responseData);
         throw new Error('Token não recebido do servidor');
     },
 
     async register(userData) {
-        console.log('📝 Registrando novo entregador...');
-        
-        // ✅ CORREÇÃO: Usa a rota genérica de registro que já existe
         const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -94,9 +75,7 @@ const authService = {
         });
         
         const responseData = await processResponse(response);
-        console.log('📥 Response data:', responseData);
-        
-        // Tenta salvar o token se vier na resposta do registro
+
         let token, user;
         
         if (responseData?.status === 'success' && responseData?.data?.token) {
@@ -113,47 +92,31 @@ const authService = {
         if (token) {
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-            console.log('✅ Token salvo após registro!');
         }
-        
         return responseData;
     },
 
     logout() {
-        console.log('👋 Fazendo logout...');
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_DATA_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
-        console.log('✅ Dados removidos do localStorage');
         window.location.href = '/login';
     },
 
     getToken() {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        if (!token) {
-            console.warn('⚠️ Token não encontrado no localStorage');
-        }
-        return token;
+        return localStorage.getItem(AUTH_TOKEN_KEY);
     },
 
     getCurrentUser() {
-        const userStr = localStorage.getItem(USER_DATA_KEY);
-        if (!userStr) {
-            console.warn('⚠️ User não encontrado no localStorage');
-            return null;
-        }
         try {
-            return JSON.parse(userStr);
-        } catch (error) {
-            console.error('❌ Erro ao parsear user:', error);
+            return JSON.parse(localStorage.getItem(USER_DATA_KEY));
+        } catch {
             return null;
         }
     },
 
     isAuthenticated() {
-        const isAuth = !!localStorage.getItem(AUTH_TOKEN_KEY);
-        console.log('🔐 Está autenticado?', isAuth);
-        return isAuth;
+        return !!localStorage.getItem(AUTH_TOKEN_KEY);
     }
 };
 
