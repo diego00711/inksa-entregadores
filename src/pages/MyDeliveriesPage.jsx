@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
 import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package } from 'lucide-react';
 import { acceptDelivery, completeDelivery } from '../services/orderService';
+import { DELIVERY_API_URL } from '../services/api';
 
 export function MyDeliveriesPage() {
   const { loading: profileLoading } = useProfile();
@@ -27,7 +28,7 @@ export function MyDeliveriesPage() {
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
       const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+      const apiUrl = DELIVERY_API_URL;
       const response = await fetch(`${apiUrl}/api/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
@@ -58,7 +59,7 @@ export function MyDeliveriesPage() {
         // disponíveis
         try {
           const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
-          const apiUrl = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+          const apiUrl = DELIVERY_API_URL;
           const resp = await fetch(`${apiUrl}/api/orders/available`, {
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           });

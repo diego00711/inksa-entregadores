@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { DELIVERY_API_URL } from '../../services/api';
 import { 
   Home, 
   Package, 
@@ -47,7 +48,7 @@ export default function DeliveryPortalLayout() {
       
       console.log('🔍 Buscando dados do usuário...');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery/profile`, {
+      const response = await fetch(`${DELIVERY_API_URL}/api/delivery/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

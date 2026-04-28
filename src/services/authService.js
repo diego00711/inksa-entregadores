@@ -1,6 +1,6 @@
 // src/services/authService.js - VERSÃO FINAL CORRIGIDA
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+import { DELIVERY_API_URL as API_BASE_URL } from './api';
 
 const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';

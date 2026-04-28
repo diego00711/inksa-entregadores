@@ -1,6 +1,6 @@
 // inksa-entregadores/src/services/orderService.js
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+import { DELIVERY_API_URL as API_URL } from './api';
 
 // Helper – token
 const getAuthToken = () =>
