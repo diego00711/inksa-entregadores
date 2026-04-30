@@ -174,6 +174,8 @@ export default function ModernDeliveryDashboard() {
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [pendingCompleteId, setPendingCompleteId] = useState(null);
+  const [pendingCode, setPendingCode] = useState('');
 
   const fetchDashboardData = useCallback(async (isBackground = false) => {
     if (profileLoading || !profile?.id) { setInitialLoading(false); return; }
@@ -231,21 +233,22 @@ export default function ModernDeliveryDashboard() {
     catch { addToast('Erro ao aceitar pedido.', 'error'); }
   };
 
-  // 👇 **AQUI está a correção** — pede o código e envia no body
-  const handleCompleteOrder = async (orderId) => {
-    const code = window.prompt('Informe o CÓDIGO DE ENTREGA do cliente (4 letras):');
-    if (!code) return; // cancelado
-    const deliveryCode = String(code).trim().toUpperCase();
-    if (deliveryCode.length < 3) { addToast('Código inválido. Tente novamente.', 'warning'); return; }
+  const handleCompleteOrder = (orderId) => {
+    setPendingCompleteId(orderId);
+    setPendingCode('');
+  };
 
+  const confirmComplete = async () => {
+    const deliveryCode = String(pendingCode).trim().toUpperCase();
+    if (deliveryCode.length < 3) { addToast('Código inválido. Tente novamente.', 'warning'); return; }
     try {
-      await completeDelivery(orderId, deliveryCode);
+      await completeDelivery(pendingCompleteId, deliveryCode);
+      setPendingCompleteId(null);
+      setPendingCode('');
       addToast('Pedido entregue com sucesso! 🎉', 'success');
       fetchDashboardData(true);
     } catch (err) {
-      const msg = err?.message || 'Erro ao completar entrega.';
-      addToast(msg, 'error');
-      console.error('Finalizar entrega falhou:', err);
+      addToast(err?.message || 'Erro ao completar entrega.', 'error');
     }
   };
 
@@ -427,6 +430,44 @@ export default function ModernDeliveryDashboard() {
           </div>
         </div>
       </div>
+
+      {pendingCompleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-orange-500" />
+              Código de Entrega
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
+            <input
+              type="text"
+              value={pendingCode}
+              onChange={e => setPendingCode(e.target.value.toUpperCase())}
+              placeholder="Ex: ABCD"
+              maxLength={6}
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
+              onKeyDown={e => { if (e.key === 'Enter') confirmComplete(); }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPendingCompleteId(null); setPendingCode(''); }}
+                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmComplete}
+                disabled={pendingCode.trim().length < 3}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

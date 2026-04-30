@@ -23,3 +23,15 @@ export async function postClientReview(reviewData) {
   });
   return processResponse(response);
 }
+
+/**
+ * Envia uma nova avaliação para um restaurante.
+ */
+export async function postRestaurantReview(reviewData) {
+  const response = await fetch(`${DELIVERY_API_URL}/api/review/restaurants/${reviewData.restaurantId}/reviews`, {
+    method: 'POST',
+    headers: createAuthHeaders(),
+    body: JSON.stringify(reviewData),
+  });
+  return processResponse(response);
+}

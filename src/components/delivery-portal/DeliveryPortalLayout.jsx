@@ -17,7 +17,7 @@ export default function DeliveryPortalLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userData, setUserData] = useState({
-    name: 'dudu eduardo',
+    name: 'Entregador',
     type: 'Entregador',
     avatar: null
   });

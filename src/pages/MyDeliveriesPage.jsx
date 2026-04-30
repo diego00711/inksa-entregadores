@@ -24,6 +24,8 @@ export function MyDeliveriesPage() {
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [pendingFinishId, setPendingFinishId] = useState(null);
+  const [finishCode, setFinishCode] = useState('');
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -121,16 +123,19 @@ export function MyDeliveriesPage() {
   const handleCloseModal = () => { setIsModalOpen(false); setSelectedOrder(null); };
   const handleDeliverySelect = (delivery) => setActiveDelivery(delivery);
 
-  // Exemplo de finalizar nessa página (se você chamar daqui):
-  const finishFromHere = async (orderId) => {
-    const code = window.prompt('Informe o CÓDIGO DE ENTREGA do cliente (4 letras):');
-    if (!code) return;
-    const deliveryCode = String(code).trim().toUpperCase();
-    if (deliveryCode.length < 3) return;
+  const finishFromHere = (orderId) => {
+    setPendingFinishId(orderId);
+    setFinishCode('');
+  };
 
+  const confirmFinish = async () => {
+    const deliveryCode = String(finishCode).trim().toUpperCase();
+    if (deliveryCode.length < 3) return;
     try {
-      await completeDelivery(orderId, deliveryCode);
-      handleUpdateStatus(orderId, 'delivered');
+      await completeDelivery(pendingFinishId, deliveryCode);
+      handleUpdateStatus(pendingFinishId, 'delivered');
+      setPendingFinishId(null);
+      setFinishCode('');
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
     }
@@ -305,6 +310,40 @@ export function MyDeliveriesPage() {
           onUpdateStatus={(id, st) => (st === 'delivered' ? finishFromHere(id) : undefined)}
           isAvailable={activeFilter === 'available'}
         />
+      )}
+
+      {pendingFinishId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
+            <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
+            <input
+              type="text"
+              value={finishCode}
+              onChange={e => setFinishCode(e.target.value.toUpperCase())}
+              placeholder="Ex: ABCD"
+              maxLength={6}
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
+              onKeyDown={e => { if (e.key === 'Enter') confirmFinish(); }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPendingFinishId(null); setFinishCode(''); }}
+                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmFinish}
+                disabled={finishCode.trim().length < 3}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold disabled:opacity-50"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

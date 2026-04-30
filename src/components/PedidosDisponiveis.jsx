@@ -5,6 +5,7 @@ import {
   acceptDelivery,
   getPickupCode,
 } from '../services/orderService';
+import { useToast } from '../context/ToastContext';
 
 const toBRL = (v) =>
   Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -97,6 +98,7 @@ const Modal = ({ open, onClose, title, children }) => {
 };
 
 export default function PedidosDisponiveis() {
+  const addToast = useToast();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState('');
@@ -133,8 +135,7 @@ export default function PedidosDisponiveis() {
       setPickupInfo({ open: true, code, orderId: pedidoId });
     } catch (error) {
       const msg = error?.message || 'Erro ao aceitar pedido.';
-      alert(msg);
-      console.error('[PedidosDisponiveis] accept error:', error);
+      addToast(msg, 'error');
     }
   };
 

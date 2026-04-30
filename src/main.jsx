@@ -17,28 +17,18 @@ import './app.css';
 // REGISTRO DO SERVICE WORKER - PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW Entregador registered successfully:', registration);
-      })
-      .catch((error) => {
-        console.log('SW Entregador registration failed:', error);
-      });
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
 
 // BEFORE INSTALL PROMPT - Detecta quando pode instalar como app
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('beforeinstallprompt fired - App Entregador pode ser instalado!');
   e.preventDefault();
   deferredPrompt = e;
 });
 
-// DETECTAR QUANDO FOI INSTALADO
-window.addEventListener('appinstalled', (evt) => {
-  console.log('App Entregador foi instalado com sucesso!');
-});
+window.addEventListener('appinstalled', () => {});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

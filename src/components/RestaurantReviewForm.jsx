@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Star, Send, CheckCircle, MessageSquare, Clock, Utensils, Users, Package } from "lucide-react";
+import { postRestaurantReview } from '../services/reviewService';
 
 // Componente para rating rápido com estrelas
 const QuickStarRating = ({ rating, onRatingChange, size = "w-6 h-6" }) => {
@@ -112,10 +113,11 @@ export default function RestaurantReviewForm({ restaurantId, orderId, onSuccess 
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const handleTagToggle = (tagId) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId) 
+    setSelectedTags(prev =>
+      prev.includes(tagId)
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
     );
@@ -138,12 +140,10 @@ export default function RestaurantReviewForm({ restaurantId, orderId, onSuccess 
     if (e) e.preventDefault();
     
     setLoading(true);
-    
+    setSubmitError(null);
+
     try {
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log({
+      await postRestaurantReview({
         restaurantId,
         orderId,
         rating: quickRating || rating,
@@ -151,15 +151,15 @@ export default function RestaurantReviewForm({ restaurantId, orderId, onSuccess 
         categories,
         comment: comment.trim(),
       });
-      
+
       setSuccess(true);
-      
+
       setTimeout(() => {
         onSuccess?.();
       }, 1500);
-      
+
     } catch (error) {
-      console.error("Erro ao enviar avaliação:", error);
+      setSubmitError(error.message || 'Erro ao enviar avaliação. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -254,6 +254,10 @@ export default function RestaurantReviewForm({ restaurantId, orderId, onSuccess 
               </span>
             </div>
           </div>
+
+          {submitError && (
+            <p className="text-red-500 text-sm">{submitError}</p>
+          )}
 
           {/* Submit Button */}
           <button

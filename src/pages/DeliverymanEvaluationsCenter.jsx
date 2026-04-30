@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, MessageSquare, User, Clock, Award, TrendingUp } from 'lucide-react';
-import { useProfile } from '../context/DeliveryProfileContext'; // Ajuste o caminho conforme necessário
+import { useProfile } from '../context/DeliveryProfileContext';
 import { getMyDeliveryReviews } from '../services/reviewService';
 import useDeliveredOrders from '../hooks/useDeliveredOrders';
 import ClientReviewForm from '../components/ClientReviewForm';
+import { useToast } from '../context/ToastContext';
 
 // Card para uma avaliação recebida (com mais estilo)
 const ReviewReceivedCard = ({ review }) => (
@@ -30,6 +31,7 @@ const ReviewReceivedCard = ({ review }) => (
 
 export default function DeliverymanEvaluationsCenter() {
   const { profile, loading: loadingProfile } = useProfile();
+  const addToast = useToast();
   const [receivedReviews, setReceivedReviews] = useState(null);
   const [loadingReceived, setLoadingReceived] = useState(true);
   
@@ -140,9 +142,9 @@ export default function DeliverymanEvaluationsCenter() {
                           clientId={order.client_id}
                           orderId={order.id}
                           onSuccess={() => {
-                            alert('Avaliação enviada com sucesso!');
+                            addToast('Avaliação enviada com sucesso!', 'success');
                             setHighlightOrderId(null);
-                            refetch(); // ✅ ATUALIZA A LISTA
+                            refetch();
                           }}
                         />
                       </div>
