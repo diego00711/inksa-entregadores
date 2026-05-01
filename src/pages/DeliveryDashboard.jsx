@@ -1,5 +1,4 @@
-// src/pages/DeliveryDashboard.jsx – VERSÃO COMPLETA (pede delivery_code ao finalizar)
-
+// src/pages/DeliveryDashboard.jsx
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import DeliveryService from '../services/deliveryService';
 import { acceptDelivery, completeDelivery } from '../services/orderService';
@@ -8,14 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Calendar, Bell,
   Target, Award, Activity, RefreshCw, ExternalLink, Phone, Navigation,
-  KeyRound, Zap, CheckCircle
+  KeyRound, Zap, CheckCircle, TrendingUp, Package,
 } from 'lucide-react';
 
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useGPSTracking } from '../hooks/useGPSTracking';
+import { useNotificationSound } from '../hooks/useNotificationSound';
+import { supabase } from '../lib/supabase';
 
-// helpers
+// ─── helpers ─────────────────────────────────────────────────────────────────
 const toNumber = (v) => (typeof v === 'number' ? v : parseFloat(v || '0')) || 0;
+
 const useDebouncedCallback = (fn, delay = 600) => {
   const timer = useRef(null);
   return useCallback((...args) => {
@@ -24,9 +27,51 @@ const useDebouncedCallback = (fn, delay = 600) => {
   }, [fn, delay]);
 };
 
-// UI
+// ─── AnimatedNumber ───────────────────────────────────────────────────────────
+const AnimatedNumber = memo(({ value, prefix = '', suffix = '', decimals = 0 }) => {
+  const [displayed, setDisplayed] = useState(0);
+  const prevRef = useRef(0);
+
+  useEffect(() => {
+    const start = prevRef.current;
+    const end = value;
+    const diff = end - start;
+    if (!diff) return;
+    const duration = 900;
+    const startTime = performance.now();
+    const tick = (now) => {
+      const elapsed = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - elapsed, 3);
+      setDisplayed(start + diff * ease);
+      if (elapsed < 1) requestAnimationFrame(tick);
+      else prevRef.current = end;
+    };
+    requestAnimationFrame(tick);
+  }, [value]);
+
+  const formatted = decimals > 0 ? displayed.toFixed(decimals) : Math.round(displayed);
+  return <span>{prefix}{formatted}{suffix}</span>;
+});
+
+// ─── PulsingBadge ─────────────────────────────────────────────────────────────
+const PulsingBadge = memo(({ count }) => {
+  if (!count) return null;
+  return (
+    <div className="relative inline-flex">
+      <span className="absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75 animate-ping" />
+      <span className="relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white text-xs font-black shadow-lg">
+        {count > 9 ? '9+' : count}
+      </span>
+    </div>
+  );
+});
+
+// ─── ModernStatCard ───────────────────────────────────────────────────────────
 const ModernStatCard = memo(({ title, value, icon: Icon, color, trend, subtitle, onClick }) => (
-  <Card className={`relative overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-br ${color} border-0`} onClick={onClick}>
+  <Card
+    className={`relative overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-br ${color} border-0`}
+    onClick={onClick}
+  >
     <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
       <Icon className="w-full h-full" />
     </div>
@@ -37,17 +82,20 @@ const ModernStatCard = memo(({ title, value, icon: Icon, color, trend, subtitle,
         </div>
         {typeof trend === 'number' && (
           <div className="flex items-center text-white/80 text-sm">
-            <Award className="h-4 w-4 mr-1" />+{trend}%
+            <TrendingUp className="h-4 w-4 mr-1" />+{trend}%
           </div>
         )}
       </div>
-      <div className="text-3xl font-bold text-white mb-1" style={{ textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>{value}</div>
+      <div className="text-3xl font-bold text-white mb-1" style={{ textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
+        {value}
+      </div>
       <div className="text-white/80 text-sm font-medium">{title}</div>
       {subtitle && <div className="text-white/60 text-xs mt-1">{subtitle}</div>}
     </CardContent>
   </Card>
 ));
 
+// ─── PerformanceRing ──────────────────────────────────────────────────────────
 const PerformanceRing = memo(({ percentage, label, color }) => {
   const p = Math.max(0, Math.min(100, percentage || 0));
   const circumference = 2 * Math.PI * 45;
@@ -57,25 +105,31 @@ const PerformanceRing = memo(({ percentage, label, color }) => {
       <div className="relative w-24 h-24">
         <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100" aria-label={label}>
           <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-gray-200" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke={color} strokeWidth="8" strokeDasharray={strokeDasharray} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke={color} strokeWidth="8"
+            strokeDasharray={strokeDasharray} strokeLinecap="round"
+            className="transition-all duration-1000 ease-out" />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center"><span className="text-xl font-bold text-gray-800">{Math.round(p)}%</span></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xl font-bold text-gray-800">{Math.round(p)}%</span>
+        </div>
       </div>
       <span className="text-sm text-gray-600 mt-2">{label}</span>
     </div>
   );
 });
 
-const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) => {
+// ─── ModernActiveOrderCard ────────────────────────────────────────────────────
+const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isNew }) => {
   const status = order?.status;
+
   const badge = useMemo(() => {
     const map = {
-      pending: { t: 'Aguardando', cls: 'bg-yellow-500' },
-      accepted: { t: 'Aceito', cls: 'bg-blue-500' },
-      ready: { t: 'Pronto', cls: 'bg-purple-500' },
-      accepted_by_delivery: { t: 'Aguardando Retirada', cls: 'bg-fuchsia-600' },
-      delivering: { t: 'Entregando', cls: 'bg-green-600' },
-      delivered: { t: 'Entregue', cls: 'bg-gray-500' }
+      pending:             { t: 'Disponível',         cls: 'bg-yellow-500' },
+      accepted:            { t: 'Aceito',              cls: 'bg-blue-500' },
+      ready:               { t: 'Pronto p/ retirada',  cls: 'bg-purple-500' },
+      accepted_by_delivery:{ t: 'Aguardando Retirada', cls: 'bg-fuchsia-600' },
+      delivering:          { t: 'Entregando',          cls: 'bg-green-600' },
+      delivered:           { t: 'Entregue',            cls: 'bg-gray-500' },
     };
     return map[status] || { t: status || '—', cls: 'bg-gray-500' };
   }, [status]);
@@ -83,7 +137,10 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
   const showPickup = status === 'accepted_by_delivery' && order?.pickup_code;
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+    <Card
+      className={`relative overflow-hidden border-0 shadow-xl bg-white/90 backdrop-blur-sm transition-all duration-500
+        ${isNew ? 'animate-[slideInRight_0.4s_ease-out]' : ''}`}
+    >
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500" />
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
@@ -136,16 +193,21 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
 
           <div className="flex gap-3 pt-2">
             {status === 'pending' && (
-              <button onClick={() => onAcceptOrder(order.id)}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
+              <button
+                onClick={() => onAcceptOrder(order.id)}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              >
                 <Zap className="h-4 w-4" /> Aceitar Pedido
               </button>
             )}
 
             {(status === 'accepted' || status === 'ready' || status === 'accepted_by_delivery' || status === 'delivering') && (
-              <button onClick={() => onCompleteOrder(order.id)}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
-                <CheckCircle className="h-4 w-4" /> Marcar Entregue
+              <button
+                onClick={() => onCompleteOrder(order.id)}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                <CheckCircle className="h-4 w-4" />
+                {status === 'delivering' ? 'Entreguei! 🎉' : 'Marcar Próximo Passo'}
               </button>
             )}
 
@@ -153,8 +215,9 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.delivery_address)}`}
                 target="_blank" rel="noreferrer"
-                className="px-4 py-3 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2">
-                <Navigation className="h-4 w-4" /> Ver rota
+                className="px-4 py-3 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
+              >
+                <Navigation className="h-4 w-4" /> Rota
               </a>
             )}
           </div>
@@ -164,10 +227,11 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder }) =
   );
 });
 
-// Página
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function ModernDeliveryDashboard() {
   const { profile, updateProfile, loading: profileLoading } = useProfile();
   const addToast = useToast();
+  const playSound = useNotificationSound();
 
   const [dashboardStats, setDashboardStats] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -176,7 +240,17 @@ export default function ModernDeliveryDashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [pendingCompleteId, setPendingCompleteId] = useState(null);
   const [pendingCode, setPendingCode] = useState('');
+  const [availableCount, setAvailableCount] = useState(0);
+  const [newOrderIds, setNewOrderIds] = useState(new Set());
+  const knownAvailableRef = useRef(null);
 
+  const isAvailable = dashboardStats?.is_available || false;
+  const activeOrders = dashboardStats?.activeOrders || [];
+
+  // ── GPS tracking when online and delivering ────────────────────────────────
+  useGPSTracking({ enabled: isAvailable && activeOrders.length > 0 });
+
+  // ── Fetch dashboard ────────────────────────────────────────────────────────
   const fetchDashboardData = useCallback(async (isBackground = false) => {
     if (profileLoading || !profile?.id) { setInitialLoading(false); return; }
     if (isBackground && dashboardStats) setBackgroundLoading(true);
@@ -184,11 +258,33 @@ export default function ModernDeliveryDashboard() {
 
     setError('');
     try {
-      const response = await DeliveryService.getDashboardStats();
-      const statsData = response?.data || response || {};
-      setDashboardStats(statsData);
+      const [statsData, availableData] = await Promise.all([
+        DeliveryService.getDashboardStats(),
+        DeliveryService.getAvailableDeliveries().catch(() => []),
+      ]);
+
+      const stats = statsData?.data || statsData || {};
+      setDashboardStats(stats);
       setLastUpdated(new Date());
-      if (typeof statsData?.is_available === 'boolean') updateProfile({ is_available: statsData.is_available });
+      if (typeof stats?.is_available === 'boolean') updateProfile({ is_available: stats.is_available });
+
+      const available = Array.isArray(availableData) ? availableData : [];
+
+      // Detect new available orders after first load
+      if (knownAvailableRef.current !== null) {
+        const newIds = available
+          .map(o => o.id)
+          .filter(id => !knownAvailableRef.current.has(id));
+        if (newIds.length > 0) {
+          playSound('new_order');
+          addToast(`🛵 ${newIds.length === 1 ? 'Novo pedido disponível!' : `${newIds.length} novos pedidos!`}`, 'success');
+          setNewOrderIds(prev => new Set([...prev, ...newIds]));
+          setTimeout(() => setNewOrderIds(new Set()), 4000);
+        }
+      }
+      knownAvailableRef.current = new Set(available.map(o => o.id));
+      setAvailableCount(available.length);
+
     } catch (err) {
       const msg = err?.message || 'Não foi possível carregar as estatísticas.';
       if (!dashboardStats) setError(msg);
@@ -197,8 +293,9 @@ export default function ModernDeliveryDashboard() {
       setInitialLoading(false);
       setBackgroundLoading(false);
     }
-  }, [profileLoading, profile?.id, dashboardStats, updateProfile, addToast]);
+  }, [profileLoading, profile?.id, dashboardStats, updateProfile, addToast, playSound]);
 
+  // ── Polling + visibility ───────────────────────────────────────────────────
   useEffect(() => {
     if (profileLoading || !profile?.id) return;
     let intervalId;
@@ -209,42 +306,61 @@ export default function ModernDeliveryDashboard() {
     start();
     const onVisibility = () => {
       if (document.visibilityState === 'visible') { fetchDashboardData(true); start(); }
-      else { stop(); }
+      else stop();
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => { stop(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [profileLoading, profile?.id, fetchDashboardData]);
 
+  // ── Supabase realtime for new available orders ─────────────────────────────
+  useEffect(() => {
+    if (!supabase) return;
+    const ch = supabase
+      .channel('delivery-available-orders')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.new?.status === 'ready' && !payload.new?.delivery_id) {
+          playSound('new_order');
+          addToast('🛵 Novo pedido disponível!', 'success');
+          fetchDashboardData(true);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [playSound, addToast, fetchDashboardData]);
+
   const debouncedRefresh = useDebouncedCallback(() => fetchDashboardData(true), 700);
 
+  // ── Toggle availability ────────────────────────────────────────────────────
   const toggleAvailability = async () => {
     if (!profile || profileLoading) return addToast('Perfil não carregado.', 'warning');
     try {
-      const next = !(dashboardStats?.is_available || false);
+      const next = !isAvailable;
       const updated = await DeliveryService.updateDeliveryProfile({ is_available: next });
       updateProfile({ is_available: !!updated?.is_available });
       setDashboardStats((p) => ({ ...(p || {}), is_available: !!updated?.is_available }));
-      addToast(`Agora você está ${next ? 'ONLINE' : 'OFFLINE'}!`, 'success');
+      addToast(`Agora você está ${next ? 'ONLINE 🟢' : 'OFFLINE 🔴'}!`, 'success');
     } catch { addToast('Erro ao atualizar disponibilidade.', 'error'); }
   };
 
   const handleAcceptOrder = async (orderId) => {
-    try { await acceptDelivery(orderId); addToast('Pedido aceito com sucesso!', 'success'); fetchDashboardData(true); }
-    catch { addToast('Erro ao aceitar pedido.', 'error'); }
+    try {
+      await acceptDelivery(orderId);
+      playSound('accepted');
+      addToast('Pedido aceito com sucesso! 🎉', 'success');
+      fetchDashboardData(true);
+    } catch { addToast('Erro ao aceitar pedido.', 'error'); }
   };
 
-  const handleCompleteOrder = (orderId) => {
-    setPendingCompleteId(orderId);
-    setPendingCode('');
-  };
+  const handleCompleteOrder = (orderId) => { setPendingCompleteId(orderId); setPendingCode(''); };
 
   const confirmComplete = async () => {
     const deliveryCode = String(pendingCode).trim().toUpperCase();
-    if (deliveryCode.length < 3) { addToast('Código inválido. Tente novamente.', 'warning'); return; }
+    if (deliveryCode.length < 3) { addToast('Código inválido.', 'warning'); return; }
     try {
       await completeDelivery(pendingCompleteId, deliveryCode);
       setPendingCompleteId(null);
       setPendingCode('');
+      playSound('delivered');
       addToast('Pedido entregue com sucesso! 🎉', 'success');
       fetchDashboardData(true);
     } catch (err) {
@@ -252,6 +368,7 @@ export default function ModernDeliveryDashboard() {
     }
   };
 
+  // ── Loading / Error states ─────────────────────────────────────────────────
   if (initialLoading) {
     return (
       <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen animate-pulse">
@@ -283,92 +400,138 @@ export default function ModernDeliveryDashboard() {
     );
   }
 
-  const isAvailable = dashboardStats?.is_available || false;
   const todayEarnings = toNumber(dashboardStats?.todayEarnings);
   const todayDeliveries = dashboardStats?.todayDeliveries || 0;
   const avgRating = toNumber(dashboardStats?.avgRating);
   const totalDeliveries = dashboardStats?.totalDeliveries || 0;
   const onlineMinutes = dashboardStats?.onlineMinutes || 0;
   const dailyGoal = toNumber(dashboardStats?.dailyGoal || 100);
-
   const goalProgress = Math.min((todayEarnings / (dailyGoal || 1)) * 100, 100);
   const ratingProgress = Math.min((avgRating / 5) * 100, 100);
   const efficiencyProgress = Math.min((todayDeliveries / 10) * 100, 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      {backgroundLoading && <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-red-400 animate-pulse" />}
+      {/* Top progress bar */}
+      {backgroundLoading && <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-red-400 animate-pulse fixed top-0 z-50" />}
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="bg-white/70 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
-        <div className="p-6">
-          <div className="flex justify-between items-center">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-wrap justify-between items-center gap-3">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                 Olá, {profile?.first_name || 'Entregador'}! 👋
               </h1>
-              <div className="flex items-center gap-4 mt-2">
-                <p className="text-gray-600 flex items-center gap-2 text-sm">
+              <div className="flex items-center flex-wrap gap-3 mt-1">
+                <p className="text-gray-600 flex items-center gap-1.5 text-sm">
                   <Calendar className="h-4 w-4" />
                   {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
                 {lastUpdated && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
                     <Activity className={`h-3 w-3 ${backgroundLoading ? 'animate-pulse' : ''}`} />
-                    Atualizado às {lastUpdated.toLocaleTimeString('pt-BR')}
+                    {lastUpdated.toLocaleTimeString('pt-BR')}
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="flex gap-3 items-center">
-              <button onClick={debouncedRefresh}
+            <div className="flex gap-2 items-center flex-wrap">
+              {/* Available orders badge */}
+              {availableCount > 0 && (
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+                  <Package className="h-4 w-4 text-orange-500" />
+                  <span className="text-sm font-semibold text-orange-700">Disponíveis</span>
+                  <PulsingBadge count={availableCount} />
+                </div>
+              )}
+
+              <button
+                onClick={debouncedRefresh}
                 className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50"
-                disabled={backgroundLoading} title="Atualizar agora">
+                disabled={backgroundLoading}
+              >
                 <RefreshCw className={`h-5 w-5 text-gray-600 ${backgroundLoading ? 'animate-spin' : ''}`} />
               </button>
 
-              <button className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg transition-all duration-300 border border-gray-200/50 relative">
+              <button className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 relative">
                 <Bell className="h-5 w-5 text-gray-600" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                {availableCount > 0 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />}
               </button>
 
-              <button onClick={toggleAvailability}
-                className={`px-6 py-3 rounded-xl text-white font-bold flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl ${
-                  isAvailable ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
-                              : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'}`}>
-                {isAvailable ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
-                {isAvailable ? 'ONLINE' : 'OFFLINE'}
+              {/* ONLINE/OFFLINE big toggle */}
+              <button
+                onClick={toggleAvailability}
+                className={`px-5 py-3 rounded-xl text-white font-black text-sm flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                  isAvailable
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
+                    : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
+                }`}
+              >
+                <div className={`w-3 h-3 rounded-full bg-white ${isAvailable ? 'animate-pulse' : 'opacity-50'}`} />
+                {isAvailable ? (
+                  <><Wifi className="h-5 w-5" /> ONLINE</>
+                ) : (
+                  <><WifiOff className="h-5 w-5" /> OFFLINE</>
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <ModernStatCard title="Ganhos Hoje" value={`R$ ${todayEarnings.toFixed(2)}`} icon={DollarSign}
-            color="from-green-500 to-emerald-600" trend={12} subtitle={`Meta: R$ ${dailyGoal.toFixed(2)}`}
-            onClick={() => window.location.assign('/delivery/ganhos')} />
-          <ModernStatCard title="Entregas Hoje" value={todayDeliveries} icon={Truck}
-            color="from-blue-500 to-indigo-600" trend={8} subtitle="Excelente ritmo!"
-            onClick={() => window.location.assign('/delivery/entregas')} />
-          <ModernStatCard title="Avaliação Média" value={avgRating.toFixed(1)} icon={Star}
-            color="from-yellow-500 to-orange-500" subtitle="Muito bom!"
-            onClick={() => window.location.assign('/delivery/avaliacoes')} />
-          <ModernStatCard title="Total Entregas" value={totalDeliveries} icon={Award}
-            color="from-purple-500 to-pink-500" subtitle="desde o início"
-            onClick={() => window.location.assign('/delivery/entregas')} />
+      <div className="p-4 sm:p-6">
+        {/* ── Stats Grid ──────────────────────────────────────────────────── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <ModernStatCard
+            title="Ganhos Hoje"
+            value={<AnimatedNumber value={todayEarnings} prefix="R$ " decimals={2} />}
+            icon={DollarSign}
+            color="from-green-500 to-emerald-600"
+            trend={12}
+            subtitle={`Meta: R$ ${dailyGoal.toFixed(2)}`}
+            onClick={() => window.location.assign('/delivery/ganhos')}
+          />
+          <ModernStatCard
+            title="Entregas Hoje"
+            value={<AnimatedNumber value={todayDeliveries} />}
+            icon={Truck}
+            color="from-blue-500 to-indigo-600"
+            trend={8}
+            subtitle="Continue assim!"
+            onClick={() => window.location.assign('/delivery/entregas')}
+          />
+          <ModernStatCard
+            title="Avaliação Média"
+            value={<AnimatedNumber value={avgRating} decimals={1} suffix="★" />}
+            icon={Star}
+            color="from-yellow-500 to-orange-500"
+            subtitle="Muito bom!"
+            onClick={() => window.location.assign('/delivery/avaliacoes')}
+          />
+          <ModernStatCard
+            title="Total Entregas"
+            value={<AnimatedNumber value={totalDeliveries} />}
+            icon={Award}
+            color="from-purple-500 to-pink-500"
+            subtitle="desde o início"
+            onClick={() => window.location.assign('/delivery/entregas')}
+          />
         </div>
 
+        {/* ── Performance + Active Orders ─────────────────────────────────── */}
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Performance rings */}
           <div className="lg:col-span-2">
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-6">
+              <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   <Target className="h-6 w-6 text-orange-500" /> Performance de Hoje
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-8 mb-8">
+                <div className="grid grid-cols-3 gap-8 mb-6">
                   <PerformanceRing percentage={goalProgress} label="Meta Diária" color="#10b981" />
                   <PerformanceRing percentage={ratingProgress} label="Satisfação" color="#f59e0b" />
                   <PerformanceRing percentage={efficiencyProgress} label="Eficiência" color="#3b82f6" />
@@ -378,14 +541,14 @@ export default function ModernDeliveryDashboard() {
                     <div>
                       <p className="text-sm text-gray-600">Tempo Online Hoje</p>
                       <p className="text-2xl font-bold text-orange-600">
-                        {Math.floor((onlineMinutes || 0) / 60)}h {(onlineMinutes || 0) % 60}min
+                        {Math.floor(onlineMinutes / 60)}h {onlineMinutes % 60}min
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-600">Status</p>
                       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
                         isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+                        <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                         {isAvailable ? 'Online' : 'Offline'}
                       </div>
                     </div>
@@ -395,20 +558,22 @@ export default function ModernDeliveryDashboard() {
             </Card>
           </div>
 
+          {/* Active orders */}
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
               <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-3 py-1 rounded-full font-bold">
-                {dashboardStats?.activeOrders?.length || 0}
+                {activeOrders.length}
               </div>
             </div>
 
-            {dashboardStats?.activeOrders?.length ? (
+            {activeOrders.length ? (
               <div className="space-y-4">
-                {dashboardStats.activeOrders.map((order) => (
+                {activeOrders.map((order) => (
                   <ModernActiveOrderCard
                     key={order.id}
                     order={order}
+                    isNew={newOrderIds.has(order.id)}
                     onAcceptOrder={handleAcceptOrder}
                     onCompleteOrder={handleCompleteOrder}
                   />
@@ -417,11 +582,19 @@ export default function ModernDeliveryDashboard() {
             ) : (
               <Card className="p-8 text-center shadow-xl border-0 bg-white/90 backdrop-blur-sm">
                 <div className="text-6xl mb-4">🎯</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Tudo tranquilo por aqui!</h3>
-                <p className="text-gray-600 mb-4">{isAvailable ? 'Aguardando novos pedidos chegarem...' : 'Fique online para receber pedidos'}</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Tudo tranquilo!</h3>
+                <p className="text-gray-600 mb-4">
+                  {isAvailable
+                    ? availableCount > 0
+                      ? `${availableCount} pedido${availableCount > 1 ? 's' : ''} disponível${availableCount > 1 ? 'is' : ''} para aceitar`
+                      : 'Aguardando novos pedidos...'
+                    : 'Fique online para receber pedidos'}
+                </p>
                 {!isAvailable && (
-                  <button onClick={toggleAvailability}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <button
+                    onClick={toggleAvailability}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
                     Ficar Online
                   </button>
                 )}
@@ -431,6 +604,7 @@ export default function ModernDeliveryDashboard() {
         </div>
       </div>
 
+      {/* ── Delivery code modal ────────────────────────────────────────────── */}
       {pendingCompleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
