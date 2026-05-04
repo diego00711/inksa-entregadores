@@ -191,6 +191,26 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             <Phone className="h-4 w-4 text-gray-400" />
           </div>
 
+          {/* Payment info */}
+          {order.payment_method === 'cash' ? (
+            <div className="p-3 rounded-xl border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-yellow-50">
+              <p className="text-sm font-black text-orange-700 flex items-center gap-2">
+                💵 COBRAR{' '}
+                <span className="text-base">R$ {toNumber(order.total_amount).toFixed(2)}</span>
+                {' '}EM DINHEIRO
+              </p>
+              {toNumber(order.change_for) > 0 && (
+                <p className="text-xs text-orange-600 mt-1">
+                  Levar troco de R$ {(toNumber(order.change_for) - toNumber(order.total_amount)).toFixed(2)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+              <span className="text-green-600 text-sm font-semibold">✅ Pago online</span>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             {status === 'pending' && (
               <button
