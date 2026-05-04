@@ -158,6 +158,16 @@ const DeliveryService = {
     return data;
   },
 
+  async confirmCashPayment(orderId) {
+    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}/cash-payment`, {
+      method: 'POST',
+      headers: createAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+    const data = await processResponse(response);
+    return data.data || data;
+  },
+
   // ---- Auth auxiliar -----------------------------------------------
 
   async forgotPassword(email) {

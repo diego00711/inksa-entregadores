@@ -259,7 +259,11 @@ export default function ModernDeliveryDashboard() {
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [pendingCompleteId, setPendingCompleteId] = useState(null);
+  const [pendingCompleteOrder, setPendingCompleteOrder] = useState(null);
   const [pendingCode, setPendingCode] = useState('');
+  const [pendingCashConfirm, setPendingCashConfirm] = useState(null);
+  const [cashConfirmResult, setCashConfirmResult] = useState(null);
+  const [cashConfirmLoading, setCashConfirmLoading] = useState(false);
   const [availableCount, setAvailableCount] = useState(0);
   const [newOrderIds, setNewOrderIds] = useState(new Set());
   const knownAvailableRef = useRef(null);
@@ -371,20 +375,46 @@ export default function ModernDeliveryDashboard() {
     } catch { addToast('Erro ao aceitar pedido.', 'error'); }
   };
 
-  const handleCompleteOrder = (orderId) => { setPendingCompleteId(orderId); setPendingCode(''); };
+  const handleCompleteOrder = (orderId) => {
+    const order = activeOrders.find(o => o.id === orderId) || null;
+    setPendingCompleteId(orderId);
+    setPendingCompleteOrder(order);
+    setPendingCode('');
+  };
 
   const confirmComplete = async () => {
     const deliveryCode = String(pendingCode).trim().toUpperCase();
     if (deliveryCode.length < 3) { addToast('Código inválido.', 'warning'); return; }
     try {
       await completeDelivery(pendingCompleteId, deliveryCode);
-      setPendingCompleteId(null);
-      setPendingCode('');
       playSound('delivered');
       addToast('Pedido entregue com sucesso! 🎉', 'success');
+
+      if (pendingCompleteOrder?.payment_method === 'cash') {
+        setPendingCashConfirm(pendingCompleteOrder);
+        setCashConfirmResult(null);
+      }
+
+      setPendingCompleteId(null);
+      setPendingCompleteOrder(null);
+      setPendingCode('');
       fetchDashboardData(true);
     } catch (err) {
       addToast(err?.message || 'Erro ao completar entrega.', 'error');
+    }
+  };
+
+  const handleCashConfirm = async () => {
+    if (!pendingCashConfirm) return;
+    setCashConfirmLoading(true);
+    try {
+      const result = await DeliveryService.confirmCashPayment(pendingCashConfirm.id);
+      setCashConfirmResult(result);
+      fetchDashboardData(true);
+    } catch (err) {
+      addToast(err?.message || 'Erro ao confirmar recebimento.', 'error');
+    } finally {
+      setCashConfirmLoading(false);
     }
   };
 
@@ -502,6 +532,26 @@ export default function ModernDeliveryDashboard() {
       </div>
 
       <div className="p-4 sm:p-6">
+        {/* ── Dinheiro em mãos ────────────────────────────────────────────── */}
+        {(toNumber(dashboardStats?.cashDebt) > 0 || toNumber(dashboardStats?.totalCashReceived) > 0) && (
+          <div className="mb-6 p-5 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl text-white shadow-xl">
+            <h3 className="font-bold text-base mb-3 flex items-center gap-2">💵 Dinheiro em mãos</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-white/80 mb-0.5">Recebido hoje</p>
+                <p className="text-2xl font-black">R$ {toNumber(dashboardStats?.totalCashReceived).toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-white/80 mb-0.5">Débito com plataforma</p>
+                <p className="text-2xl font-black">R$ {toNumber(dashboardStats?.cashDebt).toFixed(2)}</p>
+              </div>
+            </div>
+            <p className="text-xs text-white/70 mt-3">
+              O débito será descontado dos seus próximos repasses online.
+            </p>
+          </div>
+        )}
+
         {/* ── Stats Grid ──────────────────────────────────────────────────── */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <ModernStatCard
@@ -623,6 +673,79 @@ export default function ModernDeliveryDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Cash payment confirmation modal ───────────────────────────────── */}
+      {pendingCashConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            {cashConfirmResult ? (
+              <div className="text-center">
+                <div className="text-5xl mb-3">✅</div>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Pagamento Registrado!</h3>
+                <div className="space-y-2 text-left bg-gray-50 rounded-xl p-4 mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Você recebeu</span>
+                    <span className="font-bold text-green-600">R$ {toNumber(cashConfirmResult.voce_recebeu).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Sua taxa de entrega</span>
+                    <span className="font-bold text-blue-600">R$ {toNumber(cashConfirmResult.sua_taxa).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-sm text-gray-600">Débito com plataforma</span>
+                    <span className="font-bold text-orange-600">R$ {toNumber(cashConfirmResult.deve_a_plataforma).toFixed(2)}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  R$ {toNumber(cashConfirmResult.deve_a_plataforma).toFixed(2)} será descontado do seu próximo repasse online.
+                </p>
+                <button
+                  onClick={() => { setPendingCashConfirm(null); setCashConfirmResult(null); }}
+                  className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
+                >
+                  Entendido!
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-5">
+                  <div className="text-5xl mb-2">💵</div>
+                  <h3 className="text-lg font-bold text-gray-800">Confirmar Recebimento</h3>
+                  <p className="text-sm text-gray-500 mt-1">Este era um pedido em dinheiro</p>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-5 text-center">
+                  <p className="text-3xl font-black text-orange-700">
+                    R$ {toNumber(pendingCashConfirm.total_amount).toFixed(2)}
+                  </p>
+                  <p className="text-sm text-orange-600 mt-1">Você já recebeu este valor do cliente?</p>
+                  {toNumber(pendingCashConfirm.change_for) > 0 && (
+                    <p className="text-xs text-orange-500 mt-1">
+                      Troco levado: R$ {(toNumber(pendingCashConfirm.change_for) - toNumber(pendingCashConfirm.total_amount)).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setPendingCashConfirm(null)}
+                    className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                  >
+                    Não agora
+                  </button>
+                  <button
+                    onClick={handleCashConfirm}
+                    disabled={cashConfirmLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                  >
+                    {cashConfirmLoading
+                      ? <RefreshCw className="h-4 w-4 animate-spin" />
+                      : '✅ Sim, confirmar'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Delivery code modal ────────────────────────────────────────────── */}
       {pendingCompleteId && (
