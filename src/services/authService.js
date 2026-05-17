@@ -1,6 +1,7 @@
 // src/services/authService.js - VERSÃO FINAL CORRIGIDA
 
 import { DELIVERY_API_URL as API_BASE_URL } from './api';
+import apiFetch from './apiClient';
 
 const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';
@@ -27,7 +28,7 @@ const authService = {
     async login(email, password) {
         let response;
         try {
-            response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            response = await apiFetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -72,7 +73,7 @@ const authService = {
     async register(userData) {
         let response;
         try {
-            response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+            response = await apiFetch(`${API_BASE_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

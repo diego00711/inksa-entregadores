@@ -1,13 +1,14 @@
 // src/services/deliveryService.js (ENTREGADOR) — ALINHADO AO BACKEND ATUAL
 
 import { DELIVERY_API_URL, processResponse, createAuthHeaders } from './api';
+import apiFetch from './apiClient';
 
 const DELIVERY_USER_DATA_KEY = 'deliveryUser';
 
 const DeliveryService = {
   // -------- Perfil / Avatar / Stats (mantidos como estavam) --------
   async getDeliveryProfile() {
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/profile`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/delivery/profile`, {
       method: 'GET',
       headers: createAuthHeaders(),
     });
@@ -16,7 +17,7 @@ const DeliveryService = {
   },
 
   async updateDeliveryProfile(profileData) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/profile`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/delivery/profile`, {
       method: 'PUT',
       headers: createAuthHeaders(),
       body: JSON.stringify(profileData),
@@ -34,7 +35,7 @@ const DeliveryService = {
 
   async getDashboardStats() {
     const url = `${DELIVERY_API_URL}/api/delivery/stats/dashboard-stats`;
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'GET',
       headers: createAuthHeaders(),
     });
@@ -48,7 +49,7 @@ const DeliveryService = {
     if (endDate) params.append('end_date', endDate);
     const qs = params.toString();
     const url = `${DELIVERY_API_URL}/api/delivery/stats/earnings-history${qs ? `?${qs}` : ''}`;
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'GET',
       headers: createAuthHeaders(),
     });
@@ -63,7 +64,7 @@ const DeliveryService = {
     const token = localStorage.getItem('deliveryAuthToken');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/upload-avatar`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/delivery/upload-avatar`, {
       method: 'POST',
       headers,
       body: formData,
@@ -91,7 +92,7 @@ const DeliveryService = {
    * Endpoint: GET /api/orders/available
    */
   async getAvailableDeliveries() {
-    const response = await fetch(`${DELIVERY_API_URL}/api/orders/available`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/available`, {
       method: 'GET',
       headers: createAuthHeaders(),
     });
@@ -105,7 +106,7 @@ const DeliveryService = {
    * Endpoint: POST /api/orders/:orderId/accept
    */
   async acceptDelivery(orderId) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/orders/${orderId}/accept`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/${orderId}/accept`, {
       method: 'POST',
       headers: createAuthHeaders(),
       body: JSON.stringify({}), // sem payload adicional
@@ -120,7 +121,7 @@ const DeliveryService = {
    * (Se não existir no backend, pode remover/ajustar conforme necessário.)
    */
   async getOrderDetail(orderId) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/orders/${orderId}`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/${orderId}`, {
       method: 'GET',
       headers: createAuthHeaders(),
     });
@@ -134,7 +135,7 @@ const DeliveryService = {
    * Body esperado: { pickup_code: "ABCD" }
    */
   async confirmPickup(orderId, pickupCode) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/orders/${orderId}/pickup`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/${orderId}/pickup`, {
       method: 'POST',
       headers: createAuthHeaders(),
       body: JSON.stringify({ pickup_code: String(pickupCode || '').trim().toUpperCase() }),
@@ -149,7 +150,7 @@ const DeliveryService = {
    * Body esperado: { delivery_code: "WXYZ" }
    */
   async completeDelivery(orderId, deliveryCode) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/orders/${orderId}/complete`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/${orderId}/complete`, {
       method: 'POST',
       headers: createAuthHeaders(),
       body: JSON.stringify({ delivery_code: String(deliveryCode || '').trim().toUpperCase() }),
@@ -159,7 +160,7 @@ const DeliveryService = {
   },
 
   async confirmCashPayment(orderId) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}/cash-payment`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/delivery/orders/${orderId}/cash-payment`, {
       method: 'POST',
       headers: createAuthHeaders(),
       body: JSON.stringify({}),
@@ -171,7 +172,7 @@ const DeliveryService = {
   // ---- Auth auxiliar -----------------------------------------------
 
   async forgotPassword(email) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/auth/forgot-password`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -180,7 +181,7 @@ const DeliveryService = {
   },
 
   async resetPassword(token, password) {
-    const response = await fetch(`${DELIVERY_API_URL}/api/auth/reset-password`, {
+    const response = await apiFetch(`${DELIVERY_API_URL}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, password }),

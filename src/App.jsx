@@ -1,7 +1,8 @@
 // Ficheiro: src/App.jsx (VERSÃO FINAL COM ROTA DE GAMIFICAÇÃO E AVALIAÇÕES)
 
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useToast } from './context/ToastContext';
 
 // --- Importações ---
 import DeliveryPortalLayout from './components/delivery-portal/DeliveryPortalLayout.jsx';
@@ -20,6 +21,21 @@ import GamificationPage from './pages/GamificationPage.jsx'; // Gamificação
 import DeliverymanEvaluationsCenter from './pages/DeliverymanEvaluationsCenter.jsx'; // <-- NOVA IMPORTAÇÃO
 
 function App() {
+  const navigate = useNavigate();
+  const addToast = useToast();
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      addToast('Sessão expirada, faça login novamente', 'error');
+      navigate('/login', { replace: true });
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, [navigate, addToast]);
+
   return (
     <Routes>
       {/* Rotas Públicas */}

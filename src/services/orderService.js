@@ -1,6 +1,7 @@
 // inksa-entregadores/src/services/orderService.js
 
 import { DELIVERY_API_URL as API_URL } from './api';
+import apiFetch from './apiClient';
 
 const getAuthToken = () => localStorage.getItem('deliveryAuthToken');
 
@@ -9,7 +10,7 @@ const fetchWithAuth = async (url, options = {}) => {
   const token = getAuthToken();
   if (!token) throw new Error('Token de autenticação não encontrado');
 
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ export const completeDelivery = async (orderId, deliveryCode) => {
 export const getOrdersToReview = async (signal) => {
   const token = getAuthToken();
   if (!token) throw new Error('Token de autenticação não encontrado');
-  const response = await fetch(`${API_URL}/api/orders/pending-delivery-review`, {
+  const response = await apiFetch(`${API_URL}/api/orders/pending-delivery-review`, {
     headers: { Authorization: `Bearer ${token}` },
     signal,
   });
