@@ -25,11 +25,16 @@ const processResponse = async (response) => {
 
 const authService = {
     async login(email, password) {
-        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
+        let response;
+        try {
+            response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+        } catch (networkError) {
+            throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão.');
+        }
 
         const responseData = await processResponse(response);
 
@@ -53,7 +58,7 @@ const authService = {
         }
         
         if (token) {
-            if (user.user_type !== 'delivery') {
+            if (user && user.user_type !== 'delivery') {
                 throw new Error('Acesso negado. Este login é apenas para entregadores.');
             }
             localStorage.setItem(AUTH_TOKEN_KEY, token);
@@ -65,14 +70,19 @@ const authService = {
     },
 
     async register(userData) {
-        const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...userData,
-                user_type: 'delivery' // ✅ Especifica que é entregador
-            }),
-        });
+        let response;
+        try {
+            response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...userData,
+                    user_type: 'delivery'
+                }),
+            });
+        } catch (networkError) {
+            throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão.');
+        }
         
         const responseData = await processResponse(response);
 

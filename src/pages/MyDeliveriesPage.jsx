@@ -11,9 +11,11 @@ import { Header } from '../components/Header.jsx';
 import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package } from 'lucide-react';
 import { acceptDelivery, completeDelivery } from '../services/orderService';
 import { DELIVERY_API_URL } from '../services/api';
+import { useToast } from '../context/ToastContext.jsx';
 
 export function MyDeliveriesPage() {
   const { loading: profileLoading } = useProfile();
+  const addToast = useToast();
   const [availableOrders, setAvailableOrders] = useState([]);
   const [myDeliveries, setMyDeliveries] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -44,8 +46,8 @@ export function MyDeliveriesPage() {
 
   useEffect(() => {
     const fetchDeliveries = async () => {
+      setPageLoading(true);
       try {
-        setPageLoading(true);
         const stats = await DeliveryService.getDashboardStats();
         let myActive = stats.activeOrders || [];
 
@@ -75,6 +77,9 @@ export function MyDeliveriesPage() {
           ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
         );
         setActiveDelivery(ongoing);
+      } catch (err) {
+        console.error('Erro ao carregar entregas:', err);
+        addToast(err?.message || 'Não foi possível carregar as entregas.', 'error');
       } finally {
         setPageLoading(false);
       }
@@ -136,8 +141,10 @@ export function MyDeliveriesPage() {
       handleUpdateStatus(pendingFinishId, 'delivered');
       setPendingFinishId(null);
       setFinishCode('');
+      addToast('Entrega concluída com sucesso!', 'success');
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
+      addToast(e?.message || 'Erro ao confirmar entrega. Verifique o código e tente novamente.', 'error');
     }
   };
 

@@ -30,34 +30,37 @@ export default function GamificationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser?.id) throw new Error('Sessão expirada. Faça login novamente.');
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser?.id) throw new Error('Sessão expirada. Faça login novamente.');
 
-        const headers = createAuthHeaders();
+      const headers = createAuthHeaders();
 
-        const [ptsRes, lbRes] = await Promise.all([
-          fetch(`${DELIVERY_API_URL}/api/gamification/${currentUser.id}/points-level`, { headers }),
-          fetch(`${DELIVERY_API_URL}/api/gamification/leaderboard?scope=delivery&limit=10`, { headers }),
-        ]);
+      const [ptsRes, lbRes] = await Promise.all([
+        fetch(`${DELIVERY_API_URL}/api/gamification/${currentUser.id}/points-level`, { headers }),
+        fetch(`${DELIVERY_API_URL}/api/gamification/leaderboard?scope=delivery&limit=10`, { headers }),
+      ]);
 
-        if (!ptsRes.ok) throw new Error('Não foi possível carregar seus pontos.');
-        const ptsJson = await ptsRes.json();
-        setUserPoints(ptsJson.data || ptsJson);
+      if (!ptsRes.ok) throw new Error('Não foi possível carregar seus pontos.');
+      const ptsJson = await ptsRes.json();
+      setUserPoints(ptsJson.data || ptsJson);
 
-        if (lbRes.ok) {
-          const lbJson = await lbRes.json();
-          const users = lbJson.data?.users ?? lbJson.data ?? lbJson.users ?? [];
-          setLeaderboard(Array.isArray(users) ? users : []);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (lbRes.ok) {
+        const lbJson = await lbRes.json();
+        const users = lbJson.data?.users ?? lbJson.data ?? lbJson.users ?? [];
+        setLeaderboard(Array.isArray(users) ? users : []);
       }
-    };
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     load();
   }, []);
 
@@ -74,6 +77,12 @@ export default function GamificationPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 gap-3 p-6">
         <AlertCircle className="w-12 h-12 text-red-400" />
         <p className="text-red-600 font-medium text-center">{error}</p>
+        <button
+          onClick={load}
+          className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
+        >
+          Tentar Novamente
+        </button>
       </div>
     );
   }

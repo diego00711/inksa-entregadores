@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Importações de UI
 import { Button } from '@/components/ui/button.jsx';
@@ -23,6 +24,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
+  const addToast = useToast();
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -31,6 +33,10 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.password.length < 6) {
+      setErrorMessage('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       setErrorMessage('As senhas não coincidem.');
       return;
@@ -46,6 +52,7 @@ export default function RegisterPage() {
         phone: formData.phone,
       });
       // Após o registro bem-sucedido, redireciona para a página de login
+      addToast('Conta criada com sucesso! Faça login para continuar.', 'success');
       navigate('/login');
     } catch (err) {
       console.error("Erro no registro:", err);

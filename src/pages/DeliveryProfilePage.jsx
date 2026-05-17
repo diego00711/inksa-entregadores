@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
-import { CameraIcon, MapPin } from 'lucide-react';
+import { CameraIcon, MapPin, Loader2 } from 'lucide-react';
 
 export default function DeliveryProfilePage() {
     const { profile: contextProfile, updateProfile: updateContextProfile, loading: profileLoading } = useProfile();
@@ -191,7 +191,28 @@ export default function DeliveryProfilePage() {
     };
 
     if (profileLoading || loading) {
-        return <div className="page-container text-center py-10">Carregando perfil...</div>;
+        return (
+            <div className="p-6 bg-gray-50 min-h-screen">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="h-8 bg-gray-200 rounded-lg w-32 animate-pulse" />
+                </div>
+                <div className="space-y-6">
+                    {[1,2,3,4].map(i => (
+                        <div key={i} className="bg-white rounded-lg shadow-lg p-6 animate-pulse">
+                            <div className="h-5 bg-gray-200 rounded w-40 mb-4" />
+                            <div className="grid grid-cols-2 gap-4">
+                                {[1,2,3,4].map(j => (
+                                    <div key={j}>
+                                        <div className="h-3 bg-gray-200 rounded w-20 mb-2" />
+                                        <div className="h-9 bg-gray-200 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     return (

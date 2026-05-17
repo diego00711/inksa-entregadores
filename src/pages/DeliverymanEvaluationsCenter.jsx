@@ -1,7 +1,7 @@
 // src/pages/DeliverymanEvaluationsCenter.jsx - VERSÃO ATUALIZADA
 
 import React, { useState, useEffect } from 'react';
-import { Star, ThumbsUp, MessageSquare, User, Clock, Award, TrendingUp } from 'lucide-react';
+import { Star, ThumbsUp, MessageSquare, User, Clock, Award, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { getMyDeliveryReviews } from '../services/reviewService';
 import useDeliveredOrders from '../hooks/useDeliveredOrders';
@@ -34,6 +34,7 @@ export default function DeliverymanEvaluationsCenter() {
   const addToast = useToast();
   const [receivedReviews, setReceivedReviews] = useState(null);
   const [loadingReceived, setLoadingReceived] = useState(true);
+  const [receivedReviewsError, setReceivedReviewsError] = useState(null);
   
   // ✅ CORREÇÃO: Adiciona refetch ao hook
   const { orders: ordersToReview, loading: loadingOrders, refetch } = useDeliveredOrders(profile?.id);
@@ -43,9 +44,13 @@ export default function DeliverymanEvaluationsCenter() {
   useEffect(() => {
     if (profile) {
       setLoadingReceived(true);
+      setReceivedReviewsError(null);
       getMyDeliveryReviews()
         .then(data => setReceivedReviews(data))
-        .catch(err => console.error("Erro ao buscar avaliações recebidas:", err))
+        .catch(err => {
+          console.error("Erro ao buscar avaliações recebidas:", err);
+          setReceivedReviewsError(err?.message || 'Não foi possível carregar as avaliações.');
+        })
         .finally(() => setLoadingReceived(false));
     }
   }, [profile]);
@@ -77,16 +82,27 @@ export default function DeliverymanEvaluationsCenter() {
           </div>
           <div className="p-6">
             {loadingReceived ? (
-              <p className="text-center text-gray-500">Carregando suas avaliações...</p>
-            ) : receivedReviews && receivedReviews.reviews.length > 0 ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="h-20 bg-gray-200 rounded-lg" />
+                  <div className="h-20 bg-gray-200 rounded-lg" />
+                </div>
+                {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-lg" />)}
+              </div>
+            ) : receivedReviewsError ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <AlertCircle className="h-10 w-10 text-red-400" />
+                <p className="text-red-600 text-center text-sm">{receivedReviewsError}</p>
+              </div>
+            ) : receivedReviews && Array.isArray(receivedReviews.reviews) && receivedReviews.reviews.length > 0 ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-center mb-6">
                   <div>
-                    <p className="text-4xl font-bold text-indigo-600">{receivedReviews.average_rating.toFixed(1)}</p>
+                    <p className="text-4xl font-bold text-indigo-600">{Number(receivedReviews.average_rating || 0).toFixed(1)}</p>
                     <p className="text-sm text-gray-500">Média Geral</p>
                   </div>
                   <div>
-                    <p className="text-4xl font-bold text-indigo-600">{receivedReviews.total_reviews}</p>
+                    <p className="text-4xl font-bold text-indigo-600">{receivedReviews.total_reviews || 0}</p>
                     <p className="text-sm text-gray-500">Total de Avaliações</p>
                   </div>
                 </div>
@@ -112,7 +128,9 @@ export default function DeliverymanEvaluationsCenter() {
           </div>
           <div className="p-6">
             {loadingOrders ? (
-              <p className="text-center text-gray-500">Carregando pedidos para avaliar...</p>
+              <div className="space-y-3 animate-pulse">
+                {[1,2].map(i => <div key={i} className="h-20 bg-gray-200 rounded-lg" />)}
+              </div>
             ) : ordersToReview?.length > 0 ? (
               <div className="space-y-4">
                 {ordersToReview.map(order => (

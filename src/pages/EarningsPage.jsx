@@ -78,11 +78,37 @@ export function EarningsPage() {
     };
 
     if (profileLoading || loading) {
-        return <div className="page-container text-center py-10">A carregar dados de ganhos...</div>;
+        return (
+            <div className="p-6 bg-gray-50 min-h-screen">
+                <div className="h-8 bg-gray-200 rounded-lg w-1/3 mb-2 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-8 animate-pulse" />
+                <div className="flex gap-3 mb-8">
+                    {[1,2,3].map(i => <div key={i} className="h-10 bg-gray-200 rounded-md w-28 animate-pulse" />)}
+                </div>
+                <div className="grid gap-4 md:grid-cols-3 mb-8">
+                    {[1,2,3].map(i => <div key={i} className="h-28 bg-gray-200 rounded-lg animate-pulse" />)}
+                </div>
+                <div className="grid gap-6 lg:grid-cols-2">
+                    {[1,2].map(i => <div key={i} className="h-80 bg-gray-200 rounded-lg animate-pulse" />)}
+                </div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="page-container text-center text-red-500 py-10">Erro: {error}</div>;
+        return (
+            <div className="p-6 bg-gray-50 min-h-screen flex flex-col items-center justify-center gap-4">
+                <div className="text-5xl">😕</div>
+                <h2 className="text-xl font-bold text-gray-800">Erro ao carregar ganhos</h2>
+                <p className="text-red-600 text-center max-w-sm">{error}</p>
+                <button
+                    onClick={fetchEarningsData}
+                    className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
+                >
+                    Tentar Novamente
+                </button>
+            </div>
+        );
     }
 
     return (
@@ -142,7 +168,7 @@ export function EarningsPage() {
                     <CardContent>
                         <div className="text-3xl font-bold text-green-700">R$ {earningsData.totalEarningsPeriod.toFixed(2)}</div>
                         <p className="text-xs text-gray-500">
-                            Período: {format(new Date(earningsData.periodStartDate), 'dd/MM/yyyy')} - {format(new Date(earningsData.periodEndDate), 'dd/MM/yyyy')}
+                            Período: {earningsData.periodStartDate ? format(new Date(earningsData.periodStartDate), 'dd/MM/yyyy') : format(startDate, 'dd/MM/yyyy')} - {earningsData.periodEndDate ? format(new Date(earningsData.periodEndDate), 'dd/MM/yyyy') : format(endDate, 'dd/MM/yyyy')}
                         </p>
                     </CardContent>
                 </Card>
@@ -176,9 +202,9 @@ export function EarningsPage() {
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={earningsData.dailyEarnings}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="earning_date" tickFormatter={(tick) => format(new Date(tick), 'dd/MM')} />
-                            <YAxis tickFormatter={(tick) => `R$${tick.toFixed(2)}`} />
-                            <Tooltip formatter={(value) => [`R$${value.toFixed(2)}`, 'Ganhos']} />
+                            <XAxis dataKey="earning_date" tickFormatter={(tick) => { try { return format(new Date(tick), 'dd/MM'); } catch { return tick; } }} />
+                            <YAxis tickFormatter={(tick) => `R$${Number(tick).toFixed(2)}`} />
+                            <Tooltip formatter={(value) => [`R$${Number(value).toFixed(2)}`, 'Ganhos']} />
                             <Legend />
                             <Line type="monotone" dataKey="total_earned_daily" stroke="#28a745" activeDot={{ r: 8 }} name="Ganhos" />
                         </LineChart>
@@ -189,7 +215,7 @@ export function EarningsPage() {
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={earningsData.dailyEarnings}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="earning_date" tickFormatter={(tick) => format(new Date(tick), 'dd/MM')} />
+                            <XAxis dataKey="earning_date" tickFormatter={(tick) => { try { return format(new Date(tick), 'dd/MM'); } catch { return tick; } }} />
                             <YAxis />
                             <Tooltip formatter={(value) => [value, 'Entregas']} />
                             <Legend />
@@ -233,10 +259,10 @@ export function EarningsPage() {
                                                 {delivery.client_name}
                                             </td>
                                             <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-                                                {parseFloat(delivery.delivery_fee).toFixed(2)}
+                                                {parseFloat(delivery.delivery_fee || 0).toFixed(2)}
                                             </td>
                                             <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-                                                {parseFloat(delivery.total_amount).toFixed(2)}
+                                                {parseFloat(delivery.total_amount || 0).toFixed(2)}
                                             </td>
                                             <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                                 <span className="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight">
