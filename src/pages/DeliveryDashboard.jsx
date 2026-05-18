@@ -15,6 +15,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { supabase } from '../lib/supabase';
+import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const toNumber = (v) => (typeof v === 'number' ? v : parseFloat(v || '0')) || 0;
@@ -273,6 +274,76 @@ export default function ModernDeliveryDashboard() {
 
   // ── GPS tracking when online and delivering ────────────────────────────────
   useGPSTracking({ enabled: isAvailable && activeOrders.length > 0 });
+
+  // ── Per-order location tracking (sends to /api/deliveries/:id/location) ───
+  const trackingIntervalRef = useRef(null);
+  const orderWatchIdRef = useRef(null);
+  const trackedOrderIdRef = useRef(null);
+
+  const sendOrderLocation = useCallback((latitude, longitude, orderId) => {
+    fetch(`${DELIVERY_API_URL}/api/deliveries/${orderId}/location`, {
+      method: 'PATCH',
+      headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ latitude, longitude }),
+    }).catch(() => {}); // falha silenciosa
+  }, []);
+
+  useEffect(() => {
+    const activeOrder = activeOrders.find(
+      (o) => ['picked_up', 'on_the_way', 'delivering'].includes(o?.status)
+    );
+    const isTracking = !!activeOrder;
+    const orderId = activeOrder?.id;
+
+    // Stop tracking if order changed or no longer active
+    if (trackedOrderIdRef.current && trackedOrderIdRef.current !== orderId) {
+      if (orderWatchIdRef.current != null) {
+        navigator.geolocation?.clearWatch(orderWatchIdRef.current);
+        orderWatchIdRef.current = null;
+      }
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+      trackedOrderIdRef.current = null;
+    }
+
+    if (isTracking && orderId && orderWatchIdRef.current == null) {
+      trackedOrderIdRef.current = orderId;
+
+      // watchPosition: sends on movement
+      orderWatchIdRef.current = navigator.geolocation?.watchPosition(
+        (pos) => sendOrderLocation(pos.coords.latitude, pos.coords.longitude, orderId),
+        (err) => console.warn('[OrderTracking] Geo error:', err),
+        { enableHighAccuracy: true, maximumAge: 5000 }
+      ) ?? null;
+
+      // Interval fallback: guarantees a send every 10s even without movement
+      trackingIntervalRef.current = setInterval(() => {
+        navigator.geolocation?.getCurrentPosition(
+          (pos) => sendOrderLocation(pos.coords.latitude, pos.coords.longitude, orderId),
+          () => {}
+        );
+      }, 10000);
+    }
+
+    if (!isTracking) {
+      if (orderWatchIdRef.current != null) {
+        navigator.geolocation?.clearWatch(orderWatchIdRef.current);
+        orderWatchIdRef.current = null;
+      }
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+      trackedOrderIdRef.current = null;
+    }
+
+    return () => {
+      if (orderWatchIdRef.current != null) navigator.geolocation?.clearWatch(orderWatchIdRef.current);
+      if (trackingIntervalRef.current) clearInterval(trackingIntervalRef.current);
+    };
+  }, [activeOrders, sendOrderLocation]);
 
   // ── Fetch dashboard ────────────────────────────────────────────────────────
   const fetchDashboardData = useCallback(async (isBackground = false) => {

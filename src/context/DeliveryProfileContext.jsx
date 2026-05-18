@@ -3,6 +3,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import  authService  from '../services/authService.js';
 import DeliveryService from '../services/deliveryService.js';
+import { requestNotificationPermission, saveFcmToken } from '../services/notificationService.js';
+import { DELIVERY_API_URL, createAuthHeaders } from '../services/api.js';
 
 const DeliveryProfileContext = createContext(null);
 
@@ -37,6 +39,15 @@ export function DeliveryProfileProvider({ children }) {
     const profileData = await DeliveryService.getDeliveryProfile();
     setProfile(profileData);
     setIsAuthenticated(true);
+
+    // FCM: solicita permissão e salva token — falha silenciosa
+    try {
+      const fcmToken = await requestNotificationPermission();
+      await saveFcmToken(fcmToken, DELIVERY_API_URL, createAuthHeaders());
+    } catch (fcmErr) {
+      console.warn('FCM init error (non-blocking):', fcmErr);
+    }
+
     return profileData;
   };
 

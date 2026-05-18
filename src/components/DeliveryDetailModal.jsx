@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import {
   X, MapPin, Package, DollarSign, Clock,
-  Navigation, CheckCircle, Loader2, KeyRound
+  Navigation, CheckCircle, Loader2, KeyRound, MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { acceptDelivery, getPickupCode } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
+import { ChatModal } from './ChatModal';
 
 // helpers
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
@@ -47,6 +48,7 @@ export function DeliveryDetailModal({
   const addToast = useToast();
   const [accepting, setAccepting] = useState(false);
   const [pickupCode, setPickupCode] = useState('');        // ⬅️ novo
+  const [chatOpen, setChatOpen] = useState(false);
 
   if (!order) return null;
 
@@ -107,6 +109,10 @@ export function DeliveryDetailModal({
 
   const canShowGetCodeButton =
     !isAvailable && ['accepted_by_delivery', 'ready'].includes(order.status || '');
+
+  const canChat = ['accepted_by_delivery', 'delivering', 'picked_up', 'on_the_way'].includes(
+    order.status || ''
+  );
 
   return (
     <>
@@ -289,6 +295,16 @@ export function DeliveryDetailModal({
                   </Button>
                 ) : null}
 
+                {canChat && (
+                  <Button
+                    onClick={() => setChatOpen(true)}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold min-h-[44px] py-3 text-base"
+                  >
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    💬 Falar com cliente
+                  </Button>
+                )}
+
                 <Button onClick={onClose} variant="outline" className="flex-1 min-h-[44px] py-3 text-base">
                   Fechar
                 </Button>
@@ -297,6 +313,13 @@ export function DeliveryDetailModal({
           )}
         </div>
       </div>
+
+      <ChatModal
+        orderId={order?.id}
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        senderType="delivery"
+      />
     </>
   );
 }
