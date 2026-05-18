@@ -111,16 +111,16 @@ export function DeliveryDetailModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-0 sm:mx-4"
              onClick={(e) => e.stopPropagation()}>
 
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2">
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
               <Package className="h-5 w-5 text-orange-500" />
               Detalhes do Pedido
             </h2>
-            <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-100 transition-colors">
+            <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -130,7 +130,7 @@ export function DeliveryDetailModal({
               <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
             </div>
           ) : (
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* bloco com o código quando disponível */}
               {pickupCode && (
                 <div className="p-4 rounded-lg border-2 border-purple-300 bg-purple-50">
@@ -260,12 +260,12 @@ export function DeliveryDetailModal({
               )}
 
               {/* ações */}
-              <div className="flex gap-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                 {isAvailable ? (
                   <Button
                     onClick={handleAcceptOrder}
                     disabled={accepting}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-6 text-base"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold min-h-[44px] py-3 text-base"
                   >
                     {accepting ? (
                       <>
@@ -282,14 +282,14 @@ export function DeliveryDetailModal({
                 ) : canShowGetCodeButton ? (
                   <Button
                     onClick={handleShowCode}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 text-base"
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold min-h-[44px] py-3 text-base"
                   >
                     <KeyRound className="mr-2 h-5 w-5" />
                     Ver Código de Retirada
                   </Button>
                 ) : null}
 
-                <Button onClick={onClose} variant="outline" className="flex-1 py-6 text-base">
+                <Button onClick={onClose} variant="outline" className="flex-1 min-h-[44px] py-3 text-base">
                   Fechar
                 </Button>
               </div>

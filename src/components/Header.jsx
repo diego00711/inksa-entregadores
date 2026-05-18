@@ -28,21 +28,21 @@ export function Header() {
   const firstName = profile && profile.name ? profile.name.split(' ')[0] : 'Entregador';
 
   return (
-    <header className="flex items-center justify-between p-6 border-b border-border/60 bg-background">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
+    <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/60 bg-background">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">
           {greeting}, {profileLoading ? '...' : firstName}!
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Confira as entregas disponíveis.
         </p>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Botão de tema */}
-        <button className="p-2 rounded-full hover:bg-muted" title="Trocar tema (desativado)">
+        <button className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center" title="Trocar tema (desativado)">
             <Moon className="w-5 h-5" />
         </button>
-        <button className="p-2 rounded-full hover:bg-muted">
+        <button className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center">
           <Bell className="w-5 h-5" />
         </button>
         <UserAvatar />

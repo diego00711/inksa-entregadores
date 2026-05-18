@@ -163,7 +163,7 @@ export function MyDeliveriesPage() {
     <div className="flex-1 flex flex-col">
       <Header />
       <main className="flex-1 p-4 md:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 h-full">
           {/* MAPA / CARTÃO DA ENTREGA ATIVA (mantido) */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -176,7 +176,7 @@ export function MyDeliveriesPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0 relative" style={{ height: '500px' }}>
+            <CardContent className="p-0 relative" style={{ height: '280px' }}>
               <div className="h-full flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                   <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -245,7 +245,7 @@ export function MyDeliveriesPage() {
                 <CardTitle className="text-lg font-bold">
                   {activeFilter === 'available' ? 'Pedidos Disponíveis' : 'Histórico de Entregas'}
                 </CardTitle>
-                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg overflow-x-auto">
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg overflow-x-auto w-full sm:w-auto scrollbar-none">
                   <Button
                     size="sm"
                     variant={activeFilter === 'available' ? 'default' : 'ghost'}
@@ -270,7 +270,7 @@ export function MyDeliveriesPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="pt-4" style={{ height: '420px', overflowY: 'auto' }}>
+            <CardContent className="pt-4 overflow-y-auto" style={{ maxHeight: '420px' }}>
               {isFiltering ? (
                 <div className="flex justify-center items-center h-full">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -320,8 +320,8 @@ export function MyDeliveriesPage() {
       )}
 
       {pendingFinishId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4">
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
             <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
             <input
@@ -331,20 +331,20 @@ export function MyDeliveriesPage() {
               placeholder="Ex: ABCD"
               maxLength={6}
               autoFocus
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-base font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
               onKeyDown={e => { if (e.key === 'Enter') confirmFinish(); }}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => { setPendingFinishId(null); setFinishCode(''); }}
-                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmFinish}
                 disabled={finishCode.trim().length < 3}
-                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold disabled:opacity-50"
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold disabled:opacity-50"
               >
                 Confirmar
               </button>

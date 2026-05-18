@@ -75,18 +75,18 @@ const ModernStatCard = memo(({ title, value, icon: Icon, color, trend, subtitle,
     <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
       <Icon className="w-full h-full" />
     </div>
-    <CardContent className="p-6 relative z-10">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-          <Icon className="h-6 w-6 text-white" />
+    <CardContent className="p-4 sm:p-6 relative z-10">
+      <div className="flex items-center justify-between mb-3">
+        <div className="p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
         </div>
         {typeof trend === 'number' && (
-          <div className="flex items-center text-white/80 text-sm">
-            <TrendingUp className="h-4 w-4 mr-1" />+{trend}%
+          <div className="flex items-center text-white/80 text-xs sm:text-sm">
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />+{trend}%
           </div>
         )}
       </div>
-      <div className="text-3xl font-bold text-white mb-1" style={{ textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
+      <div className="text-2xl sm:text-3xl font-bold text-white mb-1 break-words" style={{ textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
         {value}
       </div>
       <div className="text-white/80 text-sm font-medium">{title}</div>
@@ -102,18 +102,18 @@ const PerformanceRing = memo(({ percentage, label, color }) => {
   const strokeDasharray = `${(p * circumference) / 100} ${circumference}`;
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-24 h-24">
-        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100" aria-label={label}>
+      <div className="relative w-16 h-16 sm:w-24 sm:h-24">
+        <svg className="w-16 h-16 sm:w-24 sm:h-24 transform -rotate-90" viewBox="0 0 100 100" aria-label={label}>
           <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-gray-200" />
           <circle cx="50" cy="50" r="45" fill="none" stroke={color} strokeWidth="8"
             strokeDasharray={strokeDasharray} strokeLinecap="round"
             className="transition-all duration-1000 ease-out" />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold text-gray-800">{Math.round(p)}%</span>
+          <span className="text-sm sm:text-xl font-bold text-gray-800">{Math.round(p)}%</span>
         </div>
       </div>
-      <span className="text-sm text-gray-600 mt-2">{label}</span>
+      <span className="text-xs sm:text-sm text-gray-600 mt-2 text-center">{label}</span>
     </div>
   );
 });
@@ -142,14 +142,14 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
         ${isNew ? 'animate-[slideInRight_0.4s_ease-out]' : ''}`}
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500" />
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-bold text-gray-800">#{order?.id?.substring(0, 8) || 'N/A'}</h3>
-            <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${badge.cls}`}>{badge.t}</div>
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex justify-between items-start mb-4 gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800">#{order?.id?.substring(0, 8) || 'N/A'}</h3>
+            <div className={`px-2 py-0.5 rounded-full text-xs font-bold text-white ${badge.cls}`}>{badge.t}</div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+          <div className="text-right shrink-0">
+            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
               R$ {toNumber(order?.delivery_fee).toFixed(2)}
             </div>
             <p className="text-xs text-gray-500">Taxa de entrega</p>
@@ -211,11 +211,11 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             </div>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             {status === 'pending' && (
               <button
                 onClick={() => onAcceptOrder(order.id)}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                className="flex-1 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
               >
                 <Zap className="h-4 w-4" /> Aceitar Pedido
               </button>
@@ -224,10 +224,10 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             {(status === 'accepted' || status === 'ready' || status === 'accepted_by_delivery' || status === 'delivering') && (
               <button
                 onClick={() => onCompleteOrder(order.id)}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                className="flex-1 min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm"
               >
                 <CheckCircle className="h-4 w-4" />
-                {status === 'delivering' ? 'Entreguei! 🎉' : 'Marcar Próximo Passo'}
+                {status === 'delivering' ? 'Entreguei! 🎉' : 'Próximo Passo'}
               </button>
             )}
 
@@ -235,7 +235,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.delivery_address)}`}
                 target="_blank" rel="noreferrer"
-                className="px-4 py-3 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
+                className="min-h-[44px] px-4 py-2.5 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
               >
                 <Navigation className="h-4 w-4" /> Rota
               </a>
@@ -468,14 +468,14 @@ export default function ModernDeliveryDashboard() {
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="bg-white/70 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
         <div className="p-4 sm:p-6">
-          <div className="flex flex-wrap justify-between items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between sm:items-center">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
                 Olá, {profile?.first_name || 'Entregador'}! 👋
               </h1>
-              <div className="flex items-center flex-wrap gap-3 mt-1">
-                <p className="text-gray-600 flex items-center gap-1.5 text-sm">
-                  <Calendar className="h-4 w-4" />
+              <div className="flex items-center flex-wrap gap-2 mt-1">
+                <p className="text-gray-600 flex items-center gap-1.5 text-xs sm:text-sm">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                   {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
                 {lastUpdated && (
@@ -499,13 +499,13 @@ export default function ModernDeliveryDashboard() {
 
               <button
                 onClick={debouncedRefresh}
-                className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50"
+                className="p-2 sm:p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 disabled={backgroundLoading}
               >
                 <RefreshCw className={`h-5 w-5 text-gray-600 ${backgroundLoading ? 'animate-spin' : ''}`} />
               </button>
 
-              <button className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 relative">
+              <button className="p-2 sm:p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 relative min-h-[44px] min-w-[44px] flex items-center justify-center">
                 <Bell className="h-5 w-5 text-gray-600" />
                 {availableCount > 0 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />}
               </button>
@@ -513,7 +513,7 @@ export default function ModernDeliveryDashboard() {
               {/* ONLINE/OFFLINE big toggle */}
               <button
                 onClick={toggleAvailability}
-                className={`px-5 py-3 rounded-xl text-white font-black text-sm flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                className={`px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl text-white font-black text-sm flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-h-[44px] ${
                   isAvailable
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
                     : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
@@ -521,9 +521,9 @@ export default function ModernDeliveryDashboard() {
               >
                 <div className={`w-3 h-3 rounded-full bg-white ${isAvailable ? 'animate-pulse' : 'opacity-50'}`} />
                 {isAvailable ? (
-                  <><Wifi className="h-5 w-5" /> ONLINE</>
+                  <><Wifi className="h-4 w-4 sm:h-5 sm:w-5" /> ONLINE</>
                 ) : (
-                  <><WifiOff className="h-5 w-5" /> OFFLINE</>
+                  <><WifiOff className="h-4 w-4 sm:h-5 sm:w-5" /> OFFLINE</>
                 )}
               </button>
             </div>
@@ -553,7 +553,7 @@ export default function ModernDeliveryDashboard() {
         )}
 
         {/* ── Stats Grid ──────────────────────────────────────────────────── */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-6 sm:mb-8">
           <ModernStatCard
             title="Ganhos Hoje"
             value={<AnimatedNumber value={todayEarnings} prefix="R$ " decimals={2} />}
@@ -591,31 +591,31 @@ export default function ModernDeliveryDashboard() {
         </div>
 
         {/* ── Performance + Active Orders ─────────────────────────────────── */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Performance rings */}
           <div className="lg:col-span-2">
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <Target className="h-6 w-6 text-orange-500" /> Performance de Hoje
+                <CardTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500" /> Performance de Hoje
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-8 mb-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-8 mb-6">
                   <PerformanceRing percentage={goalProgress} label="Meta Diária" color="#10b981" />
                   <PerformanceRing percentage={ratingProgress} label="Satisfação" color="#f59e0b" />
                   <PerformanceRing percentage={efficiencyProgress} label="Eficiência" color="#3b82f6" />
                 </div>
-                <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-xl">
-                  <div className="flex items-center justify-between">
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 sm:p-4 rounded-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
-                      <p className="text-sm text-gray-600">Tempo Online Hoje</p>
-                      <p className="text-2xl font-bold text-orange-600">
+                      <p className="text-xs sm:text-sm text-gray-600">Tempo Online Hoje</p>
+                      <p className="text-xl sm:text-2xl font-bold text-orange-600">
                         {Math.floor(onlineMinutes / 60)}h {onlineMinutes % 60}min
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Status</p>
+                    <div className="sm:text-right">
+                      <p className="text-xs sm:text-sm text-gray-600">Status</p>
                       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
                         isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
@@ -676,8 +676,8 @@ export default function ModernDeliveryDashboard() {
 
       {/* ── Cash payment confirmation modal ───────────────────────────────── */}
       {pendingCashConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4">
             {cashConfirmResult ? (
               <div className="text-center">
                 <div className="text-5xl mb-3">✅</div>
@@ -749,8 +749,8 @@ export default function ModernDeliveryDashboard() {
 
       {/* ── Delivery code modal ────────────────────────────────────────────── */}
       {pendingCompleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4">
             <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-orange-500" />
               Código de Entrega
@@ -763,20 +763,20 @@ export default function ModernDeliveryDashboard() {
               placeholder="Ex: ABCD"
               maxLength={6}
               autoFocus
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-base sm:text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
               onKeyDown={e => { if (e.key === 'Enter') confirmComplete(); }}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => { setPendingCompleteId(null); setPendingCode(''); }}
-                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmComplete}
                 disabled={pendingCode.trim().length < 3}
-                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <CheckCircle className="h-4 w-4" />
                 Confirmar

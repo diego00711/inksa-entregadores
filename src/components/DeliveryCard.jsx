@@ -133,7 +133,7 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
           </div>
         )}
 
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-2">
           <div className="flex gap-4">
             <div>
               <p className="text-xs text-gray-500 mb-0.5">Taxa</p>
@@ -152,10 +152,10 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
           </div>
 
           {delivery.created_at && (
-            <div className="text-right">
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Clock className="h-3 w-3" />
-                <span>{formatDate(delivery.created_at)}</span>
+            <div className="text-right shrink-0">
+              <div className="flex items-center gap-1 text-xs text-gray-500 flex-wrap justify-end">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span className="break-words">{formatDate(delivery.created_at)}</span>
               </div>
             </div>
           )}

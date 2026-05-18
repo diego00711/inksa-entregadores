@@ -112,54 +112,53 @@ export function EarningsPage() {
     }
 
     return (
-        <div className="earnings-container p-6 bg-gray-50 min-h-screen">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Relatório de Ganhos</h1>
-            <p className="text-gray-500 mb-6">Veja o seu desempenho e histórico de entregas.</p>
+        <div className="earnings-container p-4 sm:p-6 bg-gray-50 min-h-screen">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Relatório de Ganhos</h1>
+            <p className="text-gray-500 mb-4 sm:mb-6 text-sm sm:text-base">Veja o seu desempenho e histórico de entregas.</p>
 
             {/* Seleção de Período */}
-            <div className="mb-8 flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg shadow-md">
-                <span className="font-medium text-gray-700 mr-2">Filtrar por:</span>
-                <button 
-                    onClick={() => handlePeriodChange(7)} 
-                    className="px-4 py-2 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-sm"
-                >
-                    Últimos 7 dias
-                </button>
-                <button 
-                    onClick={() => handlePeriodChange(30)} 
-                    className="px-4 py-2 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-sm"
-                >
-                    Últimos 30 dias
-                </button>
-                <button 
-                    onClick={() => { setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setEndDate(new Date()); }}
-                    className="px-4 py-2 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-sm"
-                >
-                    Mês Atual
-                </button>
-                
-                {/* Seletor de Data Customizado (com DatePicker do Shadcn/ui, se você o tiver) */}
-                {/* Se não tiver, substitua por inputs type="date" */}
-                <div className="flex items-center gap-2 text-sm text-gray-700 ml-auto">
-                    <CalendarIcon className="h-5 w-5 text-gray-500" />
-                    <input 
-                        type="date" 
-                        value={format(startDate, 'yyyy-MM-dd')} 
-                        onChange={(e) => setStartDate(new Date(e.target.value))} 
-                        className="p-2 border border-gray-300 rounded-md"
+            <div className="mb-6 sm:mb-8 flex flex-col gap-3 p-4 bg-white rounded-lg shadow-md">
+                <span className="font-medium text-gray-700 text-sm">Filtrar por:</span>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={() => handlePeriodChange(7)}
+                        className="min-h-[44px] px-4 py-2 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-sm"
+                    >
+                        Últimos 7 dias
+                    </button>
+                    <button
+                        onClick={() => handlePeriodChange(30)}
+                        className="min-h-[44px] px-4 py-2 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-sm"
+                    >
+                        Últimos 30 dias
+                    </button>
+                    <button
+                        onClick={() => { setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setEndDate(new Date()); }}
+                        className="min-h-[44px] px-4 py-2 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-sm"
+                    >
+                        Mês Atual
+                    </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+                    <CalendarIcon className="h-4 w-4 text-gray-500" />
+                    <input
+                        type="date"
+                        value={format(startDate, 'yyyy-MM-dd')}
+                        onChange={(e) => setStartDate(new Date(e.target.value))}
+                        className="p-2 border border-gray-300 rounded-md text-base flex-1 min-w-0"
                     />
                     <span>até</span>
-                    <input 
-                        type="date" 
-                        value={format(endDate, 'yyyy-MM-dd')} 
-                        onChange={(e) => setEndDate(new Date(e.target.value))} 
-                        className="p-2 border border-gray-300 rounded-md"
+                    <input
+                        type="date"
+                        value={format(endDate, 'yyyy-MM-dd')}
+                        onChange={(e) => setEndDate(new Date(e.target.value))}
+                        className="p-2 border border-gray-300 rounded-md text-base flex-1 min-w-0"
                     />
                 </div>
             </div>
 
             {/* Cards de Sumário do Período */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 sm:mb-8">
                 <Card className="shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-600">Total de Ganhos</CardTitle>
@@ -195,8 +194,8 @@ export function EarningsPage() {
             </div>
 
             {/* Gráficos */}
-            <h2 className="text-2xl font-bold text-gray-800 mb-5 border-b pb-2">Gráficos de Desempenho</h2>
-            <div className="grid gap-6 lg:grid-cols-2 mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-5 border-b pb-2">Gráficos de Desempenho</h2>
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 mb-6 sm:mb-8">
                 <Card className="shadow-lg p-4">
                     <CardTitle className="text-lg font-semibold mb-4 text-gray-700">Ganhos Diários</CardTitle>
                     <ResponsiveContainer width="100%" height={300}>
@@ -226,12 +225,12 @@ export function EarningsPage() {
             </div>
 
             {/* Tabela Detalhada de Entregas */}
-            <h2 className="text-2xl font-bold text-gray-800 mb-5 border-b pb-2">Histórico Detalhado de Entregas</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-5 border-b pb-2">Histórico Detalhado de Entregas</h2>
             {earningsData.detailedDeliveries?.length > 0 ? (
-                <Card className="shadow-lg p-4">
+                <Card className="shadow-lg p-0 sm:p-4">
                     <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full leading-normal">
+                        <div className="overflow-x-auto w-full">
+                            <table className="min-w-full leading-normal text-sm">
                                 <thead>
                                     <tr className="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         <th className="px-5 py-3 border-b-2 border-gray-200">ID Pedido</th>

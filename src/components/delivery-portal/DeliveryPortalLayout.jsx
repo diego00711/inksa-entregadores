@@ -107,7 +107,7 @@ export default function DeliveryPortalLayout() {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={closeSidebar}
         />
@@ -117,7 +117,7 @@ export default function DeliveryPortalLayout() {
       <div className={`
         fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white
+        inset-y-0 left-0 z-50 w-64 min-w-[16rem] bg-slate-900 text-white
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -180,21 +180,21 @@ export default function DeliveryPortalLayout() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {/* Mobile header */}
-        <header className="lg:hidden bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between">
+        <header className="lg:hidden bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-md hover:bg-gray-100"
+            className="p-2 rounded-md hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <Menu className="w-6 h-6" />
           </button>
-          <h1 className="font-semibold text-gray-900">Inksa Entregadores</h1>
+          <h1 className="font-semibold text-gray-900 text-sm">Inksa Entregadores</h1>
           <div className="w-10" /> {/* Spacer */}
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-4 sm:p-6 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

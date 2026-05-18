@@ -90,7 +90,7 @@ export function LoginPage() {
             )}
             <Button
               type="submit"
-              className="w-full h-9 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors"
+              className="w-full min-h-[44px] text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors"
               disabled={loading}
             >
               {loading ? 'Entrando...' : 'Entrar'}

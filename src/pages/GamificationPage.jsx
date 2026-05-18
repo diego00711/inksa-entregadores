@@ -99,12 +99,12 @@ export default function GamificationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-4 pb-12">
-      <div className="max-w-lg mx-auto space-y-5">
+      <div className="max-w-lg mx-auto space-y-4 sm:space-y-5">
 
-        <h1 className="text-2xl font-bold text-gray-800 text-center pt-2">Minha Gamificação</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center pt-2">Minha Gamificação</h1>
 
         {/* Level card */}
-        <div className={`rounded-2xl bg-gradient-to-br ${gradient} p-6 text-white shadow-xl`}>
+        <div className={`rounded-2xl bg-gradient-to-br ${gradient} p-4 sm:p-6 text-white shadow-xl`}>
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-white/70 text-xs uppercase tracking-widest mb-1">Nível atual</p>
@@ -115,7 +115,7 @@ export default function GamificationPage() {
             </div>
           </div>
 
-          <p className="text-5xl font-black tabular-nums">{totalPts.toLocaleString('pt-BR')}</p>
+          <p className="text-4xl sm:text-5xl font-black tabular-nums break-words">{totalPts.toLocaleString('pt-BR')}</p>
           <p className="text-white/70 text-sm mb-4">pontos acumulados</p>
 
           {toNext > 0 ? (

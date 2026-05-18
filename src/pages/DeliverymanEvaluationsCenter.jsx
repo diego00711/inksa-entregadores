@@ -64,23 +64,23 @@ export default function DeliverymanEvaluationsCenter() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Minhas Avaliações</h1>
-          <p className="text-gray-500 mt-1">Veja seu desempenho e avalie seus clientes.</p>
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Minhas Avaliações</h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Veja seu desempenho e avalie seus clientes.</p>
         </div>
 
         {/* Seção 1: Como você foi avaliado */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <Award className="h-6 w-6 text-white" />
-              <h2 className="text-2xl font-bold text-white">Seu Desempenho</h2>
+              <Award className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Seu Desempenho</h2>
             </div>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {loadingReceived ? (
               <div className="space-y-3 animate-pulse">
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -120,13 +120,13 @@ export default function DeliverymanEvaluationsCenter() {
 
         {/* Seção 2: Avalie seus clientes */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <MessageSquare className="h-6 w-6 text-white" />
-              <h2 className="text-2xl font-bold text-white">Avaliações Pendentes</h2>
+              <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Avaliações Pendentes</h2>
             </div>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {loadingOrders ? (
               <div className="space-y-3 animate-pulse">
                 {[1,2].map(i => <div key={i} className="h-20 bg-gray-200 rounded-lg" />)}
@@ -135,17 +135,17 @@ export default function DeliverymanEvaluationsCenter() {
               <div className="space-y-4">
                 {ordersToReview.map(order => (
                   <div key={order.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-gray-800">Pedido para {order.client_name}</p>
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-800 break-words">Pedido para {order.client_name}</p>
                         <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-4 w-4 shrink-0" />
                           Entregue em: {new Date(order.delivered_at || order.completed_at).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                       <button
                         onClick={() => setHighlightOrderId(highlightOrderId === order.id ? null : order.id)}
-                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                        className={`min-h-[44px] px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 shrink-0 ${
                           highlightOrderId === order.id
                             ? "bg-red-500 hover:bg-red-600 text-white"
                             : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md"

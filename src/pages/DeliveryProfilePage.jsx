@@ -216,30 +216,31 @@ export default function DeliveryProfilePage() {
     }
 
     return (
-        <div className="profile-container p-6 bg-gray-50 min-h-screen">
-            {/* ✅ CORREÇÃO: Header com botão funcional */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">Meu Perfil</h1>
+        <div className="profile-container p-4 sm:p-6 bg-gray-50 min-h-screen">
+            {/* Header com botão funcional */}
+            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Meu Perfil</h1>
                 {!isEditing ? (
-                    <Button onClick={() => setIsEditing(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
+                    <Button onClick={() => setIsEditing(true)} className="bg-orange-500 hover:bg-orange-600 text-white min-h-[44px]">
                         Editar Perfil
                     </Button>
                 ) : (
-                    <div className="flex gap-2">
-                        <Button 
+                    <div className="flex gap-2 flex-wrap">
+                        <Button
                             onClick={() => {
                                 setIsEditing(false);
                                 setSelectedFile(null);
                                 setPreviewUrl(formData.avatar_url || null);
-                            }} 
+                            }}
                             variant="outline"
+                            className="min-h-[44px]"
                         >
                             Cancelar
                         </Button>
-                        <Button 
-                            onClick={handleSave} 
-                            disabled={isSaving} 
-                            className="bg-green-500 hover:bg-green-600 text-white"
+                        <Button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="bg-green-500 hover:bg-green-600 text-white min-h-[44px]"
                         >
                             {isSaving ? "Salvando..." : "Salvar Alterações"}
                         </Button>
@@ -251,9 +252,9 @@ export default function DeliveryProfilePage() {
                 {/* Informações Pessoais */}
                 <Card className="shadow-lg">
                     <CardHeader><CardTitle className="text-xl font-semibold">Informações Pessoais</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Campo para Foto de Perfil */}
-                        <div className="flex flex-col items-center col-span-full md:col-span-1">
+                        <div className="flex flex-col items-center col-span-full sm:col-span-1">
                             <Label htmlFor="avatar_upload" className="cursor-pointer mb-2 font-medium text-gray-700">Foto de Perfil</Label>
                             <div className="relative w-36 h-36 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100">
                                 {previewUrl ? (
@@ -298,9 +299,9 @@ export default function DeliveryProfilePage() {
                             <Label htmlFor="cpf">CPF</Label>
                             <Input id="cpf" value={formData.cpf} onChange={handleChange} disabled={!isEditing} />
                         </div>
-                        <div className="col-span-full md:col-span-1">
+                        <div className="col-span-full sm:col-span-1">
                             <Label htmlFor="birth_date">Data de Nascimento</Label>
-                            <Input id="birth_date" type="date" value={formData.birth_date} onChange={handleChange} disabled={!isEditing} />
+                            <Input id="birth_date" type="date" value={formData.birth_date} onChange={handleChange} disabled={!isEditing} className="text-base" />
                         </div>
                     </CardContent>
                 </Card>
@@ -324,7 +325,7 @@ export default function DeliveryProfilePage() {
                             )}
                         </div>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <Label htmlFor="address_street">Rua</Label>
                             <Input id="address_street" value={formData.address_street} onChange={handleChange} disabled={!isEditing} />
@@ -349,7 +350,7 @@ export default function DeliveryProfilePage() {
                             <Label htmlFor="address_state">Estado</Label>
                             <Input id="address_state" value={formData.address_state} onChange={handleChange} disabled={!isEditing} />
                         </div>
-                        <div className="col-span-full md:col-span-1">
+                        <div className="col-span-full sm:col-span-1">
                             <Label htmlFor="address_zipcode">CEP</Label>
                             <Input id="address_zipcode" value={formData.address_zipcode} onChange={handleChange} disabled={!isEditing} />
                         </div>
@@ -372,7 +373,7 @@ export default function DeliveryProfilePage() {
                 {/* Informações do Veículo */}
                 <Card className="shadow-lg">
                     <CardHeader><CardTitle className="text-xl font-semibold">Informações do Veículo</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="vehicle_type">Tipo de Veículo</Label>
                             <Select value={formData.vehicle_type} onValueChange={(value) => handleSelectChange('vehicle_type', value)} disabled={!isEditing}>
@@ -393,7 +394,7 @@ export default function DeliveryProfilePage() {
                 {/* Informações Bancárias */}
                 <Card className="shadow-lg">
                     <CardHeader><CardTitle className="text-xl font-semibold">Informações Bancárias</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="bank_name">Nome do Banco</Label>
                             <Input id="bank_name" value={formData.bank_name} onChange={handleChange} disabled={!isEditing} />

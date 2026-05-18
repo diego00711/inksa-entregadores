@@ -103,7 +103,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-9 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white" disabled={loading}>
+            <Button type="submit" className="w-full min-h-[44px] text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white" disabled={loading}>
               {loading ? 'A Criar...' : 'Criar Conta'}
             </Button>
           </form>
