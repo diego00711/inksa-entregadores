@@ -14,6 +14,8 @@ import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import { supabase } from '../lib/supabase';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 
@@ -425,6 +427,8 @@ export default function ModernDeliveryDashboard() {
 
   const debouncedRefresh = useDebouncedCallback(() => fetchDashboardData(true), 700);
 
+  const { pulling, refreshing } = usePullToRefresh(() => fetchDashboardData(true));
+
   // ── Toggle availability ────────────────────────────────────────────────────
   const toggleAvailability = async () => {
     if (!profile || profileLoading) return addToast('Perfil não carregado.', 'warning');
@@ -533,6 +537,11 @@ export default function ModernDeliveryDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      {(pulling || refreshing) && (
+        <div className="flex justify-center py-3">
+          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       {/* Top progress bar */}
       {backgroundLoading && <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-red-400 animate-pulse fixed top-0 z-50" />}
 
@@ -708,7 +717,9 @@ export default function ModernDeliveryDashboard() {
               </div>
             </div>
 
-            {activeOrders.length ? (
+            {backgroundLoading && activeOrders.length === 0 ? (
+              <DeliverySkeleton count={2} />
+            ) : activeOrders.length ? (
               <div className="space-y-4">
                 {activeOrders.map((order) => (
                   <ModernActiveOrderCard

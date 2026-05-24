@@ -18,6 +18,16 @@
     <!-- Meta tags para melhor SEO -->
     <meta name="description" content="App de entregas Inksa para entregadores profissionais">
     <meta name="keywords" content="delivery, entrega, inksa, entregador, app">
+
+  <!-- Sentry Error Monitoring (CDN — sem npm) -->
+  <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Substitua SUA_DSN_AQUI pela DSN real em https://sentry.io → Projeto → Settings → Client Keys
+    var SENTRY_DSN = "SUA_DSN_AQUI";
+    if (window.Sentry && SENTRY_DSN !== "SUA_DSN_AQUI") {
+      window.Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 });
+    }
+  </script>
   </head>
   <body>
     <div id="root"></div>

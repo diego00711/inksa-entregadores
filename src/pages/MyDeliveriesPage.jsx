@@ -1,6 +1,6 @@
 // src/pages/MyDeliveriesPage.jsx – VERSÃO COMPLETA (finalização com delivery_code)
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx';
@@ -12,6 +12,7 @@ import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route
 import { acceptDelivery, completeDelivery } from '../services/orderService';
 import { DELIVERY_API_URL } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 export function MyDeliveriesPage() {
   const { loading: profileLoading } = useProfile();
@@ -44,51 +45,53 @@ export function MyDeliveriesPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchDeliveries = async () => {
-      setPageLoading(true);
+  const fetchDeliveries = useCallback(async () => {
+    setPageLoading(true);
+    try {
+      const stats = await DeliveryService.getDashboardStats();
+      let myActive = stats.activeOrders || [];
+
+      const withPickup = await Promise.all(
+        myActive.map(async (order) => {
+          if (order.pickup_code) return order;
+          const full = await fetchOrderWithPickupCode(order.id);
+          return full?.pickup_code ? { ...order, pickup_code: full.pickup_code } : order;
+        })
+      );
+      setMyDeliveries(withPickup);
+
+      // disponíveis
       try {
-        const stats = await DeliveryService.getDashboardStats();
-        let myActive = stats.activeOrders || [];
-
-        const withPickup = await Promise.all(
-          myActive.map(async (order) => {
-            if (order.pickup_code) return order;
-            const full = await fetchOrderWithPickupCode(order.id);
-            return full?.pickup_code ? { ...order, pickup_code: full.pickup_code } : order;
-          })
-        );
-        setMyDeliveries(withPickup);
-
-        // disponíveis
-        try {
-          const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
-          const apiUrl = DELIVERY_API_URL;
-          const resp = await fetch(`${apiUrl}/api/orders/available`, {
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          });
-          setAvailableOrders(resp.ok ? await resp.json() : []);
-        } catch (e) {
-          console.error('Erro ao buscar disponíveis:', e);
-        }
-
-        // quais contam como “em andamento”
-        const ongoing = withPickup.find((d) =>
-          ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
-        );
-        setActiveDelivery(ongoing);
-      } catch (err) {
-        console.error('Erro ao carregar entregas:', err);
-        addToast(err?.message || 'Não foi possível carregar as entregas.', 'error');
-      } finally {
-        setPageLoading(false);
+        const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
+        const apiUrl = DELIVERY_API_URL;
+        const resp = await fetch(`${apiUrl}/api/orders/available`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        setAvailableOrders(resp.ok ? await resp.json() : []);
+      } catch (e) {
+        console.error('Erro ao buscar disponíveis:', e);
       }
-    };
 
+      // quais contam como “em andamento”
+      const ongoing = withPickup.find((d) =>
+        ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
+      );
+      setActiveDelivery(ongoing);
+    } catch (err) {
+      console.error('Erro ao carregar entregas:', err);
+      addToast(err?.message || 'Não foi possível carregar as entregas.', 'error');
+    } finally {
+      setPageLoading(false);
+    }
+  }, [addToast]);
+
+  const { pulling, refreshing } = usePullToRefresh(fetchDeliveries);
+
+  useEffect(() => {
     fetchDeliveries();
     const id = setInterval(fetchDeliveries, 30000);
     return () => clearInterval(id);
-  }, []);
+  }, [fetchDeliveries]);
 
   const filteredDeliveries = useMemo(() => {
     if (activeFilter === 'available') return availableOrders;
@@ -161,6 +164,11 @@ export function MyDeliveriesPage() {
 
   return (
     <div className="flex-1 flex flex-col">
+      {(pulling || refreshing) && (
+        <div className="flex justify-center py-3">
+          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       <Header />
       <main className="flex-1 p-4 md:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 h-full">

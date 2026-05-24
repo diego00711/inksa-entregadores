@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send } from 'lucide-react';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
+import { supabase } from '../lib/supabase';
 
 export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery' }) {
   const [messages, setMessages] = useState([]);
@@ -12,7 +13,6 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery' })
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const bottomRef = useRef(null);
-  const pollingRef = useRef(null);
   const lastMessageIdRef = useRef(null);
 
   const fetchMessages = useCallback(async () => {
@@ -34,28 +34,32 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery' })
     }
   }, [orderId]);
 
-  // Start/stop polling when modal opens/closes
+  // Start/stop Supabase realtime subscription when modal opens/closes
   useEffect(() => {
     if (!isOpen || !orderId) {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
       setMessages([]);
       setInputText('');
       setLoadError(false);
       return;
     }
 
-    fetchMessages();
-    pollingRef.current = setInterval(fetchMessages, 5000);
+    fetchMessages(); // carga inicial
 
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
+    if (!supabase) return; // fallback se env vars não configuradas
+
+    const channel = supabase
+      .channel(`chat-delivery-${orderId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `order_id=eq.${orderId}`,
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [isOpen, orderId, fetchMessages]);
 
   // Scroll to bottom when new messages arrive

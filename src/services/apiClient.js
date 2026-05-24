@@ -17,6 +17,7 @@ const apiFetch = async (url, options = {}) => {
     response = await fetch(url, options);
   } catch (networkError) {
     // Erros de rede (sem conexão, CORS abortado, etc.)
+    window.dispatchEvent(new CustomEvent('network:error'));
     throw networkError;
   }
 

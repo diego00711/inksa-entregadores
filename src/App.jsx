@@ -1,9 +1,11 @@
 // Ficheiro: src/App.jsx (VERSÃO FINAL COM ROTA DE GAMIFICAÇÃO E AVALIAÇÕES)
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useToast } from './context/ToastContext';
 import { useProfile } from './context/DeliveryProfileContext.jsx';
+import GlobalError from './components/GlobalError';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 // --- Importações ---
 import DeliveryPortalLayout from './components/delivery-portal/DeliveryPortalLayout.jsx';
@@ -57,8 +59,19 @@ function App() {
     };
   }, [navigate, addToast]);
 
+  // Online/Offline status
+  const isOnline = useOnlineStatus();
+  const wasOnlineRef = useRef(null);
+  useEffect(() => {
+    if (wasOnlineRef.current === null) { wasOnlineRef.current = isOnline; return; }
+    if (isOnline && !wasOnlineRef.current) addToast('Conexão restaurada', 'success');
+    if (!isOnline && wasOnlineRef.current) addToast('Você está offline', 'error');
+    wasOnlineRef.current = isOnline;
+  }, [isOnline, addToast]);
+
   return (
     <>
+      <GlobalError />
       <Routes>
         {/* Rotas Públicas */}
         <Route path="/login" element={<LoginPage />} />
