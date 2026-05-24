@@ -7,13 +7,30 @@ import { X, Send } from 'lucide-react';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { supabase } from '../lib/supabase';
 
-export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery' }) {
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  } catch { /* silencioso */ }
+}
+
+export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const bottomRef = useRef(null);
   const lastMessageIdRef = useRef(null);
+  const unreadRef = useRef(0);
 
   const fetchMessages = useCallback(async () => {
     if (!orderId) return;
@@ -43,6 +60,8 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery' })
       return;
     }
 
+    unreadRef.current = 0;
+    onUnreadChange?.(0);
     fetchMessages(); // carga inicial
 
     if (!supabase) return; // fallback se env vars não configuradas
@@ -55,7 +74,17 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery' })
         table: 'chat_messages',
         filter: `order_id=eq.${orderId}`,
       }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
+        setMessages(prev => {
+          const updated = [...prev, payload.new];
+          if (payload.new?.sender_type !== senderType) {
+            playBeep();
+            if (!isOpen) {
+              unreadRef.current += 1;
+              onUnreadChange?.(unreadRef.current);
+            }
+          }
+          return updated;
+        });
       })
       .subscribe();
 

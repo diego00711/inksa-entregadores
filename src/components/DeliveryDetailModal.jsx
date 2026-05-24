@@ -49,6 +49,7 @@ export function DeliveryDetailModal({
   const [accepting, setAccepting] = useState(false);
   const [pickupCode, setPickupCode] = useState('');        // ⬅️ novo
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
 
   if (!order) return null;
 
@@ -296,13 +297,18 @@ export function DeliveryDetailModal({
                 ) : null}
 
                 {canChat && (
-                  <Button
-                    onClick={() => setChatOpen(true)}
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold min-h-[44px] py-3 text-base"
+                  <button
+                    onClick={() => { setChatOpen(true); setChatUnread(0); }}
+                    className="w-full flex items-center justify-center gap-2 bg-white border-2 border-orange-500 text-orange-600 font-bold py-3 min-h-[44px] rounded-xl mb-2 hover:bg-orange-50 transition-colors shadow-sm relative"
                   >
-                    <MessageCircle className="mr-2 h-5 w-5" />
-                    💬 Falar com cliente
-                  </Button>
+                    <MessageCircle className="w-5 h-5" />
+                    Chat com cliente
+                    {chatUnread > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                        {chatUnread > 9 ? '9+' : chatUnread}
+                      </span>
+                    )}
+                  </button>
                 )}
 
                 <Button onClick={onClose} variant="outline" className="flex-1 min-h-[44px] py-3 text-base">
@@ -315,10 +321,11 @@ export function DeliveryDetailModal({
       </div>
 
       <ChatModal
-        orderId={order?.id}
+        orderId={order.id}
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         senderType="delivery"
+        onUnreadChange={(n) => { if (!chatOpen) setChatUnread(n); }}
       />
     </>
   );
