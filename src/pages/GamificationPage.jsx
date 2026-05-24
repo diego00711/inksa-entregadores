@@ -475,7 +475,9 @@ function RewardsSection({ userPoints, onPointsRefresh }) {
                 >
                   {/* Icon + name */}
                   <div className="flex items-start gap-3">
-                    {r.icon ? (
+                    {r.image_url ? (
+                      <img src={r.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                    ) : r.icon ? (
                       isEmoji
                         ? <span className="text-4xl leading-none shrink-0">{r.icon}</span>
                         : <img src={r.icon} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
