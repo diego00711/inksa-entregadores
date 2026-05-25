@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import OnboardingSlides from './components/onboarding/OnboardingSlides.jsx';
 import GuidedTour from './components/onboarding/GuidedTour.jsx';
 import WakingUpScreen from './components/WakingUpScreen.jsx';
+import SupportButton from './components/SupportButton.jsx';
 
 // --- Lazy-loaded pages ---
 const DeliveryDashboard = lazy(() => import('./pages/DeliveryDashboard.jsx'));
@@ -71,6 +72,7 @@ function App() {
       {serverReady && (
         <>
           <GlobalError />
+          <SupportButton />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
