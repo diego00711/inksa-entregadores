@@ -33,9 +33,14 @@ export default function WakingUpScreen({ onReady }) {
   }, [onReady]);
 
   useEffect(() => {
+    // Fallback: após 8s chama onReady() independente do resultado do health check
+    const fallbackTimer = setTimeout(() => onReady(), 8000);
     doCheck();
-    return () => abortRef.current?.abort();
-  }, [doCheck]);
+    return () => {
+      abortRef.current?.abort();
+      clearTimeout(fallbackTimer);
+    };
+  }, [doCheck, onReady]);
 
   if (phase === 'checking') return null;
 

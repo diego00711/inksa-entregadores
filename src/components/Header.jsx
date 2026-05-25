@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bell, Moon } from 'lucide-react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 function UserAvatar() {
   return (
@@ -14,6 +15,7 @@ function UserAvatar() {
 
 export function Header() {
   const { profile, loading: profileLoading } = useProfile();
+  const addToast = useToast();
 
   const hour = new Date().getHours();
   let greeting;
@@ -39,10 +41,21 @@ export function Header() {
       </div>
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Botão de tema */}
-        <button className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center" title="Trocar tema (desativado)">
-            <Moon className="w-5 h-5" />
+        <button
+          onClick={() => {
+            document.documentElement.classList.toggle('dark');
+            addToast('Tema alternado!', 'info');
+          }}
+          className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center"
+          title="Alternar modo noturno"
+        >
+          <Moon className="w-5 h-5" />
         </button>
-        <button className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center">
+        <button
+          onClick={() => addToast('Notificações em breve!', 'info')}
+          className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center"
+          title="Notificações"
+        >
           <Bell className="w-5 h-5" />
         </button>
         <UserAvatar />

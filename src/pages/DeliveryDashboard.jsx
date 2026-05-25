@@ -392,6 +392,13 @@ export default function ModernDeliveryDashboard() {
     }
   }, [profileLoading, profile?.id, dashboardStats, updateProfile, addToast, playSound]);
 
+  // ── Para o loading quando o perfil termina de carregar sem ID (ex: não autenticado) ──
+  useEffect(() => {
+    if (!profileLoading && !profile?.id) {
+      setInitialLoading(false);
+    }
+  }, [profileLoading, profile?.id]);
+
   // ── Polling + visibility ───────────────────────────────────────────────────
   useEffect(() => {
     if (profileLoading || !profile?.id) return;
@@ -585,7 +592,10 @@ export default function ModernDeliveryDashboard() {
                 <RefreshCw className={`h-5 w-5 text-gray-600 ${backgroundLoading ? 'animate-spin' : ''}`} />
               </button>
 
-              <button className="p-2 sm:p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <button
+                onClick={() => addToast('Notificações em breve!', 'info')}
+                className="p-2 sm:p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 relative min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
                 <Bell className="h-5 w-5 text-gray-600" />
                 {availableCount > 0 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />}
               </button>
