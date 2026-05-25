@@ -190,3 +190,8 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(clients.openWindow('/'));
   }
 });
+
+// Keep-alive: pinga o backend a cada 10 min para evitar cold start no Render
+setInterval(() => {
+  fetch(API_URL + '/api/health', { cache: 'no-store' }).catch(() => {});
+}, 10 * 60 * 1000);
