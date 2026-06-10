@@ -5,6 +5,9 @@ const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrend
 const MAX_WAIT_MS = 60000; // não prende o usuário para sempre
 
 export default function WakingUpScreen({ onReady }) {
+  // `ready` controla a própria visibilidade: o App renderiza este componente
+  // de forma incondicional, então ele PRECISA sumir sozinho quando termina.
+  const [ready, setReady] = useState(false);
   const [slow, setSlow] = useState(false);
   const done = useRef(false);
 
@@ -13,9 +16,10 @@ export default function WakingUpScreen({ onReady }) {
     const start = Date.now();
 
     const finish = () => {
-      if (done.current || !alive) return;
+      if (done.current) return;
       done.current = true;
-      onReady();
+      if (alive) setReady(true); // esconde a tela
+      onReady();                 // libera as rotas no App
     };
 
     const ping = async () => {
@@ -38,6 +42,8 @@ export default function WakingUpScreen({ onReady }) {
     ping();
     return () => { alive = false; };
   }, [onReady]);
+
+  if (ready) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white">
