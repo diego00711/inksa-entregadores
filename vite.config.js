@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: {
@@ -20,6 +20,10 @@ export default defineConfig({
       },
     },
   },
+  // Remove console.* e debugger só no build de produção (dev fica intacto)
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   server: {
     port: 5173,
     host: true,
@@ -31,4 +35,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
