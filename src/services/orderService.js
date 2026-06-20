@@ -56,15 +56,22 @@ export const completeDelivery = async (orderId, deliveryCode) => {
 };
 
 // Reportar ocorrência (não consegui entregar): cliente não localizado, endereço errado, etc.
-export const reportIncident = async (orderId, { reason, notes, contactAttempts } = {}) => {
+// outcome (o que fazer com o pedido): return_to_restaurant | dispose | keep
+export const reportIncident = async (orderId, { reason, notes, contactAttempts, outcome } = {}) => {
   return fetchWithAuth(`${API_URL}/api/orders/${orderId}/report-incident`, {
     method: 'POST',
     body: JSON.stringify({
       reason,
       notes: notes || '',
       contact_attempts: contactAttempts || {},
+      outcome: outcome || '',
     }),
   });
+};
+
+// Entregador confirma que devolveu o pedido ao restaurante
+export const confirmReturn = async (orderId) => {
+  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/confirm-return`, { method: 'POST' });
 };
 
 export const getOrdersToReview = async (signal) => {

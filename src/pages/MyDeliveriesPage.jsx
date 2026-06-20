@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
 import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle } from 'lucide-react';
-import { acceptDelivery, completeDelivery, reportIncident } from '../services/orderService';
+import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import { DELIVERY_API_URL } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
@@ -32,6 +32,8 @@ export function MyDeliveriesPage() {
   const [finishCode, setFinishCode] = useState('');
   const [incidentOrderId, setIncidentOrderId] = useState(null);
   const [incidentSubmitting, setIncidentSubmitting] = useState(false);
+  const [returnOrder, setReturnOrder] = useState(null);
+  const [confirmingReturn, setConfirmingReturn] = useState(false);
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -154,21 +156,43 @@ export function MyDeliveriesPage() {
     }
   };
 
-  const handleReportIncident = async ({ reason, notes, contactAttempts }) => {
+  const handleReportIncident = async ({ reason, notes, contactAttempts, outcome }) => {
     if (!incidentOrderId) return;
     setIncidentSubmitting(true);
+    const orderForReturn = activeDelivery; // captura antes de limpar
     try {
-      await reportIncident(incidentOrderId, { reason, notes, contactAttempts });
+      await reportIncident(incidentOrderId, { reason, notes, contactAttempts, outcome });
       handleUpdateStatus(incidentOrderId, 'delivery_failed');
       setIncidentOrderId(null);
-      setActiveDelivery(null);
-      addToast('Ocorrência registrada. Nossa equipe vai tratar o caso.', 'success');
+      addToast('Ocorrência registrada.', 'success');
+      // Padrão iFood: se for devolver, guia o entregador até o restaurante
+      if (outcome === 'return_to_restaurant' && orderForReturn) {
+        setReturnOrder(orderForReturn);
+      } else {
+        setActiveDelivery(null);
+      }
       fetchDeliveries();
     } catch (e) {
       console.error('Erro ao reportar ocorrência:', e);
       addToast(e?.message || 'Erro ao registrar a ocorrência.', 'error');
     } finally {
       setIncidentSubmitting(false);
+    }
+  };
+
+  const handleConfirmReturn = async () => {
+    if (!returnOrder) return;
+    setConfirmingReturn(true);
+    try {
+      await confirmReturn(returnOrder.id);
+      addToast('Devolução confirmada. Obrigado!', 'success');
+      setReturnOrder(null);
+      setActiveDelivery(null);
+      fetchDeliveries();
+    } catch (e) {
+      addToast(e?.message || 'Erro ao confirmar a devolução.', 'error');
+    } finally {
+      setConfirmingReturn(false);
     }
   };
 
@@ -394,6 +418,42 @@ export function MyDeliveriesPage() {
         onClose={() => setIncidentOrderId(null)}
         onConfirm={handleReportIncident}
       />
+
+      {/* Fluxo guiado de devolução ao restaurante (padrão iFood) */}
+      {returnOrder && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6">
+            <div className="text-center mb-3">
+              <div className="text-4xl mb-2">🔁</div>
+              <h3 className="text-lg font-bold text-gray-800">Devolva o pedido ao restaurante</h3>
+              <p className="text-sm text-gray-500 mt-1">Leve o pedido de volta ao estabelecimento e confirme abaixo.</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm">
+              <p className="font-semibold text-gray-800">{returnOrder.restaurant_name || returnOrder.restaurant?.name || 'Restaurante'}</p>
+              <p className="text-gray-500">{returnOrder.restaurant_address || returnOrder.restaurant?.address || ''}</p>
+            </div>
+            <button
+              onClick={() => {
+                const addr = returnOrder.restaurant_address || returnOrder.restaurant?.address || returnOrder.restaurant_name || '';
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`, '_blank');
+              }}
+              className="w-full mb-2 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+            >
+              <Route className="w-4 h-4" /> Rota até o restaurante
+            </button>
+            <button
+              onClick={handleConfirmReturn}
+              disabled={confirmingReturn}
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {confirmingReturn && <Loader2 className="w-4 h-4 animate-spin" />} Confirmei a devolução
+            </button>
+            <button onClick={() => { setReturnOrder(null); setActiveDelivery(null); }} className="w-full mt-2 text-xs text-gray-400">
+              Confirmar depois
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

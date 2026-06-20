@@ -14,16 +14,22 @@ const REASONS = [
   { code: 'courier_issue',      emoji: '🛵', label: 'Problema comigo (acidente, moto, etc.)' },
 ];
 
+const OUTCOMES = [
+  { code: 'return_to_restaurant', emoji: '🔁', label: 'Devolver ao restaurante', hint: 'Leve o pedido de volta ao estabelecimento' },
+  { code: 'dispose',             emoji: '🗑️', label: 'Descartar o pedido',       hint: 'Perecível ou sem condições de devolver' },
+];
+
 export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submitting }) {
   const [reason, setReason] = useState(null);
   const [notes, setNotes] = useState('');
   const [tried, setTried] = useState(false);
+  const [outcome, setOutcome] = useState(null);
 
   if (!isOpen) return null;
 
   // Para "cliente não localizado" exigimos confirmação de tentativa de contato
   const needsContact = reason === 'customer_not_found' || reason === 'customer_absent';
-  const canSubmit = !!reason && (!needsContact || tried) && !submitting;
+  const canSubmit = !!reason && (!needsContact || tried) && !!outcome && !submitting;
 
   const handleConfirm = () => {
     if (!canSubmit) return;
@@ -31,6 +37,7 @@ export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submit
       reason,
       notes: notes.trim(),
       contactAttempts: needsContact ? { tried_contact: true } : {},
+      outcome,
     });
   };
 
@@ -86,6 +93,29 @@ export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submit
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
             />
           </div>
+
+          {/* O que fazer com o pedido (padrão iFood) */}
+          {reason && (
+            <div className="pt-1">
+              <p className="text-sm font-medium text-gray-700 mb-2">O que fazer com o pedido?</p>
+              <div className="space-y-2">
+                {OUTCOMES.map((o) => (
+                  <button
+                    key={o.code}
+                    onClick={() => setOutcome(o.code)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors
+                      ${outcome === o.code ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <span className="text-xl">{o.emoji}</span>
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-800">{o.label}</span>
+                      <span className="block text-xs text-gray-500">{o.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             onClick={handleConfirm}
