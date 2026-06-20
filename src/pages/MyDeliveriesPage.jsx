@@ -8,8 +8,9 @@ import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
-import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package } from 'lucide-react';
-import { acceptDelivery, completeDelivery } from '../services/orderService';
+import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle } from 'lucide-react';
+import { acceptDelivery, completeDelivery, reportIncident } from '../services/orderService';
+import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import { DELIVERY_API_URL } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
@@ -29,6 +30,8 @@ export function MyDeliveriesPage() {
   const [showMap, setShowMap] = useState(false);
   const [pendingFinishId, setPendingFinishId] = useState(null);
   const [finishCode, setFinishCode] = useState('');
+  const [incidentOrderId, setIncidentOrderId] = useState(null);
+  const [incidentSubmitting, setIncidentSubmitting] = useState(false);
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -151,6 +154,24 @@ export function MyDeliveriesPage() {
     }
   };
 
+  const handleReportIncident = async ({ reason, notes, contactAttempts }) => {
+    if (!incidentOrderId) return;
+    setIncidentSubmitting(true);
+    try {
+      await reportIncident(incidentOrderId, { reason, notes, contactAttempts });
+      handleUpdateStatus(incidentOrderId, 'delivery_failed');
+      setIncidentOrderId(null);
+      setActiveDelivery(null);
+      addToast('Ocorrência registrada. Nossa equipe vai tratar o caso.', 'success');
+      fetchDeliveries();
+    } catch (e) {
+      console.error('Erro ao reportar ocorrência:', e);
+      addToast(e?.message || 'Erro ao registrar a ocorrência.', 'error');
+    } finally {
+      setIncidentSubmitting(false);
+    }
+  };
+
   if (pageLoading || profileLoading) {
     return (
       <div className="flex-1 flex flex-col">
@@ -238,6 +259,12 @@ export function MyDeliveriesPage() {
                             <Phone className="w-4 w-4" />
                           </Button>
                         </div>
+                        <button
+                          onClick={() => setIncidentOrderId(activeDelivery.id)}
+                          className="mt-3 w-full text-sm font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
+                        >
+                          <AlertTriangle className="w-4 h-4" /> Não consegui entregar
+                        </button>
                       </div>
                     </div>
                   )}
@@ -360,6 +387,13 @@ export function MyDeliveriesPage() {
           </div>
         </div>
       )}
+
+      <ReportIncidentModal
+        isOpen={!!incidentOrderId}
+        submitting={incidentSubmitting}
+        onClose={() => setIncidentOrderId(null)}
+        onConfirm={handleReportIncident}
+      />
     </div>
   );
 }

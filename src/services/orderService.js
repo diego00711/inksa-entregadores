@@ -55,6 +55,18 @@ export const completeDelivery = async (orderId, deliveryCode) => {
   });
 };
 
+// Reportar ocorrência (não consegui entregar): cliente não localizado, endereço errado, etc.
+export const reportIncident = async (orderId, { reason, notes, contactAttempts } = {}) => {
+  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/report-incident`, {
+    method: 'POST',
+    body: JSON.stringify({
+      reason,
+      notes: notes || '',
+      contact_attempts: contactAttempts || {},
+    }),
+  });
+};
+
 export const getOrdersToReview = async (signal) => {
   const token = getAuthToken();
   if (!token) throw new Error('Token de autenticação não encontrado');
