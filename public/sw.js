@@ -1,7 +1,7 @@
 /* sw.js — Service Worker para PWA Inksa Entregadores
    Estratégias de cache otimizadas + proteção para chamadas POST/PUT/PATCH/DELETE
 */
-const CACHE_NAME = 'inksa-entregadores-v1.0.2';
+const CACHE_NAME = 'inksa-entregadores-v1.0.3';
 const API_URL = 'https://inksa-auth-flask-dev.onrender.com';
 
 // Rotas base para funcionar offline (app shell)
