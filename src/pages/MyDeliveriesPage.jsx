@@ -156,12 +156,12 @@ export function MyDeliveriesPage() {
     }
   };
 
-  const handleReportIncident = async ({ reason, notes, contactAttempts, outcome }) => {
+  const handleReportIncident = async ({ reason, notes, contactAttempts, outcome, photoUrl }) => {
     if (!incidentOrderId) return;
     setIncidentSubmitting(true);
     const orderForReturn = activeDelivery; // captura antes de limpar
     try {
-      await reportIncident(incidentOrderId, { reason, notes, contactAttempts, outcome });
+      await reportIncident(incidentOrderId, { reason, notes, contactAttempts, outcome, photoUrl });
       handleUpdateStatus(incidentOrderId, 'delivery_failed');
       setIncidentOrderId(null);
       addToast('Ocorrência registrada.', 'success');
@@ -414,6 +414,7 @@ export function MyDeliveriesPage() {
 
       <ReportIncidentModal
         isOpen={!!incidentOrderId}
+        orderId={incidentOrderId}
         submitting={incidentSubmitting}
         onClose={() => setIncidentOrderId(null)}
         onConfirm={handleReportIncident}

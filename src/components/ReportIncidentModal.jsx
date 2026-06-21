@@ -3,7 +3,8 @@
 // cliente não localizado, confirma que tentou contato antes de finalizar.
 
 import { useState, useEffect } from 'react';
-import { X, Loader2, AlertTriangle, Phone, MessageCircle, Clock } from 'lucide-react';
+import { X, Loader2, AlertTriangle, Phone, MessageCircle, Clock, Camera, Check } from 'lucide-react';
+import { uploadIncidentPhoto } from '../services/orderService';
 
 // Tempo mínimo de espera (tentando contato) antes de finalizar "cliente não
 // localizado/ausente" — padrão dos grandes deliverys. Ajustável.
@@ -23,12 +24,29 @@ const OUTCOMES = [
   { code: 'dispose',             emoji: '🗑️', label: 'Descartar o pedido',       hint: 'Perecível ou sem condições de devolver' },
 ];
 
-export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submitting }) {
+export default function ReportIncidentModal({ isOpen, orderId, onClose, onConfirm, submitting }) {
   const [reason, setReason] = useState(null);
   const [notes, setNotes] = useState('');
   const [tried, setTried] = useState(false);
   const [outcome, setOutcome] = useState(null);
   const [waitLeft, setWaitLeft] = useState(0);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !orderId) return;
+    setUploading(true);
+    try {
+      const url = await uploadIncidentPhoto(orderId, file);
+      setPhotoUrl(url);
+    } catch (err) {
+      console.error('Erro ao enviar foto:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Inicia o cronômetro de espera quando o motivo exige tentativa de contato
   useEffect(() => {
@@ -54,6 +72,7 @@ export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submit
       notes: notes.trim(),
       contactAttempts: needsContact ? { tried_contact: true, waited: true } : {},
       outcome,
+      photoUrl,
     });
   };
 
@@ -115,6 +134,22 @@ export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submit
               placeholder="Ex.: toquei o interfone várias vezes, sem resposta."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
             />
+          </div>
+
+          {/* Foto-comprovante (opcional) */}
+          <div>
+            <label className="text-sm text-gray-600">Foto-comprovante (opcional)</label>
+            <label className="mt-1 flex items-center justify-center gap-2 w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50">
+              {uploading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+              ) : photoUrl ? (
+                <><Check className="w-4 h-4 text-green-600" /> Foto adicionada — tocar para trocar</>
+              ) : (
+                <><Camera className="w-4 h-4" /> Tirar foto do local</>
+              )}
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} disabled={uploading} />
+            </label>
+            {photoUrl && <img src={photoUrl} alt="comprovante" className="mt-2 w-full max-h-40 object-cover rounded-lg border" />}
           </div>
 
           {/* O que fazer com o pedido (padrão iFood) */}

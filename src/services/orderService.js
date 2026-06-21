@@ -57,7 +57,7 @@ export const completeDelivery = async (orderId, deliveryCode) => {
 
 // Reportar ocorrência (não consegui entregar): cliente não localizado, endereço errado, etc.
 // outcome (o que fazer com o pedido): return_to_restaurant | dispose | keep
-export const reportIncident = async (orderId, { reason, notes, contactAttempts, outcome } = {}) => {
+export const reportIncident = async (orderId, { reason, notes, contactAttempts, outcome, photoUrl } = {}) => {
   return fetchWithAuth(`${API_URL}/api/orders/${orderId}/report-incident`, {
     method: 'POST',
     body: JSON.stringify({
@@ -65,8 +65,30 @@ export const reportIncident = async (orderId, { reason, notes, contactAttempts, 
       notes: notes || '',
       contact_attempts: contactAttempts || {},
       outcome: outcome || '',
+      photo_url: photoUrl || '',
     }),
   });
+};
+
+// Envia a foto-comprovante da ocorrência (multipart) e retorna a URL pública
+export const uploadIncidentPhoto = async (orderId, file) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Token de autenticação não encontrado');
+  const form = new FormData();
+  form.append('file', file);
+  const response = await apiFetch(`${API_URL}/api/orders/${orderId}/incident-photo`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }, // sem Content-Type: o browser define o boundary
+    body: form,
+  });
+  if (!response.ok) {
+    const t = await response.text().catch(() => '');
+    let msg = `Erro ${response.status}`;
+    try { msg = JSON.parse(t)?.error || msg; } catch { /* noop */ }
+    throw new Error(msg);
+  }
+  const data = await response.json();
+  return data.photo_url || data?.data?.photo_url || null;
 };
 
 // Entregador confirma que devolveu o pedido ao restaurante
