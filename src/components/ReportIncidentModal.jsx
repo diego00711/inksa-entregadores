@@ -2,8 +2,12 @@
 // Fluxo "Não consegui entregar": o entregador escolhe o motivo e, no caso de
 // cliente não localizado, confirma que tentou contato antes de finalizar.
 
-import { useState } from 'react';
-import { X, Loader2, AlertTriangle, Phone, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Loader2, AlertTriangle, Phone, MessageCircle, Clock } from 'lucide-react';
+
+// Tempo mínimo de espera (tentando contato) antes de finalizar "cliente não
+// localizado/ausente" — padrão dos grandes deliverys. Ajustável.
+const WAIT_SECONDS = 180;
 
 const REASONS = [
   { code: 'customer_not_found', emoji: '🔴', label: 'Cliente não localizado / não atende' },
@@ -24,19 +28,31 @@ export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submit
   const [notes, setNotes] = useState('');
   const [tried, setTried] = useState(false);
   const [outcome, setOutcome] = useState(null);
+  const [waitLeft, setWaitLeft] = useState(0);
+
+  // Inicia o cronômetro de espera quando o motivo exige tentativa de contato
+  useEffect(() => {
+    const needs = reason === 'customer_not_found' || reason === 'customer_absent';
+    if (!needs) { setWaitLeft(0); return; }
+    setWaitLeft(WAIT_SECONDS);
+    const id = setInterval(() => setWaitLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [reason]);
 
   if (!isOpen) return null;
 
-  // Para "cliente não localizado" exigimos confirmação de tentativa de contato
+  // Para "cliente não localizado/ausente" exigimos: tentar contato + aguardar o tempo
   const needsContact = reason === 'customer_not_found' || reason === 'customer_absent';
-  const canSubmit = !!reason && (!needsContact || tried) && !!outcome && !submitting;
+  const waitDone = waitLeft === 0;
+  const canSubmit = !!reason && (!needsContact || (tried && waitDone)) && !!outcome && !submitting;
+  const mmss = `${String(Math.floor(waitLeft / 60)).padStart(2, '0')}:${String(waitLeft % 60).padStart(2, '0')}`;
 
   const handleConfirm = () => {
     if (!canSubmit) return;
     onConfirm({
       reason,
       notes: notes.trim(),
-      contactAttempts: needsContact ? { tried_contact: true } : {},
+      contactAttempts: needsContact ? { tried_contact: true, waited: true } : {},
       outcome,
     });
   };
@@ -80,6 +96,13 @@ export default function ReportIncidentModal({ isOpen, onClose, onConfirm, submit
                 <input type="checkbox" checked={tried} onChange={(e) => setTried(e.target.checked)} className="h-4 w-4 text-orange-600 rounded" />
                 <span className="text-sm text-gray-700">Já tentei ligar e mandar mensagem</span>
               </label>
+              {!waitDone && (
+                <div className="flex items-center gap-2 bg-amber-100 rounded-lg px-3 py-2 mt-1">
+                  <Clock className="w-4 h-4 text-amber-700" />
+                  <span className="text-sm font-semibold text-amber-800">Aguarde {mmss}</span>
+                  <span className="text-xs text-amber-700">— continue tentando contato; o cliente foi avisado.</span>
+                </div>
+              )}
             </div>
           )}
 
