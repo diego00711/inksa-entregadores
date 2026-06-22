@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import { haptics } from '../../lib/haptics.js';
 
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
@@ -53,11 +54,14 @@ export default function DeliveryPortalLayout() {
   const toggleOnline = async () => {
     if (savingStatus || loading) return;
     const next = !isOnline;
+    haptics.tap();
     setSavingStatus(true);
     try {
       await updateProfile({ is_available: next });
+      haptics.success();
       addToast(`Você está ${next ? 'ONLINE 🟢' : 'OFFLINE 🔴'}!`, 'success');
     } catch {
+      haptics.error();
       addToast('Não foi possível atualizar seu status.', 'error');
     } finally {
       setSavingStatus(false);
@@ -162,6 +166,7 @@ export default function DeliveryPortalLayout() {
               key={item.name}
               to={item.href}
               onClick={closeSidebar}
+              aria-current={active ? 'page' : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all min-h-[44px] ${
                 active
                   ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-900/30'
@@ -254,6 +259,8 @@ export default function DeliveryPortalLayout() {
               <Link
                 key={item.name}
                 to={item.href}
+                aria-current={active ? 'page' : undefined}
+                aria-label={item.name}
                 className={`relative flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
                   active ? 'text-orange-600' : 'text-gray-400'
                 }`}

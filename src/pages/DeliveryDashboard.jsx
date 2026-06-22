@@ -18,6 +18,7 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import { supabase } from '../lib/supabase';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
+import { haptics } from '../lib/haptics';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const toNumber = (v) => (typeof v === 'number' ? v : parseFloat(v || '0')) || 0;
@@ -439,22 +440,32 @@ export default function ModernDeliveryDashboard() {
   // ── Toggle availability ────────────────────────────────────────────────────
   const toggleAvailability = async () => {
     if (!profile || profileLoading) return addToast('Perfil não carregado.', 'warning');
+    haptics.tap();
     try {
       const next = !isAvailable;
       const updated = await DeliveryService.updateDeliveryProfile({ is_available: next });
       updateProfile({ is_available: !!updated?.is_available });
       setDashboardStats((p) => ({ ...(p || {}), is_available: !!updated?.is_available }));
+      haptics.success();
       addToast(`Agora você está ${next ? 'ONLINE 🟢' : 'OFFLINE 🔴'}!`, 'success');
-    } catch { addToast('Erro ao atualizar disponibilidade.', 'error'); }
+    } catch {
+      haptics.error();
+      addToast('Erro ao atualizar disponibilidade.', 'error');
+    }
   };
 
   const handleAcceptOrder = async (orderId) => {
+    haptics.tap();
     try {
       await acceptDelivery(orderId);
       playSound('accepted');
+      haptics.success();
       addToast('Pedido aceito com sucesso! 🎉', 'success');
       fetchDashboardData(true);
-    } catch { addToast('Erro ao aceitar pedido.', 'error'); }
+    } catch {
+      haptics.error();
+      addToast('Erro ao aceitar pedido.', 'error');
+    }
   };
 
   const handleCompleteOrder = (orderId) => {
@@ -466,10 +477,11 @@ export default function ModernDeliveryDashboard() {
 
   const confirmComplete = async () => {
     const deliveryCode = String(pendingCode).trim().toUpperCase();
-    if (deliveryCode.length < 3) { addToast('Código inválido.', 'warning'); return; }
+    if (deliveryCode.length < 3) { haptics.warn(); addToast('Código inválido.', 'warning'); return; }
     try {
       await completeDelivery(pendingCompleteId, deliveryCode);
       playSound('delivered');
+      haptics.notify();
       addToast('Pedido entregue com sucesso! 🎉', 'success');
 
       if (pendingCompleteOrder?.payment_method === 'cash') {
