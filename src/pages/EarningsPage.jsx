@@ -13,6 +13,28 @@ import { format, subDays } from 'date-fns'; // Para formatação e manipulação
 // import { DatePicker } from '@/components/ui/date-picker'; // Ajuste o caminho se necessário
 // Se não, você precisará de um input de data HTML simples ou outra biblioteca.
 
+// Traduz e estiliza o status do pedido (mesmo padrão do DeliveryCard)
+const STATUS_BADGE = {
+    delivered: { label: 'Entregue', cls: 'bg-green-100 text-green-800' },
+    delivery_failed: { label: 'Não entregue', cls: 'bg-red-100 text-red-800' },
+    delivering: { label: 'Em rota', cls: 'bg-purple-100 text-purple-800' },
+    accepted_by_delivery: { label: 'Aguardando retirada', cls: 'bg-pink-100 text-pink-800' },
+    ready: { label: 'Pronto', cls: 'bg-green-100 text-green-800' },
+    preparing: { label: 'Preparando', cls: 'bg-orange-100 text-orange-800' },
+    accepted: { label: 'Aceito', cls: 'bg-blue-100 text-blue-800' },
+    pending: { label: 'Pendente', cls: 'bg-yellow-100 text-yellow-800' },
+    cancelled: { label: 'Cancelado', cls: 'bg-gray-100 text-gray-700' },
+};
+
+const StatusBadge = ({ status }) => {
+    const info = STATUS_BADGE[status] || { label: status || '—', cls: 'bg-gray-100 text-gray-700' };
+    return (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${info.cls}`}>
+            {info.label}
+        </span>
+    );
+};
+
 // Helper para formatar o endereço (reutilizado do dashboard)
 const formatAddress = (street, number, neighborhood, city, state) => {
     if (street || number || neighborhood || city || state) {
@@ -205,7 +227,7 @@ export function EarningsPage() {
                             <YAxis tickFormatter={(tick) => `R$${Number(tick).toFixed(2)}`} />
                             <Tooltip formatter={(value) => [`R$${Number(value).toFixed(2)}`, 'Ganhos']} />
                             <Legend />
-                            <Line type="monotone" dataKey="total_earned_daily" stroke="#28a745" activeDot={{ r: 8 }} name="Ganhos" />
+                            <Line type="monotone" dataKey="total_earned_daily" stroke="#16a34a" strokeWidth={2.5} activeDot={{ r: 8 }} name="Ganhos" />
                         </LineChart>
                     </ResponsiveContainer>
                 </Card>
@@ -218,7 +240,7 @@ export function EarningsPage() {
                             <YAxis />
                             <Tooltip formatter={(value) => [value, 'Entregas']} />
                             <Legend />
-                            <Bar dataKey="total_deliveries_daily" fill="#007bff" name="Entregas" />
+                            <Bar dataKey="total_deliveries_daily" fill="#2563eb" radius={[4, 4, 0, 0]} name="Entregas" />
                         </BarChart>
                     </ResponsiveContainer>
                 </Card>
@@ -264,10 +286,7 @@ export function EarningsPage() {
                                                 {parseFloat(delivery.total_amount || 0).toFixed(2)}
                                             </td>
                                             <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                <span className="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight">
-                                                    <span aria-hidden="true" className="absolute inset-0 bg-green-200 opacity-50 rounded-full"></span>
-                                                    <span className="relative">{delivery.status}</span>
-                                                </span>
+                                                <StatusBadge status={delivery.status} />
                                             </td>
                                         </tr>
                                     ))}
