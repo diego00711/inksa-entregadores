@@ -1,5 +1,10 @@
 {
   "appId": "com.inksa.entregador",
   "appName": "Inksa Entregador",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://entregadores.inksadelivery.com.br",
+    "cleartext": false,
+    "androidScheme": "https"
+  }
 }
