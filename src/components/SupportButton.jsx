@@ -47,7 +47,7 @@ export default function SupportButton() {
               </a>
 
               <a
-                href="https://wa.me/5549999999999"
+                href="https://wa.me/5549999679697"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-green-50 hover:border-green-300 transition-colors group"
@@ -57,7 +57,7 @@ export default function SupportButton() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-800 group-hover:text-green-700">WhatsApp</p>
-                  <p className="text-xs text-gray-500">(49) 99999-9999</p>
+                  <p className="text-xs text-gray-500">(49) 99967-9697</p>
                 </div>
               </a>
             </div>
