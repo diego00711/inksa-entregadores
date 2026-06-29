@@ -51,13 +51,6 @@ export function Header() {
         </p>
       </div>
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        <button
-          onClick={() => addToast('Notificações em breve!', 'info')}
-          className="p-2 rounded-full hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center"
-          title="Notificações"
-        >
-          <Bell className="w-5 h-5" />
-        </button>
         <UserAvatar profile={profile} />
       </div>
     </header>
