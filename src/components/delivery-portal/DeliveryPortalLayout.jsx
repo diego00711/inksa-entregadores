@@ -13,6 +13,7 @@ import {
   Wifi,
   WifiOff,
   Loader2,
+  LifeBuoy,
 } from 'lucide-react';
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -25,6 +26,7 @@ const NAVIGATION = [
   { name: 'Ganhos', href: '/delivery/ganhos', icon: DollarSign, primary: true },
   { name: 'Avaliações', href: '/delivery/avaliacoes', icon: Star, primary: false },
   { name: 'Gamificação', href: '/delivery/gamificacao', icon: Trophy, primary: false },
+  { name: 'Suporte', href: '/delivery/suporte', icon: LifeBuoy, primary: false },
   { name: 'Meu Perfil', href: '/delivery/meu-perfil', icon: User, primary: true },
 ];
 
