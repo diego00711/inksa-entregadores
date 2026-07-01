@@ -28,46 +28,41 @@ const authService = {
     async login(email, password) {
         let response;
         try {
-            response = await apiFetch(`${API_BASE_URL}/api/auth/login`, {
+            // NAO usa apiFetch/processResponse: no login, 401 e senha errada (nao sessao expirada)
+            response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, expected_user_type: 'delivery' }),
             });
         } catch (networkError) {
             throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão.');
         }
 
-        const responseData = await processResponse(response);
+        const responseData = await response.json().catch(() => ({}));
 
-        // ✅ Verifica diferentes formatos de resposta da API
+        if (!response.ok) {
+            throw new Error(responseData.error || responseData.message || 'Não foi possível entrar. Tente novamente.');
+        }
+
         let token, user;
-        
-        // Formato 1: { status: 'success', data: { token, user } }
-        if (responseData?.status === 'success' && responseData?.data?.token) {
+        if (responseData?.data?.token) {
             token = responseData.data.token;
             user = responseData.data.user;
-        }
-        // Formato 2: { status: 'success', token, user }
-        else if (responseData?.status === 'success' && responseData?.token) {
+        } else if (responseData?.token) {
             token = responseData.token;
             user = responseData.user;
         }
-        // Formato 3: { token, user } (resposta direta)
-        else if (responseData?.token) {
-            token = responseData.token;
-            user = responseData.user;
-        }
-        
+
         if (token) {
             if (user && user.user_type !== 'delivery') {
-                throw new Error('Acesso negado. Este login é apenas para entregadores.');
+                throw new Error('Esta conta não é de Entregador. Use o app correto.');
             }
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
             return { token, user, success: true };
         }
 
-        throw new Error('Token não recebido do servidor');
+        throw new Error('Não foi possível entrar. Tente novamente.');
     },
 
     async register(userData) {
