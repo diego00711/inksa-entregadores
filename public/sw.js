@@ -1,29 +1,15 @@
 /* sw.js — Service Worker para PWA Inksa Entregadores
    Estratégias de cache otimizadas + proteção para chamadas POST/PUT/PATCH/DELETE
 */
-const CACHE_NAME = 'inksa-entregadores-v1.0.5';
+const CACHE_NAME = 'inksa-entregadores-v1.0.6';
 const API_URL = 'https://inksa-auth-flask-dev.onrender.com';
 
-// Rotas base para funcionar offline (app shell)
-const CACHE_URLS = [
-  '/',
-  '/delivery/dashboard',
-  '/delivery/entregas',
-  '/delivery/ganhos',
-  '/delivery/avaliacoes',
-  '/delivery/gamificacao',
-  '/delivery/meu-perfil',
-  '/manifest.json',
-];
-
 // =========== Install ===========
+// NAO pre-cacheia rotas: um index congelado no install aponta para bundles antigos
+// que saem do ar a cada deploy — causava tela travada no carregamento.
+// O index e cacheado (e atualizado) a cada navegacao com rede em networkFirstWithFallback.
 self.addEventListener('install', (event) => {
   console.log('[SW] install');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(CACHE_URLS))
-      .catch((err) => console.error('[SW] install cache error:', err))
-  );
   self.skipWaiting();
 });
 
