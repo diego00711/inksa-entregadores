@@ -214,7 +214,10 @@ export default function DeliveryPortalLayout() {
       {/* Conteúdo */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {/* Header mobile com a marca */}
-        <header className="lg:hidden sticky top-0 z-30 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md">
+        <header
+          className="lg:hidden sticky top-0 z-30 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
           <div className="flex items-center justify-between px-3 py-2.5">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -246,7 +249,10 @@ export default function DeliveryPortalLayout() {
         </header>
 
         {/* Página */}
-        <main className="flex-1 overflow-x-hidden pb-20 lg:pb-0">
+        <main
+          className="flex-1 overflow-x-hidden lg:pb-0"
+          style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+        >
           <Outlet />
         </main>
       </div>
