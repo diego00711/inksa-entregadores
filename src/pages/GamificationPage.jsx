@@ -151,13 +151,16 @@ function LeaderboardSection({ currentUserId }) {
     setLoading(true);
     setError(null);
     try {
+      // Nota: "type" aqui e a aba local (points/deliveries/efficiency) usada so
+      // pra exibir a coluna certa -- o backend nao ordena por ela, so por pontos.
       const res = await fetch(
-        `${DELIVERY_API_URL}/api/gamification/leaderboard?type=deliverers&sort=${type}&limit=10`,
+        `${DELIVERY_API_URL}/api/gamification/leaderboard?scope=delivery&limit=10`,
         { headers: createAuthHeaders() }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const users = json.data?.users ?? json.data ?? json.users ?? json ?? [];
+      // Backend responde {status, data:{items:[...], limit}} -- "items", nao "users".
+      const users = json.data?.items ?? json.items ?? [];
       setData(prev => ({ ...prev, [type]: Array.isArray(users) ? users : [] }));
     } catch (err) {
       setError('Não foi possível carregar o ranking.');
