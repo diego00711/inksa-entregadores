@@ -1,6 +1,6 @@
 // src/pages/MyDeliveriesPage.jsx – VERSÃO COMPLETA (finalização com delivery_code)
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx';
@@ -68,8 +68,15 @@ export function MyDeliveriesPage() {
     }
   };
 
+  // Só mostra a tela cheia de carregamento na 1a busca. Nas atualizações
+  // automáticas seguintes (a cada 30s), os dados trocam por baixo sem
+  // reconstruir a página inteira — antes isso derrubava o mapa e reiniciava
+  // o carregamento dos tiles a cada ciclo, parecendo "o mapa fica
+  // recarregando sozinho".
+  const hasLoadedOnceRef = useRef(false);
+
   const fetchDeliveries = useCallback(async () => {
-    setPageLoading(true);
+    if (!hasLoadedOnceRef.current) setPageLoading(true);
     try {
       const stats = await DeliveryService.getDashboardStats();
       let myActive = stats.activeOrders || [];
@@ -105,6 +112,7 @@ export function MyDeliveriesPage() {
       addToast(err?.message || 'Não foi possível carregar as entregas.', 'error');
     } finally {
       setPageLoading(false);
+      hasLoadedOnceRef.current = true;
     }
   }, [addToast]);
 
