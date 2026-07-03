@@ -597,13 +597,15 @@
     grid-template-columns: repeat(1, 1fr) !important;
   }
 
-  .grid-cols-2, .grid-cols-4 {
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-  }
-
-  .lg\\:grid-cols-2, .lg\\:grid-cols-3 {
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-  }
+  /* Removido: ".grid-cols-2, .grid-cols-4 { ... 1 coluna !important }" forçava
+     TODO grid-cols-2/4 do app pra 1 coluna em telas pequenas, sem distinguir
+     onde isso fazia sentido de onde não fazia. Quebrava a barra de navegação
+     inferior (4 abas viravam uma lista vertical, parecendo o menu lateral
+     duplicado) e os cards de estatísticas do dashboard (Ganhos/Entregas
+     empilhavam em vez de ficar lado a lado, ocupando a tela toda). Cada
+     componente já define seu próprio breakpoint responsivo via Tailwind
+     (sm:/lg:) quando precisa de 1 coluna no mobile — não precisa de reforço
+     global aqui. */
 
   .text-3xl {
     font-size: 1.5rem !important;
@@ -992,11 +994,6 @@
   .dashboard-card, .delivery-card {
     padding: 0.75rem !important;
     margin-bottom: 0.75rem !important;
-  }
-
-  /* Grid em coluna única */
-  .grid-cols-2 {
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
 
   /* Texto menor se necessário */
