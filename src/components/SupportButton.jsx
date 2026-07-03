@@ -54,8 +54,7 @@ export default function SupportButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-        style={{ bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))' }}
+        className="fixed right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 bottom-[calc(56px+env(safe-area-inset-bottom)+1rem)] lg:bottom-6"
         title="Suporte / SAC"
       >
         <MessageCircle className="w-6 h-6" />
