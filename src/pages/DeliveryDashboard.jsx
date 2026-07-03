@@ -653,7 +653,6 @@ export default function ModernDeliveryDashboard() {
             value={<AnimatedNumber value={todayEarnings} prefix="R$ " decimals={2} />}
             icon={DollarSign}
             color="from-green-500 to-emerald-600"
-            trend={12}
             subtitle={`Meta: R$ ${dailyGoal.toFixed(2)}`}
             onClick={() => window.location.assign('/delivery/ganhos')}
           />
@@ -662,7 +661,6 @@ export default function ModernDeliveryDashboard() {
             value={<AnimatedNumber value={todayDeliveries} />}
             icon={Truck}
             color="from-blue-500 to-indigo-600"
-            trend={8}
             subtitle="Continue assim!"
             onClick={() => window.location.assign('/delivery/entregas')}
           />
