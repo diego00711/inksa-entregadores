@@ -1,6 +1,6 @@
 // Ficheiro: src/pages/EarningsPage.jsx (VERSÃO TURBINADA)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DeliveryService from '../services/deliveryService';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
@@ -8,6 +8,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Para os cards de sumário
 import { CalendarIcon, DollarSign, Truck } from 'lucide-react'; // Ícones
 import { format, subDays } from 'date-fns'; // Para formatação e manipulação de datas
+import { getPageCache, setPageCache } from '../lib/pageCache.js';
+
+const EARNINGS_CACHE_KEY = 'delivery:ganhos';
 
 // Se você usa o componente DatePicker de Shadcn/ui (ou similar)
 // import { DatePicker } from '@/components/ui/date-picker'; // Ajuste o caminho se necessário
@@ -48,7 +51,10 @@ export function EarningsPage() {
     const { profile, loading: profileLoading } = useProfile();
     const addToast = useToast();
 
-    const [earningsData, setEarningsData] = useState({
+    // Mostra os últimos dados vistos na hora (sem tela de carregamento) se já
+    // visitou essa tela antes na mesma sessão, atualizando por baixo.
+    const earningsCached = getPageCache(EARNINGS_CACHE_KEY);
+    const [earningsData, setEarningsData] = useState(earningsCached ?? {
         periodStartDate: '',
         periodEndDate: '',
         totalEarningsPeriod: 0,
@@ -56,8 +62,9 @@ export function EarningsPage() {
         dailyEarnings: [], // Para o gráfico de ganhos diários
         detailedDeliveries: [] // Para a tabela detalhada
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!earningsCached);
     const [error, setError] = useState('');
+    const hasLoadedOnceRef = useRef(!!earningsCached);
 
     // Estado para o período de datas
     const [startDate, setStartDate] = useState(subDays(new Date(), 6)); // Padrão: 7 dias atrás
@@ -69,7 +76,7 @@ export function EarningsPage() {
             setLoading(false);
             return;
         }
-        setLoading(true);
+        if (!hasLoadedOnceRef.current) setLoading(true);
         setError('');
         try {
             // Formata as datas para YYYY-MM-DD para a API
@@ -78,12 +85,14 @@ export function EarningsPage() {
 
             const data = await DeliveryService.getEarningsHistory(formattedStartDate, formattedEndDate);
             setEarningsData(data);
+            setPageCache(EARNINGS_CACHE_KEY, data);
         } catch (err) {
             console.error("Erro ao buscar histórico de ganhos:", err);
             setError(err.message || 'Não foi possível carregar o histórico de ganhos.');
             addToast(err.message || 'Erro ao carregar ganhos', 'error');
         } finally {
             setLoading(false);
+            hasLoadedOnceRef.current = true;
         }
     }, [profile, profileLoading, startDate, endDate, addToast]); // Dependências: profile, datas
 

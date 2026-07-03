@@ -19,6 +19,9 @@ import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import { supabase } from '../lib/supabase';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { haptics } from '../lib/haptics';
+import { getPageCache, setPageCache } from '../lib/pageCache.js';
+
+const DASHBOARD_CACHE_KEY = 'delivery:dashboard';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const toNumber = (v) => (typeof v === 'number' ? v : parseFloat(v || '0')) || 0;
@@ -257,8 +260,11 @@ export default function ModernDeliveryDashboard() {
   const addToast = useToast();
   const playSound = useNotificationSound();
 
-  const [dashboardStats, setDashboardStats] = useState(null);
-  const [initialLoading, setInitialLoading] = useState(true);
+  // Mostra os últimos dados vistos na hora (sem tela de carregamento) se já
+  // visitou essa tela antes na mesma sessão, atualizando por baixo.
+  const dashboardCached = getPageCache(DASHBOARD_CACHE_KEY);
+  const [dashboardStats, setDashboardStats] = useState(dashboardCached ?? null);
+  const [initialLoading, setInitialLoading] = useState(!dashboardCached);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -363,6 +369,7 @@ export default function ModernDeliveryDashboard() {
 
       const stats = statsData?.data || statsData || {};
       setDashboardStats(stats);
+      setPageCache(DASHBOARD_CACHE_KEY, stats);
       setLastUpdated(new Date());
       if (typeof stats?.is_available === 'boolean') updateProfile({ is_available: stats.is_available });
 

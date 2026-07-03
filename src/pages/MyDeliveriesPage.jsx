@@ -15,6 +15,9 @@ import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import { DELIVERY_API_URL } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { getPageCache, setPageCache } from '../lib/pageCache.js';
+
+const CACHE_KEY = 'delivery:minhas-entregas';
 
 // Extrai coordenadas [lat, lng] de um pedido, tolerando vários nomes de campo
 const parseCoords = (lat, lng) => {
@@ -36,12 +39,16 @@ const getPickupCoords = (o) =>
 export function MyDeliveriesPage() {
   const { loading: profileLoading } = useProfile();
   const addToast = useToast();
-  const [availableOrders, setAvailableOrders] = useState([]);
-  const [myDeliveries, setMyDeliveries] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  // Se já visitou essa tela antes na mesma sessão, mostra os últimos dados
+  // vistos na hora (sem tela de carregamento) enquanto atualiza por baixo —
+  // em vez de sempre partir do zero toda vez que navega até aqui.
+  const cached = getPageCache(CACHE_KEY);
+  const [availableOrders, setAvailableOrders] = useState(cached?.availableOrders ?? []);
+  const [myDeliveries, setMyDeliveries] = useState(cached?.myDeliveries ?? []);
+  const [pageLoading, setPageLoading] = useState(!cached);
   const [activeFilter, setActiveFilter] = useState('available');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [activeDelivery, setActiveDelivery] = useState(null);
+  const [activeDelivery, setActiveDelivery] = useState(cached?.activeDelivery ?? null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -73,7 +80,7 @@ export function MyDeliveriesPage() {
   // reconstruir a página inteira — antes isso derrubava o mapa e reiniciava
   // o carregamento dos tiles a cada ciclo, parecendo "o mapa fica
   // recarregando sozinho".
-  const hasLoadedOnceRef = useRef(false);
+  const hasLoadedOnceRef = useRef(!!cached);
 
   const fetchDeliveries = useCallback(async () => {
     if (!hasLoadedOnceRef.current) setPageLoading(true);
@@ -91,13 +98,15 @@ export function MyDeliveriesPage() {
       setMyDeliveries(withPickup);
 
       // disponíveis
+      let available = [];
       try {
         const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
         const apiUrl = DELIVERY_API_URL;
         const resp = await fetch(`${apiUrl}/api/orders/available`, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         });
-        setAvailableOrders(resp.ok ? await resp.json() : []);
+        available = resp.ok ? await resp.json() : [];
+        setAvailableOrders(available);
       } catch (e) {
         console.error('Erro ao buscar disponíveis:', e);
       }
@@ -107,6 +116,8 @@ export function MyDeliveriesPage() {
         ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
       );
       setActiveDelivery(ongoing);
+
+      setPageCache(CACHE_KEY, { availableOrders: available, myDeliveries: withPickup, activeDelivery: ongoing });
     } catch (err) {
       console.error('Erro ao carregar entregas:', err);
       addToast(err?.message || 'Não foi possível carregar as entregas.', 'error');
