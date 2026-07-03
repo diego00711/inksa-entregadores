@@ -129,7 +129,10 @@ export default function DeliveryPortalLayout() {
   const SidebarBody = () => (
     <div className="flex flex-col h-full">
       {/* Marca */}
-      <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-white/10">
+      <div
+        className="flex items-center justify-between px-4 pb-4 border-b border-white/10 shrink-0"
+        style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top))' }}
+      >
         <Link to="/delivery/dashboard" onClick={closeSidebar} className="flex items-center gap-2.5 min-w-0">
           <img src="/inka-logo.png" alt="Inksa" className="h-9 w-9 rounded-xl object-cover shadow" />
           <div className="min-w-0">
@@ -158,8 +161,10 @@ export default function DeliveryPortalLayout() {
         <OnlineToggle />
       </div>
 
-      {/* Navegação */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      {/* Navegação — min-h-0 é essencial: sem isso, um flex item com
+          overflow-y-auto não encolhe de verdade e o conteúdo empurra o
+          botão "Sair" pra fora da tela em vez de a lista rolar. */}
+      <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
         {NAVIGATION.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -183,7 +188,10 @@ export default function DeliveryPortalLayout() {
       </nav>
 
       {/* Sair */}
-      <div className="p-3 border-t border-white/10">
+      <div
+        className="p-3 border-t border-white/10 shrink-0"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      >
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-gray-300 hover:bg-red-600 hover:text-white transition-colors min-h-[44px]"
@@ -202,9 +210,11 @@ export default function DeliveryPortalLayout() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={closeSidebar} />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — sem h-screen (100vh pode ser maior que a área visível de
+          verdade no WebView Android, empurrando o "Sair" pra fora); com
+          inset-y-0 + fixed, a altura já se ajusta sozinha à área visível. */}
       <aside
-        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 min-w-[16rem] h-screen
+        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 min-w-[16rem]
           bg-gradient-to-b from-gray-900 to-gray-950 transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
