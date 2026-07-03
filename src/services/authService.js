@@ -102,7 +102,27 @@ const authService = {
         return responseData;
     },
 
-    logout() {
+    async logout() {
+        // Marca como indisponível antes de sair -- sem isso, quem estava
+        // online continuava aparecendo disponível pra receber entregas
+        // mesmo deslogado (e via isso ao logar de novo). Best-effort: se
+        // falhar (sem rede, token já vencido etc.), sai mesmo assim.
+        try {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            if (token) {
+                await fetch(`${API_BASE_URL}/api/delivery/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ is_available: false }),
+                });
+            }
+        } catch {
+            // ignora -- nao bloqueia o logout
+        }
+
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_DATA_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);

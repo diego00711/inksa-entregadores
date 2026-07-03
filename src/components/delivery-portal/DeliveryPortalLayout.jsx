@@ -18,6 +18,7 @@ import {
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { haptics } from '../../lib/haptics.js';
+import authService from '../../services/authService.js';
 
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
@@ -48,9 +49,10 @@ export default function DeliveryPortalLayout() {
   const closeSidebar = () => setSidebarOpen(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('deliveryAuthToken');
-    localStorage.removeItem('deliveryUser');
-    window.location.href = '/login';
+    // authService.logout() marca is_available=false no servidor antes de
+    // sair -- sem isso, quem estava online continuava aparecendo
+    // disponível pra receber entregas mesmo deslogado.
+    authService.logout();
   };
 
   const toggleOnline = async () => {
