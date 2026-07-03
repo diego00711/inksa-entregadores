@@ -11,6 +11,14 @@ export default function WakingUpScreen({ onReady }) {
   const [slow, setSlow] = useState(false);
   const done = useRef(false);
 
+  // Guarda a versão mais recente de onReady sem colocá-la nas dependências
+  // do efeito abaixo: se o componente pai passar uma função nova a cada
+  // render (comum com callbacks inline), o efeito reiniciaria do zero toda
+  // vez — reiniciando também o timer de 60s, fazendo a tela de "acordando
+  // servidor" nunca sumir mesmo com o backend respondendo normalmente.
+  const onReadyRef = useRef(onReady);
+  useEffect(() => { onReadyRef.current = onReady; }, [onReady]);
+
   useEffect(() => {
     let alive = true;
     const start = Date.now();
@@ -19,7 +27,7 @@ export default function WakingUpScreen({ onReady }) {
       if (done.current) return;
       done.current = true;
       if (alive) setReady(true); // esconde a tela
-      onReady();                 // libera as rotas no App
+      onReadyRef.current();      // libera as rotas no App
     };
 
     const ping = async () => {
@@ -41,7 +49,8 @@ export default function WakingUpScreen({ onReady }) {
 
     ping();
     return () => { alive = false; };
-  }, [onReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // roda uma única vez — onReady é lido via ref (onReadyRef)
 
   if (ready) return null;
 
