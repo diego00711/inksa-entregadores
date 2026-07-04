@@ -640,27 +640,47 @@ function PointsHistorySection({ history }) {
   );
 }
 
-// ─── Seção: Como ganhar pontos (estática) ───────────────────────────────────
-
-const POINTS_TABLE = [
-  { action: 'Entrega concluída',     pts: '+30' },
-  { action: 'Pedido aceito',         pts: '+5'  },
-  { action: 'Avaliação 5 estrelas',  pts: '+15' },
-  { action: 'Meta diária concluída', pts: '+50' },
-];
+// ─── Seção: Como ganhar pontos (busca as regras reais do admin) ─────────────
 
 function HowToEarnSection() {
+  const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`${DELIVERY_API_URL}/api/gamification/point-rules?applies_to=delivery`, {
+          headers: createAuthHeaders(),
+        });
+        const json = await processResponse(res);
+        if (alive) setRules(json?.data?.items ?? json?.items ?? []);
+      } catch {
+        if (alive) setRules([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
       <SectionTitle icon={Zap} color="text-orange-500">Como ganhar pontos</SectionTitle>
-      <div className="divide-y divide-gray-50">
-        {POINTS_TABLE.map(({ action, pts }) => (
-          <div key={action} className="flex justify-between items-center py-2.5">
-            <span className="text-sm text-gray-600">{action}</span>
-            <span className="text-sm font-bold text-green-600">{pts}</span>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <p className="text-sm text-gray-400 py-2">Carregando...</p>
+      ) : rules.length === 0 ? (
+        <p className="text-sm text-gray-400 py-2">Nenhuma regra disponível no momento.</p>
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {rules.map((rule) => (
+            <div key={rule.action_key} className="flex justify-between items-center py-2.5">
+              <span className="text-sm text-gray-600">{rule.label}</span>
+              <span className="text-sm font-bold text-green-600">+{rule.points}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
