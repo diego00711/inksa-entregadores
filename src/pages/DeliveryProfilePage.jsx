@@ -37,6 +37,7 @@ export default function DeliveryProfilePage() {
         bank_account_type: '',
         pix_key: '',
         payout_frequency: 'weekly',
+        daily_goal: '',
         avatar_url: ''
     });
 
@@ -71,6 +72,7 @@ export default function DeliveryProfilePage() {
                 bank_account_type: contextProfile.bank_account_type || '',
                 pix_key: contextProfile.pix_key || '',
                 payout_frequency: contextProfile.payout_frequency || 'weekly',
+                daily_goal: contextProfile.daily_goal ? String(contextProfile.daily_goal) : '',
                 avatar_url: contextProfile.avatar_url || ''
             });
             setPreviewUrl(contextProfile.avatar_url || null);
@@ -435,6 +437,23 @@ export default function DeliveryProfilePage() {
                                     <SelectItem value="monthly">Mensal</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="daily_goal">Meta de ganhos diária (R$)</Label>
+                            <Input
+                                id="daily_goal"
+                                type="number"
+                                inputMode="numeric"
+                                min="0"
+                                step="10"
+                                placeholder="Ex.: 200"
+                                value={formData.daily_goal}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Aparece no painel inicial como sua meta do dia. Deixe em branco para usar o padrão de R$ 300.
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
