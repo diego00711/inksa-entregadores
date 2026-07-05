@@ -1,5 +1,6 @@
 // src/pages/DeliveryDashboard.jsx
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DeliveryService from '../services/deliveryService';
 import { acceptDelivery, completeDelivery } from '../services/orderService';
 
@@ -256,6 +257,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function ModernDeliveryDashboard() {
+  const navigate = useNavigate();
   const { profile, updateProfile, loading: profileLoading } = useProfile();
   const addToast = useToast();
   const playSound = useNotificationSound();
@@ -661,7 +663,7 @@ export default function ModernDeliveryDashboard() {
             icon={DollarSign}
             color="from-green-500 to-emerald-600"
             subtitle={`Meta: R$ ${dailyGoal.toFixed(2)}`}
-            onClick={() => window.location.assign('/delivery/ganhos')}
+            onClick={() => navigate('/delivery/ganhos')}
           />
           <ModernStatCard
             title="Entregas Hoje"
@@ -669,7 +671,7 @@ export default function ModernDeliveryDashboard() {
             icon={Truck}
             color="from-blue-500 to-indigo-600"
             subtitle="Continue assim!"
-            onClick={() => window.location.assign('/delivery/entregas')}
+            onClick={() => navigate('/delivery/entregas')}
           />
           <ModernStatCard
             title="Avaliação Média"
@@ -677,7 +679,7 @@ export default function ModernDeliveryDashboard() {
             icon={Star}
             color="from-yellow-500 to-orange-500"
             subtitle="Muito bom!"
-            onClick={() => window.location.assign('/delivery/avaliacoes')}
+            onClick={() => navigate('/delivery/avaliacoes')}
           />
           <ModernStatCard
             title="Total Entregas"
@@ -685,7 +687,7 @@ export default function ModernDeliveryDashboard() {
             icon={Award}
             color="from-purple-500 to-pink-500"
             subtitle="desde o início"
-            onClick={() => window.location.assign('/delivery/entregas')}
+            onClick={() => navigate('/delivery/entregas')}
           />
         </div>
 
