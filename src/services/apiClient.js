@@ -51,7 +51,9 @@ const apiFetch = async (url, options = {}) => {
     window.dispatchEvent(new CustomEvent('network:error'));
     throw networkError;
   }
-  if (response.status === 401 || response.status === 403) {
+  // Só 401 (não autenticado) encerra a sessão. 403 é autorização (autenticado,
+  // mas sem permissão pra AQUELE recurso) — não deve deslogar o usuário.
+  if (response.status === 401) {
     expireSessionLocally();
   }
   return response;
