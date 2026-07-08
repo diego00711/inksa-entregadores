@@ -6,6 +6,7 @@ import {
   DollarSign,
   Star,
   Trophy,
+  Medal,
   User,
   LogOut,
   Menu,
@@ -27,6 +28,7 @@ const NAVIGATION = [
   { name: 'Ganhos', href: '/delivery/ganhos', icon: DollarSign, primary: true },
   { name: 'Avaliações', href: '/delivery/avaliacoes', icon: Star, primary: false },
   { name: 'Gamificação', href: '/delivery/gamificacao', icon: Trophy, primary: false },
+  { name: 'Clube Inksa', href: '/delivery/clube', icon: Medal, primary: false },
   { name: 'Suporte', href: '/delivery/suporte', icon: LifeBuoy, primary: false },
   { name: 'Meu Perfil', href: '/delivery/meu-perfil', icon: User, primary: true },
 ];

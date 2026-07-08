@@ -24,6 +24,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const DeliveryProfilePage = lazy(() => import('./pages/DeliveryProfilePage.jsx'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
 const GamificationPage = lazy(() => import('./pages/GamificationPage.jsx'));
+const ClubePage = lazy(() => import('./pages/ClubePage.jsx'));
 const DeliverymanEvaluationsCenter = lazy(() => import('./pages/DeliverymanEvaluationsCenter.jsx'));
 const SuportePage = lazy(() => import('./pages/SuportePage.jsx'));
 
@@ -99,6 +100,7 @@ function App() {
                 <Route path="ganhos" element={<EarningsPage />} />
                 <Route path="meu-perfil" element={<DeliveryProfilePage />} />
                 <Route path="gamificacao" element={<GamificationPage />} />
+                <Route path="clube" element={<ClubePage />} />
                 <Route path="avaliacoes" element={<DeliverymanEvaluationsCenter />} />
                 <Route path="suporte" element={<SuportePage />} />
                 <Route index element={<Navigate to="dashboard" replace />} />
