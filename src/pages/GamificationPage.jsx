@@ -95,18 +95,24 @@ function Skeleton() {
 // ─── Seção: Card de Pontos e Nível ──────────────────────────────────────────
 
 function LevelCard({ userPoints }) {
-  const total     = userPoints?.total_points ?? 0;
-  const deliveries= userPoints?.total_deliveries ?? 0;
-  const levelObj  = resolveLevel(total);
-  const progress  = calcProgress(total, levelObj);
-  const toNext    = levelObj.max === Infinity ? 0 : levelObj.max - total + 1;
+  // Fonte da verdade = backend (/user-points retorna points, level_name,
+  // points_to_next_level e progress_pct calculados dos níveis REAIS da tabela
+  // `levels`). Antes lia `total_points` (campo que o endpoint não retorna ->
+  // mostrava 0 pts sempre) e recalculava o progresso com faixas locais
+  // divergentes do servidor. A tabela local vira só fallback visual.
+  const total     = Number(userPoints?.points ?? userPoints?.total_points ?? 0);
+  const deliveries= userPoints?.total_deliveries;
+  const levelName = userPoints?.level_name || resolveLevel(total).name;
+  const levelObj  = LEVELS.find(l => l.name === levelName) || resolveLevel(total);
+  const toNext    = Number(userPoints?.points_to_next_level ?? 0);
+  const progress  = Math.max(0, Math.min(100, Number(userPoints?.progress_pct ?? 0)));
 
   return (
     <div className={`rounded-2xl bg-gradient-to-br ${levelObj.gradient} p-4 sm:p-6 text-white shadow-xl`}>
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="text-white/70 text-xs uppercase tracking-widest mb-1">Nível atual</p>
-          <h2 className="text-3xl font-black">{userPoints?.level_name || levelObj.name}</h2>
+          <h2 className="text-3xl font-black">{levelName}</h2>
         </div>
         <div className="bg-white/20 rounded-full p-3">
           <Trophy className="w-8 h-8 text-white" />
@@ -114,11 +120,13 @@ function LevelCard({ userPoints }) {
       </div>
 
       <p className="text-4xl sm:text-5xl font-black tabular-nums">{total.toLocaleString('pt-BR')}</p>
-      <p className="text-white/70 text-sm mb-1">pontos acumulados</p>
-      <p className="text-white/80 text-sm mb-4">
-        <Package className="inline w-3.5 h-3.5 mr-1 opacity-70" />
-        {deliveries.toLocaleString('pt-BR')} entregas realizadas
-      </p>
+      <p className="text-white/70 text-sm mb-4">pontos acumulados</p>
+      {deliveries != null && (
+        <p className="text-white/80 text-sm mb-4 -mt-3">
+          <Package className="inline w-3.5 h-3.5 mr-1 opacity-70" />
+          {Number(deliveries).toLocaleString('pt-BR')} entregas realizadas
+        </p>
+      )}
 
       {toNext > 0 ? (
         <>
@@ -401,7 +409,7 @@ function RewardsSection({ userPoints, onPointsRefresh }) {
     })();
   }, []);
 
-  const total = userPoints?.total_points ?? 0;
+  const total = Number(userPoints?.points ?? userPoints?.total_points ?? 0);
   const userId = profile?.id ?? profile?.user_id;
   const userName = profile?.first_name
     ? `${profile.first_name} ${profile.last_name ?? ''}`.trim()
