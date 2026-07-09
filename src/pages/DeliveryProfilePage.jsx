@@ -24,6 +24,9 @@ export default function DeliveryProfilePage() {
         cpf: '',
         birth_date: '',
         vehicle_type: '',
+        vehicle_plate: '',
+        vehicle_model: '',
+        vehicle_color: '',
         address_street: '',
         address_number: '',
         address_complement: '',
@@ -59,6 +62,9 @@ export default function DeliveryProfilePage() {
                 cpf: contextProfile.cpf || '',
                 birth_date: contextProfile.birth_date ? format(parseISO(contextProfile.birth_date), 'yyyy-MM-dd') : '',
                 vehicle_type: contextProfile.vehicle_type || '',
+                vehicle_plate: contextProfile.vehicle_plate || '',
+                vehicle_model: contextProfile.vehicle_model || '',
+                vehicle_color: contextProfile.vehicle_color || '',
                 address_street: contextProfile.address_street || '',
                 address_number: contextProfile.address_number || '',
                 address_complement: contextProfile.address_complement || '',
@@ -390,6 +396,44 @@ export default function DeliveryProfilePage() {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* Placa / modelo / cor só aparecem para veículo motorizado (bicicleta não tem placa) */}
+                        {formData.vehicle_type && formData.vehicle_type !== 'bicicleta' && (
+                            <>
+                                <div>
+                                    <Label htmlFor="vehicle_plate">Placa</Label>
+                                    <Input
+                                        id="vehicle_plate"
+                                        value={formData.vehicle_plate}
+                                        onChange={handleChange}
+                                        disabled={!isEditing}
+                                        placeholder="ABC1D23"
+                                        maxLength={8}
+                                        className="uppercase placeholder:normal-case"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="vehicle_model">Modelo / Marca</Label>
+                                    <Input
+                                        id="vehicle_model"
+                                        value={formData.vehicle_model}
+                                        onChange={handleChange}
+                                        disabled={!isEditing}
+                                        placeholder="Ex.: Honda CG 160"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="vehicle_color">Cor</Label>
+                                    <Input
+                                        id="vehicle_color"
+                                        value={formData.vehicle_color}
+                                        onChange={handleChange}
+                                        disabled={!isEditing}
+                                        placeholder="Ex.: Vermelha"
+                                    />
+                                </div>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
 

@@ -735,7 +735,10 @@
   main {
     flex: 1;
     padding: 1rem !important;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+    /* Reserva espaço da barra de navegação inferior fixa (~56px) + safe-area.
+       Antes estava 1rem e a barra ficava sobreposta ao final de páginas longas
+       (perceptível só no Perfil, o único formulário comprido). */
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     max-height: calc(100vh - 60px);
