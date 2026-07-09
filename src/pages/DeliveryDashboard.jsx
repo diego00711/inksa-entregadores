@@ -17,6 +17,7 @@ import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
+import SocialDayBanner from '../components/SocialDayBanner';
 import { supabase } from '../lib/supabase';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { haptics } from '../lib/haptics';
@@ -565,6 +566,8 @@ export default function ModernDeliveryDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      {/* Dia I — Inksa Social (só aparece quando habilitado no admin) */}
+      <SocialDayBanner />
       {(pulling || refreshing) && (
         <div className="flex justify-center py-3">
           <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
