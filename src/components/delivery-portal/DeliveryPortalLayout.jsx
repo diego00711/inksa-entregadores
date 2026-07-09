@@ -167,7 +167,11 @@ export default function DeliveryPortalLayout() {
 
       {/* Navegação — min-h-0 é essencial: sem isso, um flex item com
           overflow-y-auto não encolhe de verdade e o conteúdo empurra o
-          botão "Sair" pra fora da tela em vez de a lista rolar. */}
+          botão "Sair" pra fora da tela em vez de a lista rolar.
+
+          No mobile, os itens que já estão na barra inferior (primary) ficam
+          ocultos aqui pra não duplicar o menu (barra de baixo = principais,
+          drawer = só os extras). No desktop (sem barra inferior) mostra tudo. */}
       <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
         {NAVIGATION.map((item) => {
           const Icon = item.icon;
@@ -178,7 +182,7 @@ export default function DeliveryPortalLayout() {
               to={item.href}
               onClick={closeSidebar}
               aria-current={active ? 'page' : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all min-h-[44px] ${
+              className={`${item.primary ? 'hidden lg:flex' : 'flex'} items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all min-h-[44px] ${
                 active
                   ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-900/30'
                   : 'text-gray-300 hover:bg-white/10 hover:text-white'
