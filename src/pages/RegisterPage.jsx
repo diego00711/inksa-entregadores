@@ -116,6 +116,13 @@ export default function RegisterPage() {
               </div>
             )}
 
+            <p className="text-xs text-center text-gray-500">
+              Ao criar sua conta, você concorda com os{' '}
+              <a href="https://inksadelivery.com.br/termos" target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">Termos de Uso</a>{' '}
+              e a{' '}
+              <a href="https://inksadelivery.com.br/privacidade" target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">Política de Privacidade</a>.
+            </p>
+
             <Button type="submit" className="w-full min-h-[44px] text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white" disabled={loading}>
               {loading ? 'A Criar...' : 'Criar Conta'}
             </Button>

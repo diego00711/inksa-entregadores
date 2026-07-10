@@ -238,6 +238,17 @@ export default function SuportePage() {
           </div>
         )}
       </div>
+
+      {/* Informações legais — links exigidos pelas lojas (Google/Apple) e LGPD */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <h2 className="font-semibold text-gray-800 mb-2">Informações legais</h2>
+        <div className="flex flex-col gap-2 text-sm">
+          <a href="https://inksadelivery.com.br/termos" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Termos de Uso</a>
+          <a href="https://inksadelivery.com.br/privacidade" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Política de Privacidade</a>
+          <a href="https://inksadelivery.com.br/excluir-conta" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Excluir minha conta</a>
+          <a href="https://inksadelivery.com.br/excluir-dados" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Exclusão de dados</a>
+        </div>
+      </div>
     </div>
   );
 }
