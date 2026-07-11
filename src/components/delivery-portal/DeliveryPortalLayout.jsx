@@ -242,7 +242,7 @@ export default function DeliveryPortalLayout() {
               className="p-2 rounded-lg hover:bg-white/15 min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Abrir menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-7 h-7" />
             </button>
             <div className="flex items-center gap-2">
               <img src="/inka-logo.png" alt="Inksa" className="h-7 w-7 rounded-lg object-cover" />
