@@ -39,6 +39,7 @@ export default function DeliveryProfilePage() {
         bank_account_number: '',
         bank_account_type: '',
         pix_key: '',
+        pix_key_type: '',
         payout_frequency: 'weekly',
         daily_goal: '',
         avatar_url: ''
@@ -77,6 +78,7 @@ export default function DeliveryProfilePage() {
                 bank_account_number: contextProfile.bank_account_number || '',
                 bank_account_type: contextProfile.bank_account_type || '',
                 pix_key: contextProfile.pix_key || '',
+                pix_key_type: contextProfile.pix_key_type || '',
                 payout_frequency: contextProfile.payout_frequency || 'weekly',
                 daily_goal: contextProfile.daily_goal ? String(contextProfile.daily_goal) : '',
                 avatar_url: contextProfile.avatar_url || ''
@@ -468,6 +470,22 @@ export default function DeliveryProfilePage() {
                         <div>
                             <Label htmlFor="pix_key">Chave Pix</Label>
                             <Input id="pix_key" value={formData.pix_key} onChange={handleChange} disabled={!isEditing} />
+                        </div>
+                        <div>
+                            <Label htmlFor="pix_key_type">Tipo da chave Pix</Label>
+                            <Select value={formData.pix_key_type} onValueChange={(value) => handleSelectChange('pix_key_type', value)} disabled={!isEditing}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                    <SelectItem value="CPF">CPF</SelectItem>
+                                    <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                    <SelectItem value="EMAIL">E-mail</SelectItem>
+                                    <SelectItem value="PHONE">Telefone (celular)</SelectItem>
+                                    <SelectItem value="EVP">Chave aleatória</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">Necessário para o repasse automático via PIX cair sem erro.</p>
                         </div>
                         <div>
                             <Label htmlFor="payout_frequency">Frequência de Recebimento</Label>
