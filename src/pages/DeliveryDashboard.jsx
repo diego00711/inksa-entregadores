@@ -292,7 +292,20 @@ export default function ModernDeliveryDashboard() {
   const orderWatchIdRef = useRef(null);
   const trackedOrderIdRef = useRef(null);
 
+  // Throttle: o watchPosition dispara a cada tremida do GPS (indoor, com
+  // enableHighAccuracy, sao varias/segundo). Sem filtro, isso sozinho estourava
+  // o rate limit e derrubava o app com 429. So envia se moveu ~11m OU passou 8s
+  // desde o ultimo envio — o interval de 10s garante o batimento minimo parado.
+  const lastLocSentRef = useRef({ lat: null, lng: null, t: 0 });
   const sendOrderLocation = useCallback((latitude, longitude, orderId) => {
+    const now = Date.now();
+    const last = lastLocSentRef.current;
+    if (last.lat != null) {
+      const movedFar =
+        Math.abs(latitude - last.lat) >= 0.0001 || Math.abs(longitude - last.lng) >= 0.0001;
+      if (now - last.t < 8000 && !movedFar) return;
+    }
+    lastLocSentRef.current = { lat: latitude, lng: longitude, t: now };
     fetch(`${DELIVERY_API_URL}/api/deliveries/${orderId}/location`, {
       method: 'PATCH',
       headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
