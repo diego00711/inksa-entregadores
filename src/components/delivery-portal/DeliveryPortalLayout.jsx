@@ -267,8 +267,13 @@ export default function DeliveryPortalLayout() {
         </header>
 
         {/* Página */}
+        {/* pb no mobile reserva a zona do BottomNav (56px) + FAB de chat (56px
+            flutuando 1rem acima do nav, z-50) + folga. Sem isso, o último botão
+            de QUALQUER tela ficava por baixo do FAB e o toque não pegava — foi
+            o "Aceitar" e o código de retirada no E2E. 9rem = 144px > 128px da
+            zona ocupada. */}
         <main
-          className="flex-1 overflow-x-hidden lg:pb-0"
+          className="flex-1 overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+9rem)] lg:pb-0"
           style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
         >
           <Outlet />
