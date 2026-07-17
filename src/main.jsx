@@ -15,7 +15,8 @@ import './app.css';
 
 
 // REGISTRO DO SERVICE WORKER - PWA
-if ('serviceWorker' in navigator) {
+// SW so em producao: em dev ele intercepta fetches e atrapalha depuracao
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });

@@ -132,12 +132,12 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 z-[1100] backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="fixed inset-0 z-[1100] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div
           className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col"
           style={{ height: '70vh', maxHeight: '560px' }}

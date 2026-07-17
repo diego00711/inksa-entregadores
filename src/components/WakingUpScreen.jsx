@@ -4,12 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const MAX_WAIT_MS = 60000; // não prende o usuário para sempre
 
+// Uma vez que o app ficou pronto NESTA sessão, a cortina nunca mais aparece —
+// nem se o componente remontar. Sem isto, qualquer remontagem trazia de volta
+// a tela branca da xícara POR CIMA de tudo (z-9999) — mesma família da "tela
+// em branco" do chat no E2E do app do cliente.
+const READY_FLAG = 'inksa_server_ready';
+
 export default function WakingUpScreen({ onReady }) {
   // `ready` controla a própria visibilidade: o App renderiza este componente
   // de forma incondicional, então ele PRECISA sumir sozinho quando termina.
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => sessionStorage.getItem(READY_FLAG) === '1');
   const [slow, setSlow] = useState(false);
-  const done = useRef(false);
+  const done = useRef(ready);
 
   // Guarda a versão mais recente de onReady sem colocá-la nas dependências
   // do efeito abaixo: se o componente pai passar uma função nova a cada
@@ -24,11 +30,27 @@ export default function WakingUpScreen({ onReady }) {
     const start = Date.now();
 
     const finish = () => {
+      // Esconder e liberar SEMPRE vem antes da guarda: se o ping de uma
+      // montagem anterior (StrictMode) resolver tarde e marcar done, a
+      // montagem viva ainda PRECISA se esconder — senão a cortina fica presa
+      // pra sempre com o app rodando por baixo.
+      if (alive) setReady(true); // esconde a tela
+      onReadyRef.current();      // libera as rotas no App (idempotente)
       if (done.current) return;
       done.current = true;
-      if (alive) setReady(true); // esconde a tela
-      onReadyRef.current();      // libera as rotas no App
+      try { sessionStorage.setItem(READY_FLAG, '1'); } catch { /* modo privado */ }
     };
+
+    // Ja estava pronto (flag da sessao): so libera as rotas, sem cortina.
+    if (done.current) {
+      onReadyRef.current();
+      return () => { alive = false; };
+    }
+
+    // Rede de seguranca ABSOLUTA: a corrente de pings pode morrer (cleanup do
+    // StrictMode, SW interceptando fetch) sem nunca chamar finish — e a
+    // cortina ficava presa. Este timeout independe da corrente.
+    const hardStop = setTimeout(finish, MAX_WAIT_MS);
 
     const ping = async () => {
       try {
@@ -48,7 +70,7 @@ export default function WakingUpScreen({ onReady }) {
     };
 
     ping();
-    return () => { alive = false; };
+    return () => { alive = false; clearTimeout(hardStop); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // roda uma única vez — onReady é lido via ref (onReadyRef)
 
