@@ -445,7 +445,7 @@ export default function ModernDeliveryDashboard() {
           .map(o => o.id)
           .filter(id => !knownAvailableRef.current.has(id));
         if (newIds.length > 0) {
-          playSound('new_order');
+          // som fica por conta do alarme em loop (useEffect mais abaixo)
           addToast(`🛵 ${newIds.length === 1 ? 'Novo pedido disponível!' : `${newIds.length} novos pedidos!`}`, 'success');
           setNewOrderIds(prev => new Set([...prev, ...newIds]));
           setTimeout(() => setNewOrderIds(new Set()), 4000);
@@ -497,14 +497,27 @@ export default function ModernDeliveryDashboard() {
       .channel('delivery-available-orders')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
         if (payload.new?.status === 'ready' && !payload.new?.delivery_id) {
-          playSound('new_order');
+          // som fica por conta do alarme em loop (useEffect abaixo)
           addToast('🛵 Novo pedido disponível!', 'success');
           fetchDashboardData(true);
         }
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [playSound, addToast, fetchDashboardData]);
+  }, [addToast, fetchDashboardData]);
+
+  // ── Alarme sonoro: repete enquanto houver pedido disponível E o entregador
+  // estiver ONLINE. Para sozinho quando alguém aceita (o pedido some da lista)
+  // ou quando ele fica offline. (Diego: "avisar os entregadores até um aceitar")
+  // Depende do BOOLEANO (não da contagem) pra a cadência de 5s ficar estável
+  // mesmo quando o nº de pedidos disponíveis muda.
+  const alarmOn = isAvailable && availableCount > 0;
+  useEffect(() => {
+    if (!alarmOn) return;
+    playSound('new_order');
+    const id = window.setInterval(() => playSound('new_order'), 5000);
+    return () => window.clearInterval(id);
+  }, [alarmOn, playSound]);
 
   const debouncedRefresh = useDebouncedCallback(() => fetchDashboardData(true), 700);
 

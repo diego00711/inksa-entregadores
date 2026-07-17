@@ -1,23 +1,44 @@
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
+
+// AudioContext único no módulo + desbloqueio no primeiro gesto do usuário.
+// Sem isto, a política de autoplay do navegador mantém o contexto "suspended"
+// e os beeps disparados por evento assíncrono (pedido chegando) ficam MUDOS.
+let audioCtx = null;
+let unlockBound = false;
+
+function getAudioCtx() {
+  if (typeof window === 'undefined') return null;
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch {
+      return null;
+    }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+// Retoma o contexto a cada gesto (cobre também o caso de ele suspender depois
+// de o app ir pra segundo plano e voltar).
+function bindUnlockOnce() {
+  if (unlockBound || typeof window === 'undefined') return;
+  unlockBound = true;
+  const unlock = () => {
+    const ctx = getAudioCtx();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+  };
+  ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
+    window.addEventListener(ev, unlock, { passive: true })
+  );
+}
 
 export function useNotificationSound() {
-  const ctxRef = useRef(null);
-
-  const getCtx = useCallback(() => {
-    if (!ctxRef.current) {
-      try {
-        ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      } catch {
-        return null;
-      }
-    }
-    // Resume if suspended (browser policy)
-    if (ctxRef.current.state === 'suspended') ctxRef.current.resume();
-    return ctxRef.current;
-  }, []);
+  // liga o desbloqueio na 1ª vez que algum componente usa o hook
+  bindUnlockOnce();
 
   const beep = useCallback((notes, duration = 0.18, waveType = 'sine') => {
-    const ctx = getCtx();
+    const ctx = getAudioCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
     notes.forEach(({ f, t = 0 }) => {
@@ -32,7 +53,7 @@ export function useNotificationSound() {
       osc.start(now + t);
       osc.stop(now + t + duration + 0.02);
     });
-  }, [getCtx]);
+  }, []);
 
   const play = useCallback((event = 'new_order') => {
     try {
