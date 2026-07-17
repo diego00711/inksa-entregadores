@@ -824,11 +824,11 @@
     min-height: 0 !important;
   }
 
-  /* Containers específicos */
-  .bg-gray-50 {
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-  }
+  /* REMOVIDO: ".bg-gray-50 { min-height: 100vh }" — bg-gray-50 é utilitário de
+     COR usado em dezenas de cards pequenos (ex.: cada card de pedido a avaliar),
+     não só no fundo da página. Forçar 100vh esticava todos eles pra tela cheia,
+     gerando "espaço morto" gigante (e tags do form de avaliação com centenas de
+     px de altura). A altura da página já vem do min-h-screen de cada página. */
 
   /* Scrollable sections */
   .scrollable-content {
