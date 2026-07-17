@@ -371,10 +371,18 @@ export default function ModernDeliveryDashboard() {
   }, [activeOrders, sendOrderLocation]);
 
   // ── Fetch dashboard ────────────────────────────────────────────────────────
+  // Refs no lugar de estado nas dependências: com `dashboardStats` nas deps,
+  // cada fetch recriava este callback → o efeito de polling re-rodava → fetch
+  // imediato de novo → laço perpétuo (só a latência da rede segurava). Junto
+  // com o updateProfile instável, era a enxurrada de GET/PUT dos logs do E2E.
+  const hasStatsRef = useRef(false);
+  const profileAvailRef = useRef(undefined);
+  useEffect(() => { profileAvailRef.current = profile?.is_available; }, [profile?.is_available]);
+
   const fetchDashboardData = useCallback(async (isBackground = false) => {
     if (profileLoading || !profile?.id) { setInitialLoading(false); return; }
-    if (isBackground && dashboardStats) setBackgroundLoading(true);
-    else if (!dashboardStats) setInitialLoading(true);
+    if (isBackground && hasStatsRef.current) setBackgroundLoading(true);
+    else if (!hasStatsRef.current) setInitialLoading(true);
 
     setError('');
     try {
@@ -384,10 +392,15 @@ export default function ModernDeliveryDashboard() {
       ]);
 
       const stats = statsData?.data || statsData || {};
+      hasStatsRef.current = true;
       setDashboardStats(stats);
       setPageCache(DASHBOARD_CACHE_KEY, stats);
       setLastUpdated(new Date());
-      if (typeof stats?.is_available === 'boolean') updateProfile({ is_available: stats.is_available });
+      // So PUT quando a disponibilidade realmente MUDOU — sincronizar um valor
+      // igual gerava um PUT /delivery/profile por ciclo de polling, de graça.
+      if (typeof stats?.is_available === 'boolean' && stats.is_available !== profileAvailRef.current) {
+        updateProfile({ is_available: stats.is_available });
+      }
 
       const available = Array.isArray(availableData) ? availableData : [];
 
@@ -408,13 +421,15 @@ export default function ModernDeliveryDashboard() {
 
     } catch (err) {
       const msg = err?.message || 'Não foi possível carregar as estatísticas.';
-      if (!dashboardStats) setError(msg);
+      if (!hasStatsRef.current) setError(msg);
       addToast(msg, 'error');
     } finally {
       setInitialLoading(false);
       setBackgroundLoading(false);
     }
-  }, [profileLoading, profile?.id, dashboardStats, updateProfile, addToast, playSound]);
+    // dashboardStats fora das deps de propósito (via hasStatsRef): ele muda a
+    // CADA fetch e recriar o callback aqui reinicia o efeito de polling.
+  }, [profileLoading, profile?.id, updateProfile, addToast, playSound]);
 
   // ── Para o loading quando o perfil termina de carregar sem ID (ex: não autenticado) ──
   useEffect(() => {

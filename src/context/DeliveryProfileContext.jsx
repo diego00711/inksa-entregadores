@@ -1,6 +1,6 @@
 // Ficheiro: src/context/DeliveryProfileContext.jsx (VERSÃO COM UPDATE)
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import  authService  from '../services/authService.js';
 import DeliveryService from '../services/deliveryService.js';
 import { requestNotificationPermission, saveFcmToken } from '../services/notificationService.js';
@@ -57,13 +57,16 @@ export function DeliveryProfileProvider({ children }) {
     setIsAuthenticated(false);
   };
 
-  // ✅ NOVO: Função para atualizar o perfil
-  // Ela recebe os novos dados, chama o serviço e atualiza o estado local.
-  const updateProfile = async (profileData) => {
+  // useCallback com identidade ESTÁVEL: esta função entra em arrays de
+  // dependência de efeitos (DeliveryDashboard). Sem memoização, cada
+  // setProfile re-renderizava o provider → nova função → efeitos re-rodavam →
+  // novo updateProfile → novo setProfile... um laço que martelava o backend
+  // com PUT /delivery/profile várias vezes por segundo (visto nos logs do E2E).
+  const updateProfile = useCallback(async (profileData) => {
     const updatedProfile = await DeliveryService.updateDeliveryProfile(profileData);
     setProfile(updatedProfile); // Atualiza o perfil em toda a aplicação
     return updatedProfile;
-  };
+  }, []);
 
   const value = {
     profile,
