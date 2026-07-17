@@ -220,11 +220,14 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-2">
+          {/* Botões empilham no mobile (cada um largura cheia) e ficam lado a
+              lado no sm+. Antes, "Entreguei" (flex-1) + "Rota" na mesma linha
+              estouravam a largura no celular e o "Rota" saía cortado. */}
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             {status === 'pending' && (
               <button
                 onClick={() => onAcceptOrder(order.id)}
-                className="flex-1 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
               >
                 <Zap className="h-4 w-4" /> Aceitar Pedido
               </button>
@@ -233,7 +236,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             {(status === 'accepted' || status === 'ready' || status === 'accepted_by_delivery' || status === 'delivering') && (
               <button
                 onClick={() => onCompleteOrder(order.id)}
-                className="flex-1 min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm"
+                className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm"
               >
                 <CheckCircle className="h-4 w-4" />
                 {status === 'delivering' ? 'Entreguei! 🎉' : 'Próximo Passo'}
@@ -244,7 +247,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.delivery_address)}`}
                 target="_blank" rel="noreferrer"
-                className="min-h-[44px] px-4 py-2.5 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center gap-2"
               >
                 <Navigation className="h-4 w-4" /> Rota
               </a>
@@ -592,6 +595,56 @@ export default function ModernDeliveryDashboard() {
   const ratingProgress = Math.min((avgRating / 5) * 100, 100);
   const efficiencyProgress = Math.min((todayDeliveries / 10) * 100, 100);
 
+  // Seção de pedidos ativos extraída pra ser reusada em dois lugares: no topo
+  // no mobile (o entregador precisa do pedido + Rota sem rolar) e na coluna da
+  // direita no desktop.
+  const activeOrdersSection = (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
+        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-3 py-1 rounded-full font-bold">
+          {activeOrders.length}
+        </div>
+      </div>
+
+      {backgroundLoading && activeOrders.length === 0 ? (
+        <DeliverySkeleton count={2} />
+      ) : activeOrders.length ? (
+        <div className="space-y-4">
+          {activeOrders.map((order) => (
+            <ModernActiveOrderCard
+              key={order.id}
+              order={order}
+              isNew={newOrderIds.has(order.id)}
+              onAcceptOrder={handleAcceptOrder}
+              onCompleteOrder={handleCompleteOrder}
+            />
+          ))}
+        </div>
+      ) : (
+        <Card className="p-8 text-center shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <div className="text-6xl mb-4">🎯</div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Tudo tranquilo!</h3>
+          <p className="text-gray-600 mb-4">
+            {isAvailable
+              ? availableCount > 0
+                ? `${availableCount} pedido${availableCount > 1 ? 's' : ''} disponível${availableCount > 1 ? 'is' : ''} para aceitar`
+                : 'Aguardando novos pedidos...'
+              : 'Fique online para receber pedidos'}
+          </p>
+          {!isAvailable && (
+            <button
+              onClick={toggleAvailability}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Ficar Online
+            </button>
+          )}
+        </Card>
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       {/* Dia I — Inksa Social (só aparece quando habilitado no admin) */}
@@ -686,6 +739,15 @@ export default function ModernDeliveryDashboard() {
           </div>
         )}
 
+        {/* Pedido ativo NO TOPO no mobile: o entregador precisa do pedido e do
+            botão Rota na mão, sem rolar por baixo de stats/performance. No
+            desktop (lg+) ele segue na coluna da direita, mais abaixo. */}
+        {activeOrders.length > 0 && (
+          <div className="lg:hidden mb-6">
+            {activeOrdersSection}
+          </div>
+        )}
+
         {/* ── Stats Grid ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-6 sm:mb-8">
           <ModernStatCard
@@ -760,50 +822,12 @@ export default function ModernDeliveryDashboard() {
             </Card>
           </div>
 
-          {/* Active orders */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Pedidos Ativos</h2>
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-3 py-1 rounded-full font-bold">
-                {activeOrders.length}
-              </div>
-            </div>
-
-            {backgroundLoading && activeOrders.length === 0 ? (
-              <DeliverySkeleton count={2} />
-            ) : activeOrders.length ? (
-              <div className="space-y-4">
-                {activeOrders.map((order) => (
-                  <ModernActiveOrderCard
-                    key={order.id}
-                    order={order}
-                    isNew={newOrderIds.has(order.id)}
-                    onAcceptOrder={handleAcceptOrder}
-                    onCompleteOrder={handleCompleteOrder}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-                <div className="text-6xl mb-4">🎯</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Tudo tranquilo!</h3>
-                <p className="text-gray-600 mb-4">
-                  {isAvailable
-                    ? availableCount > 0
-                      ? `${availableCount} pedido${availableCount > 1 ? 's' : ''} disponível${availableCount > 1 ? 'is' : ''} para aceitar`
-                      : 'Aguardando novos pedidos...'
-                    : 'Fique online para receber pedidos'}
-                </p>
-                {!isAvailable && (
-                  <button
-                    onClick={toggleAvailability}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    Ficar Online
-                  </button>
-                )}
-              </Card>
-            )}
+          {/* Active orders — no desktop fica aqui na direita. No mobile já
+              aparece no topo (bloco lg:hidden acima); então quando HÁ pedido
+              ativo, escondemos esta cópia no mobile pra não duplicar. Sem
+              pedido, deixamos visível pro empty state / botão "Ficar Online". */}
+          <div className={activeOrders.length > 0 ? 'hidden lg:block' : ''}>
+            {activeOrdersSection}
           </div>
         </div>
       </div>
