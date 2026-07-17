@@ -44,13 +44,15 @@ const authService = {
             throw new Error(responseData.error || responseData.message || 'Não foi possível entrar. Tente novamente.');
         }
 
-        let token, user;
+        let token, user, refreshToken;
         if (responseData?.data?.token) {
             token = responseData.data.token;
             user = responseData.data.user;
+            refreshToken = responseData.data.refresh_token;
         } else if (responseData?.token) {
             token = responseData.token;
             user = responseData.user;
+            refreshToken = responseData.refresh_token;
         }
 
         if (token) {
@@ -59,6 +61,9 @@ const authService = {
             }
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+            // Sem o refresh_token o apiClient não renova a sessão e o entregador
+            // cai no login quando o access_token vence (~1h).
+            if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
             return { token, user, success: true };
         }
 
