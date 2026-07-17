@@ -145,6 +145,22 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
 
   const showPickup = status === 'accepted_by_delivery' && order?.pickup_code;
 
+  // O entregador vê o LÍQUIDO (frete menos a taxa da plataforma), não o frete
+  // bruto — senão vira o susto do Gabriel ("dizia 5, caiu 4,80").
+  const fee = toNumber(order?.delivery_fee);
+  const net = toNumber(order?.valor_repassado_entregador);
+  const showNet = net > 0;
+  const feePct = showNet && fee > net ? Math.round((1 - net / fee) * 100) : 0;
+
+  // Rota até o RESTAURANTE (retirada) — o botão Rota de baixo leva ao cliente.
+  const restaurantAddress = [
+    order?.restaurant_name, order?.restaurant_street, order?.restaurant_number,
+    order?.restaurant_neighborhood, order?.restaurant_city,
+  ].filter(Boolean).join(', ');
+  const restaurantMapsUrl = restaurantAddress
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(restaurantAddress)}`
+    : null;
+
   return (
     <Card
       className={`relative overflow-hidden border-0 shadow-xl bg-white/90 backdrop-blur-sm transition-all duration-500
@@ -159,9 +175,14 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
           </div>
           <div className="text-right shrink-0">
             <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              R$ {toNumber(order?.delivery_fee).toFixed(2)}
+              R$ {(showNet ? net : fee).toFixed(2)}
             </div>
-            <p className="text-xs text-gray-500">Taxa de entrega</p>
+            <p className="text-xs text-gray-500">{showNet ? 'Você recebe' : 'Taxa de entrega'}</p>
+            {showNet && feePct > 0 && (
+              <p className="text-[11px] text-gray-400 leading-tight">
+                Frete R$ {fee.toFixed(2)} · taxa {feePct}%
+              </p>
+            )}
           </div>
         </div>
 
@@ -185,10 +206,19 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
             <div className="p-2 bg-orange-100 rounded-lg"><ExternalLink className="h-4 w-4 text-orange-600" /></div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-800">{order.restaurant_name || 'Restaurante'}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-800 truncate">{order.restaurant_name || 'Restaurante'}</p>
               <p className="text-sm text-gray-600">Local de coleta</p>
             </div>
+            {restaurantMapsUrl && (
+              <a
+                href={restaurantMapsUrl}
+                target="_blank" rel="noreferrer"
+                className="shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-orange-200 bg-white text-xs font-semibold text-orange-700 hover:bg-orange-100"
+              >
+                <Navigation className="h-4 w-4" /> Rota
+              </a>
+            )}
           </div>
 
           <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">

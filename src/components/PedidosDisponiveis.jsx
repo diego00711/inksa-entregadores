@@ -51,9 +51,20 @@ const CardPedido = ({ pedido, onAceitar }) => {
           <strong>Endereço de Coleta:</strong>{' '}
           {pedido.restaurant_address || '—'}
         </p>
-        <p>
-          <strong>Taxa de Entrega:</strong> {toBRL(pedido.delivery_fee)}
-        </p>
+        {Number(pedido.valor_repassado_entregador) > 0 ? (
+          <p>
+            <strong>Você recebe:</strong> {toBRL(pedido.valor_repassado_entregador)}
+            {Number(pedido.delivery_fee) > Number(pedido.valor_repassado_entregador) && (
+              <span className="text-xs text-gray-500">
+                {' '}(frete {toBRL(pedido.delivery_fee)} − taxa)
+              </span>
+            )}
+          </p>
+        ) : (
+          <p>
+            <strong>Taxa de Entrega:</strong> {toBRL(pedido.delivery_fee)}
+          </p>
+        )}
         <p>
           <strong>Valor Total:</strong> {toBRL(pedido.total_amount)}
         </p>
