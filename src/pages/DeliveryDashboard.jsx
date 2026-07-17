@@ -222,12 +222,14 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
           </div>
 
           <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-            <div className="p-2 bg-green-100 rounded-lg"><MapPin className="h-4 w-4 text-green-600" /></div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-800">{order.client_name || 'Cliente'}</p>
+            <div className="p-2 bg-green-100 rounded-lg shrink-0"><MapPin className="h-4 w-4 text-green-600" /></div>
+            {/* min-w-0: sem isto o flex-1 não deixa o truncate agir e o
+                endereço longo estourava/cortava na borda da tela. */}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-800 truncate">{order.client_name || 'Cliente'}</p>
               <p className="text-sm text-gray-600 truncate">{order.delivery_address || 'Endereço de entrega'}</p>
             </div>
-            <Phone className="h-4 w-4 text-gray-400" />
+            <Phone className="h-4 w-4 text-gray-400 shrink-0" />
           </div>
 
           {/* Payment info */}
