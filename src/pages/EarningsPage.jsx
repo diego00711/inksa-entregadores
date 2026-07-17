@@ -258,52 +258,95 @@ export function EarningsPage() {
             {/* Tabela Detalhada de Entregas */}
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-5 border-b pb-2">Histórico Detalhado de Entregas</h2>
             {earningsData.detailedDeliveries?.length > 0 ? (
-                <Card className="shadow-lg p-0 sm:p-4">
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto w-full">
-                            <table className="min-w-full leading-normal text-sm">
-                                <thead>
-                                    <tr className="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">ID Pedido</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Data</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Restaurante</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Cliente</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 text-right">Corrida (R$)</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 text-right">Total Pedido (R$)</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {earningsData.detailedDeliveries.map(delivery => (
-                                        <tr key={delivery.id} className="hover:bg-gray-50">
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {delivery.id?.substring(0, 8)}...
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {format(new Date(delivery.created_at), 'dd/MM/yyyy HH:mm')}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {delivery.restaurant_name}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {delivery.client_name}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-                                                {parseFloat(delivery.delivery_fee || 0).toFixed(2)}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-                                                {parseFloat(delivery.total_amount || 0).toFixed(2)}
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                <StatusBadge status={delivery.status} />
-                                            </td>
+                <>
+                    {/* Mobile: cada entrega vira um card (a tabela de 7 colunas
+                        não cabe no celular — encolhia e embolava tudo). */}
+                    <div className="space-y-3 sm:hidden">
+                        {earningsData.detailedDeliveries.map(delivery => (
+                            <div key={delivery.id} className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-gray-800 truncate">
+                                            {delivery.restaurant_name || 'Restaurante'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            {format(new Date(delivery.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                                        </p>
+                                    </div>
+                                    <StatusBadge status={delivery.status} />
+                                </div>
+                                <div className="flex items-center justify-between border-t border-gray-100 pt-2 mt-2">
+                                    <div>
+                                        <p className="text-[11px] text-gray-500 uppercase tracking-wide">Sua corrida</p>
+                                        <p className="text-lg font-bold text-green-700">
+                                            R$ {parseFloat(delivery.delivery_fee || 0).toFixed(2)}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total do pedido</p>
+                                        <p className="text-sm font-semibold text-gray-700">
+                                            R$ {parseFloat(delivery.total_amount || 0).toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
+                                {delivery.client_name && (
+                                    <p className="text-xs text-gray-400 mt-2 truncate">
+                                        Cliente: {delivery.client_name} · #{delivery.id?.substring(0, 8)}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop/tablet: tabela completa, com scroll horizontal e
+                        sem quebra de linha nas células. */}
+                    <Card className="shadow-lg p-0 sm:p-4 hidden sm:block">
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto w-full">
+                                <table className="min-w-full leading-normal text-sm whitespace-nowrap">
+                                    <thead>
+                                        <tr className="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <th className="px-5 py-3 border-b-2 border-gray-200">ID Pedido</th>
+                                            <th className="px-5 py-3 border-b-2 border-gray-200">Data</th>
+                                            <th className="px-5 py-3 border-b-2 border-gray-200">Restaurante</th>
+                                            <th className="px-5 py-3 border-b-2 border-gray-200">Cliente</th>
+                                            <th className="px-5 py-3 border-b-2 border-gray-200 text-right">Corrida (R$)</th>
+                                            <th className="px-5 py-3 border-b-2 border-gray-200 text-right">Total Pedido (R$)</th>
+                                            <th className="px-5 py-3 border-b-2 border-gray-200">Status</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                    </thead>
+                                    <tbody>
+                                        {earningsData.detailedDeliveries.map(delivery => (
+                                            <tr key={delivery.id} className="hover:bg-gray-50">
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                                                    {delivery.id?.substring(0, 8)}...
+                                                </td>
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                                                    {format(new Date(delivery.created_at), 'dd/MM/yyyy HH:mm')}
+                                                </td>
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                                                    {delivery.restaurant_name}
+                                                </td>
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                                                    {delivery.client_name}
+                                                </td>
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right">
+                                                    {parseFloat(delivery.delivery_fee || 0).toFixed(2)}
+                                                </td>
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right">
+                                                    {parseFloat(delivery.total_amount || 0).toFixed(2)}
+                                                </td>
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                                                    <StatusBadge status={delivery.status} />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </>
             ) : (
                 <p className="text-center text-gray-600 p-8 bg-white rounded-lg shadow-sm">
                     Nenhuma entrega concluída no período selecionado.
