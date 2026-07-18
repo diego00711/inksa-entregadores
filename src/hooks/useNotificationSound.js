@@ -89,8 +89,10 @@ export function useNotificationSound() {
             { f: 784, t: 0.24 },  // G5
             { f: 1047, t: 0.38 }, // C6
           ], 0.26, 'triangle');
-          // …e a voz da marca logo após o jingle
-          setTimeout(() => speakInksa('Nova entrega na Inksa!'), 680);
+          // …e a voz da marca logo após o jingle. Grafia FONÉTICA de propósito
+          // ("Incasa" em vez de "Inksa"): o TTS pt-BR lê "Inksa" com o K
+          // travado; "Incasa" sai com a dicção certa da marca. Não trocar.
+          setTimeout(() => speakInksa('Nova entrega na Incasa!'), 680);
           break;
         case 'accepted':
           beep([{ f: 440, t: 0 }, { f: 554, t: 0.12 }, { f: 659, t: 0.24 }], 0.28);
