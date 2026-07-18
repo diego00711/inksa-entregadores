@@ -27,6 +27,7 @@ const GamificationPage = lazy(() => import('./pages/GamificationPage.jsx'));
 const ClubePage = lazy(() => import('./pages/ClubePage.jsx'));
 const DeliverymanEvaluationsCenter = lazy(() => import('./pages/DeliverymanEvaluationsCenter.jsx'));
 const SuportePage = lazy(() => import('./pages/SuportePage.jsx'));
+const PagamentoDinheiroPage = lazy(() => import('./pages/PagamentoDinheiroPage.jsx'));
 
 const PageLoader = () => (
   <div className="flex h-screen items-center justify-center">
@@ -103,6 +104,7 @@ function App() {
                 <Route path="clube" element={<ClubePage />} />
                 <Route path="avaliacoes" element={<DeliverymanEvaluationsCenter />} />
                 <Route path="suporte" element={<SuportePage />} />
+                <Route path="pagamento-dinheiro" element={<PagamentoDinheiroPage />} />
                 <Route index element={<Navigate to="dashboard" replace />} />
               </Route>
 

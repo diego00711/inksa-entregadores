@@ -778,9 +778,12 @@ export default function ModernDeliveryDashboard() {
                 <p className="text-2xl font-black">R$ {toNumber(dashboardStats?.cashDebt).toFixed(2)}</p>
               </div>
             </div>
-            <p className="text-xs text-white/70 mt-3">
-              O débito será descontado dos seus próximos repasses online.
-            </p>
+            <button
+              onClick={() => navigate('/delivery/pagamento-dinheiro')}
+              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-white/90 hover:text-white underline underline-offset-2"
+            >
+              Entenda como funciona o pagamento em dinheiro →
+            </button>
           </div>
         )}
 

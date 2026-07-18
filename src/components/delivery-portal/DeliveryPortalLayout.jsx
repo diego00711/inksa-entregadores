@@ -15,6 +15,7 @@ import {
   WifiOff,
   Loader2,
   LifeBuoy,
+  Banknote,
 } from 'lucide-react';
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -29,6 +30,7 @@ const NAVIGATION = [
   { name: 'Avaliações', href: '/delivery/avaliacoes', icon: Star, primary: false },
   { name: 'Gamificação', href: '/delivery/gamificacao', icon: Trophy, primary: false },
   { name: 'Clube Inksa', href: '/delivery/clube', icon: Medal, primary: false },
+  { name: 'Pagamento em Dinheiro', href: '/delivery/pagamento-dinheiro', icon: Banknote, primary: false },
   { name: 'Suporte', href: '/delivery/suporte', icon: LifeBuoy, primary: false },
   { name: 'Meu Perfil', href: '/delivery/meu-perfil', icon: User, primary: true },
 ];
