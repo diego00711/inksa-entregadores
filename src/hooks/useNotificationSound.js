@@ -1,8 +1,11 @@
 import { useCallback } from 'react';
 
-// AudioContext único no módulo + desbloqueio no primeiro gesto do usuário.
-// Sem isto, a política de autoplay do navegador mantém o contexto "suspended"
-// e os beeps disparados por evento assíncrono (pedido chegando) ficam MUDOS.
+// Som de notificação "estilo Inksa": jingle (Web Audio) + voz falando a marca
+// (speechSynthesis / TTS do navegador em pt-BR). Sem depender de arquivo.
+//
+// AudioContext único no módulo + desbloqueio no primeiro gesto do usuário —
+// sem isto a política de autoplay mantém o áudio "suspended" e o alerta
+// disparado por evento assíncrono (pedido chegando) fica MUDO.
 let audioCtx = null;
 let unlockBound = false;
 
@@ -19,18 +22,38 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-// Retoma o contexto a cada gesto (cobre também o caso de ele suspender depois
-// de o app ir pra segundo plano e voltar).
 function bindUnlockOnce() {
   if (unlockBound || typeof window === 'undefined') return;
   unlockBound = true;
   const unlock = () => {
     const ctx = getAudioCtx();
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    // prime o TTS também (também exige gesto em alguns navegadores)
+    try { window.speechSynthesis && window.speechSynthesis.resume(); } catch {}
   };
   ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
     window.addEventListener(ev, unlock, { passive: true })
   );
+}
+
+// Fala a marca em pt-BR. Degrada sem erro se o aparelho não tiver TTS.
+function speakInksa(text) {
+  try {
+    const synth = typeof window !== 'undefined' && window.speechSynthesis;
+    if (!synth) return;
+    if (synth.speaking || synth.pending) return; // não empilha a cada 5s
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'pt-BR';
+    u.rate = 1.02;
+    u.pitch = 1.05;
+    u.volume = 1;
+    const voices = synth.getVoices ? synth.getVoices() : [];
+    const ptVoice = voices.find((v) => /pt[-_]?br/i.test(v.lang)) || voices.find((v) => /^pt/i.test(v.lang));
+    if (ptVoice) u.voice = ptVoice;
+    synth.speak(u);
+  } catch {
+    // sem TTS: fica só o jingle
+  }
 }
 
 export function useNotificationSound() {
@@ -59,8 +82,15 @@ export function useNotificationSound() {
     try {
       switch (event) {
         case 'new_order':
-          // Ascending ding ×3 — attention grabbing
-          beep([{ f: 523, t: 0 }, { f: 659, t: 0.2 }, { f: 784, t: 0.4 }], 0.22);
+          // Jingle "Inksa": arpejo ascendente quentinho + oitava de acento…
+          beep([
+            { f: 523, t: 0 },     // C5
+            { f: 659, t: 0.12 },  // E5
+            { f: 784, t: 0.24 },  // G5
+            { f: 1047, t: 0.38 }, // C6
+          ], 0.26, 'triangle');
+          // …e a voz da marca logo após o jingle
+          setTimeout(() => speakInksa('Nova entrega na Inksa!'), 680);
           break;
         case 'accepted':
           beep([{ f: 440, t: 0 }, { f: 554, t: 0.12 }, { f: 659, t: 0.24 }], 0.28);
@@ -78,7 +108,7 @@ export function useNotificationSound() {
           beep([{ f: 440, t: 0 }], 0.15);
       }
     } catch {
-      // AudioContext may be blocked by browser policy
+      // AudioContext blocked by browser policy
     }
   }, [beep]);
 
