@@ -79,7 +79,7 @@ export default function DeliveryProfilePage() {
                 bank_account_type: contextProfile.bank_account_type || '',
                 pix_key: contextProfile.pix_key || '',
                 pix_key_type: contextProfile.pix_key_type || '',
-                payout_frequency: contextProfile.payout_frequency || 'weekly',
+                payout_frequency: 'weekly', // só semanal por ora (ver campo fixo no form)
                 daily_goal: contextProfile.daily_goal ? String(contextProfile.daily_goal) : '',
                 avatar_url: contextProfile.avatar_url || ''
             });
@@ -489,16 +489,13 @@ export default function DeliveryProfilePage() {
                         </div>
                         <div>
                             <Label htmlFor="payout_frequency">Frequência de Recebimento</Label>
-                            <Select value={formData.payout_frequency} onValueChange={(value) => handleSelectChange('payout_frequency', value)} disabled={!isEditing}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a frequência" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                    <SelectItem value="weekly">Semanal</SelectItem>
-                                    <SelectItem value="biweekly">Quinzenal</SelectItem>
-                                    <SelectItem value="monthly">Mensal</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            {/* Só semanal por ora — padrão do mercado e o que o
+                                entregador espera. Quinzenal/mensal podem voltar
+                                depois (o backend já aceita). */}
+                            <div className="mt-1 flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                                <span className="font-medium">Semanal</span>
+                                <span className="text-xs text-gray-400">· seus repasses caem toda semana</span>
+                            </div>
                         </div>
                         <div>
                             <Label htmlFor="daily_goal">Meta de ganhos diária (R$)</Label>
