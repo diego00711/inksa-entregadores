@@ -274,7 +274,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
                 className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm"
               >
                 <CheckCircle className="h-4 w-4" />
-                {status === 'delivering' ? 'Entreguei! 🎉' : 'Próximo Passo'}
+                {status === 'delivering' ? 'Confirmar entrega (código)' : 'Próximo passo'}
               </button>
             )}
 
@@ -430,7 +430,10 @@ export default function ModernDeliveryDashboard() {
   // cada fetch recriava este callback → o efeito de polling re-rodava → fetch
   // imediato de novo → laço perpétuo (só a latência da rede segurava). Junto
   // com o updateProfile instável, era a enxurrada de GET/PUT dos logs do E2E.
-  const hasStatsRef = useRef(false);
+  // Inicializa do cache: sem isto, cada vez que o entregador voltava pra tela
+  // Início o fetch de mount setava initialLoading=true e mostrava o skeleton
+  // inteiro de novo, mesmo já tendo os dados em cache (o "fica atualizando").
+  const hasStatsRef = useRef(!!dashboardCached);
   const profileAvailRef = useRef(undefined);
   useEffect(() => { profileAvailRef.current = profile?.is_available; }, [profile?.is_available]);
 
@@ -526,18 +529,9 @@ export default function ModernDeliveryDashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [addToast, fetchDashboardData]);
 
-  // ── Alarme sonoro: repete enquanto houver pedido disponível E o entregador
-  // estiver ONLINE. Para sozinho quando alguém aceita (o pedido some da lista)
-  // ou quando ele fica offline. (Diego: "avisar os entregadores até um aceitar")
-  // Depende do BOOLEANO (não da contagem) pra a cadência de 5s ficar estável
-  // mesmo quando o nº de pedidos disponíveis muda.
-  const alarmOn = isAvailable && availableCount > 0;
-  useEffect(() => {
-    if (!alarmOn) return;
-    playSound('new_order');
-    const id = window.setInterval(() => playSound('new_order'), 5000);
-    return () => window.clearInterval(id);
-  }, [alarmOn, playSound]);
+  // Alarme sonoro de novo pedido MOVIDO pro DeliveryPortalLayout (hook
+  // useNewOrderAlarm): agora toca em QUALQUER tela enquanto online, não só aqui
+  // no Início. Aqui ficaria mudo assim que o entregador trocasse de aba.
 
   const debouncedRefresh = useDebouncedCallback(() => fetchDashboardData(true), 700);
 

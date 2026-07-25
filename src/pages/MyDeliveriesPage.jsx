@@ -5,11 +5,12 @@ import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx';
 import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
+import { ChatModal } from '../components/ChatModal.jsx';
 import { MapDisplay } from '../components/MapDisplay.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
-import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle } from 'lucide-react';
+import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle } from 'lucide-react';
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import { DELIVERY_API_URL } from '../services/api';
@@ -60,6 +61,8 @@ export function MyDeliveriesPage() {
   const [incidentSubmitting, setIncidentSubmitting] = useState(false);
   const [returnOrder, setReturnOrder] = useState(null);
   const [confirmingReturn, setConfirmingReturn] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -363,6 +366,34 @@ export function MyDeliveriesPage() {
                       </Button>
                     </div>
 
+                    {/* Chat com o cliente direto daqui — antes só dava pra abrir
+                        entrando no modal de detalhe, então o entregador nem via
+                        que o cliente mandou mensagem. */}
+                    {['accepted_by_delivery', 'ready', 'picked_up', 'on_the_way', 'delivering'].includes(activeDelivery.status) && (
+                      <button
+                        onClick={() => { setChatOpen(true); setChatUnread(0); }}
+                        className="relative w-full text-sm font-bold text-[#FF6F00] border-2 border-[#FF6F00] bg-white hover:bg-orange-50 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Chat com cliente
+                        {chatUnread > 0 && (
+                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                            {chatUnread > 9 ? '9+' : chatUnread}
+                          </span>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Confirmar entrega (abre o código) sem voltar pra tela
+                        Início — resolve o "sair de Entregas pra pegar o cod". */}
+                    {isDeliveryPhase && activeDelivery.status !== 'delivered' && (
+                      <button
+                        onClick={() => finishFromHere(activeDelivery.id)}
+                        className="w-full text-sm font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg py-2.5 flex items-center justify-center gap-1.5 min-h-[44px] shadow"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Confirmar entrega (código)
+                      </button>
+                    )}
+
                     <button
                       onClick={() => setIncidentOrderId(activeDelivery.id)}
                       className="w-full text-sm font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
@@ -455,6 +486,15 @@ export function MyDeliveriesPage() {
           isAvailable={activeFilter === 'available'}
         />
       )}
+
+      {/* Chat com o cliente da entrega ativa (aberto pelo botão do card) */}
+      <ChatModal
+        orderId={activeDelivery?.id}
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        senderType="delivery"
+        onUnreadChange={(n) => { if (!chatOpen) setChatUnread(n); }}
+      />
 
       {pendingFinishId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">

@@ -21,6 +21,7 @@ import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { haptics } from '../../lib/haptics.js';
 import authService from '../../services/authService.js';
+import { useNewOrderAlarm } from '../../hooks/useNewOrderAlarm.js';
 
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
@@ -49,6 +50,9 @@ export default function DeliveryPortalLayout() {
     `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Entregador';
   const avatarUrl = profile?.avatar_url || null;
   const isOnline = !!profile?.is_available;
+
+  // Alarme de novo pedido em qualquer tela enquanto online (não só no Início)
+  useNewOrderAlarm(isOnline);
 
   const closeSidebar = () => setSidebarOpen(false);
 
