@@ -811,7 +811,7 @@ export default function ModernDeliveryDashboard() {
 
       <div className="p-4 sm:p-6">
         {/* ── Cadastro incompleto: bloqueia ficar online (igual restaurante) ── */}
-        {cadastroPendente.length > 0 && (
+        {!profileLoading && cadastroPendente.length > 0 && (
           <div className="mb-6 p-4 rounded-2xl border border-amber-200 bg-amber-50 flex items-start gap-3">
             <div className="text-2xl leading-none">📋</div>
             <div className="flex-1 min-w-0">
