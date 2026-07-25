@@ -104,7 +104,7 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
             <MapPin className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-800 text-sm truncate">{restaurantName}</p>
-              <p className="text-xs text-gray-500 truncate">{restaurantAddress}</p>
+              <p className="text-xs text-gray-500 break-words">{restaurantAddress}</p>
             </div>
           </div>
         </div>
@@ -115,7 +115,7 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
               <MapPin className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-800 text-sm truncate">{clientName}</p>
-                <p className="text-xs text-gray-500 truncate">{deliveryAddress}</p>
+                <p className="text-xs text-gray-500 break-words">{deliveryAddress}</p>
               </div>
             </div>
           </div>
@@ -127,7 +127,7 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
               <MapPin className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500 font-medium mb-0.5">Entregar em:</p>
-                <p className="text-sm text-gray-700 truncate">{deliveryAddress}</p>
+                <p className="text-sm text-gray-700 break-words">{deliveryAddress}</p>
               </div>
             </div>
           </div>

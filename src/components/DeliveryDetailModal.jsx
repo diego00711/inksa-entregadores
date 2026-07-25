@@ -236,9 +236,9 @@ export function DeliveryDetailModal({
                     <Navigation className="h-5 w-5 text-orange-500" />
                     Mapa da Rota
                   </h3>
-                  <div className="bg-gray-100 rounded-lg p-6 flex flex-col items-center justify-center gap-4">
+                  <div className="bg-gray-100 rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center gap-4">
                     <p className="text-gray-600">Abrir navegação:</p>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap justify-center gap-3">
                       <Button
                         onClick={() =>
                           window.open(

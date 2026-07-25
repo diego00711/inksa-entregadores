@@ -128,7 +128,7 @@ const PerformanceRing = memo(({ percentage, label, color }) => {
 });
 
 // ─── ModernActiveOrderCard ────────────────────────────────────────────────────
-const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isNew }) => {
+const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isNew, isAccepting }) => {
   const status = order?.status;
 
   const badge = useMemo(() => {
@@ -259,9 +259,12 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             {status === 'pending' && (
               <button
                 onClick={() => onAcceptOrder(order.id)}
-                className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                disabled={isAccepting}
+                className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <Zap className="h-4 w-4" /> Aceitar Pedido
+                {isAccepting
+                  ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Aceitando…</>)
+                  : (<><Zap className="h-4 w-4" /> Aceitar Pedido</>)}
               </button>
             )}
 
@@ -315,9 +318,26 @@ export default function ModernDeliveryDashboard() {
   const [availableCount, setAvailableCount] = useState(0);
   const [newOrderIds, setNewOrderIds] = useState(new Set());
   const knownAvailableRef = useRef(null);
+  const [acceptingId, setAcceptingId] = useState(null);
+  const acceptingRef = useRef(false);
 
   const isAvailable = dashboardStats?.is_available || false;
   const activeOrders = dashboardStats?.activeOrders || [];
+
+  // Cadastro mínimo pro entregador rodar sem quebrar o fluxo: contato + veículo
+  // + PIX (sem chave PIX o repasse automático via PIX falha). Espelha o gate do
+  // restaurante — só deixa ficar ONLINE depois de preencher.
+  const cadastroPendente = useMemo(() => {
+    const p = profile || {};
+    const faltando = [];
+    if (!String(p.first_name || '').trim()) faltando.push('nome');
+    if (!String(p.phone || '').trim()) faltando.push('telefone');
+    if (!String(p.vehicle_type || '').trim()) faltando.push('tipo de veículo');
+    if (p.vehicle_type && p.vehicle_type !== 'bicicleta' && !String(p.vehicle_plate || '').trim())
+      faltando.push('placa');
+    if (!String(p.pix_key || '').trim()) faltando.push('chave PIX');
+    return faltando;
+  }, [profile]);
 
   // ── GPS tracking when online and delivering ────────────────────────────────
   useGPSTracking({ enabled: isAvailable && activeOrders.length > 0 });
@@ -526,6 +546,14 @@ export default function ModernDeliveryDashboard() {
   // ── Toggle availability ────────────────────────────────────────────────────
   const toggleAvailability = async () => {
     if (!profile || profileLoading) return addToast('Perfil não carregado.', 'warning');
+    // Gate: não deixa ficar ONLINE sem o cadastro mínimo — senão entra pedido
+    // sem como pagar (PIX) nem contatar o entregador em produção.
+    if (!isAvailable && cadastroPendente.length > 0) {
+      haptics.warn();
+      addToast(`Complete seu cadastro para ficar online: ${cadastroPendente.join(', ')}.`, 'warning');
+      navigate('/delivery/meu-perfil');
+      return;
+    }
     haptics.tap();
     try {
       const next = !isAvailable;
@@ -541,16 +569,22 @@ export default function ModernDeliveryDashboard() {
   };
 
   const handleAcceptOrder = async (orderId) => {
+    if (acceptingRef.current) return;          // trava o duplo clique
+    acceptingRef.current = true;
+    setAcceptingId(orderId);
     haptics.tap();
     try {
       await acceptDelivery(orderId);
       playSound('accepted');
       haptics.success();
       addToast('Pedido aceito com sucesso! 🎉', 'success');
-      fetchDashboardData(true);
+      await fetchDashboardData(true);
     } catch {
       haptics.error();
       addToast('Erro ao aceitar pedido.', 'error');
+    } finally {
+      acceptingRef.current = false;
+      setAcceptingId(null);
     }
   };
 
@@ -652,6 +686,17 @@ export default function ModernDeliveryDashboard() {
         </div>
       </div>
 
+      {/* Atalho pro mapa da rota: quando já aceitou, o entregador vai direto pra
+          tela de Entregas (mapa ao vivo restaurante→cliente) sem caçar a aba. */}
+      {activeOrders.some((o) => ['accepted', 'ready', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'delivering'].includes(o?.status)) && (
+        <button
+          onClick={() => navigate('/delivery/entregas')}
+          className="w-full mb-4 min-h-[44px] rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
+        >
+          <MapPin className="h-4 w-4" /> Ver rota no mapa
+        </button>
+      )}
+
       {backgroundLoading && activeOrders.length === 0 ? (
         <DeliverySkeleton count={2} />
       ) : activeOrders.length ? (
@@ -661,6 +706,7 @@ export default function ModernDeliveryDashboard() {
               key={order.id}
               order={order}
               isNew={newOrderIds.has(order.id)}
+              isAccepting={acceptingId === order.id}
               onAcceptOrder={handleAcceptOrder}
               onCompleteOrder={handleCompleteOrder}
             />
@@ -764,6 +810,25 @@ export default function ModernDeliveryDashboard() {
       </div>
 
       <div className="p-4 sm:p-6">
+        {/* ── Cadastro incompleto: bloqueia ficar online (igual restaurante) ── */}
+        {cadastroPendente.length > 0 && (
+          <div className="mb-6 p-4 rounded-2xl border border-amber-200 bg-amber-50 flex items-start gap-3">
+            <div className="text-2xl leading-none">📋</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-amber-800">Complete seu cadastro para começar</p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                Falta: {cadastroPendente.join(', ')}. Você só fica online depois de preencher.
+              </p>
+              <button
+                onClick={() => navigate('/delivery/meu-perfil')}
+                className="mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2"
+              >
+                Completar cadastro →
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Dinheiro em mãos ────────────────────────────────────────────── */}
         {(toNumber(dashboardStats?.cashDebt) > 0 || toNumber(dashboardStats?.totalCashReceived) > 0) && (
           <div className="mb-6 p-5 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl text-white shadow-xl">
