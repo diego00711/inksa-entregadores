@@ -52,7 +52,8 @@ export function MyDeliveriesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
+  const [driverCoords, setDriverCoords] = useState(null); // posição do entregador ao vivo (GPS)
   const [pendingFinishId, setPendingFinishId] = useState(null);
   const [finishCode, setFinishCode] = useState('');
   const [incidentOrderId, setIncidentOrderId] = useState(null);
@@ -134,6 +135,18 @@ export function MyDeliveriesPage() {
     const id = setInterval(fetchDeliveries, 30000);
     return () => clearInterval(id);
   }, [fetchDeliveries]);
+
+  // GPS ao vivo do entregador enquanto houver entrega ativa (alimenta o mapa)
+  useEffect(() => {
+    if (!activeDelivery || !navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (pos) => setDriverCoords([pos.coords.latitude, pos.coords.longitude]),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDelivery?.id]);
 
   const filteredDeliveries = useMemo(() => {
     if (activeFilter === 'available') return availableOrders;
@@ -244,6 +257,14 @@ export function MyDeliveriesPage() {
     );
   }
 
+  // Fase da entrega: antes de retirar → rota ao RESTAURANTE; depois → ao CLIENTE
+  const isDeliveryPhase = !!activeDelivery && ['delivering', 'on_the_way', 'picked_up', 'delivered'].includes(activeDelivery.status);
+  const navAddress = !activeDelivery
+    ? ''
+    : isDeliveryPhase
+      ? (activeDelivery.delivery_address || '')
+      : [activeDelivery.restaurant_name, activeDelivery.restaurant_street, activeDelivery.restaurant_number, activeDelivery.restaurant_neighborhood, activeDelivery.restaurant_city].filter(Boolean).join(', ');
+
   return (
     <div className="flex-1 flex flex-col">
       {(pulling || refreshing) && (
@@ -266,73 +287,88 @@ export function MyDeliveriesPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0 relative" style={{ height: '280px' }}>
+            <CardContent className="p-0">
               {!activeDelivery ? (
-                <div className="h-full flex items-center justify-center bg-gray-50">
+                <div style={{ height: '280px' }} className="flex items-center justify-center bg-gray-50">
                   <div className="text-center px-4">
                     <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-600 font-medium mb-1">Nenhuma entrega ativa no momento</p>
                     <p className="text-sm text-gray-400">O mapa aparece quando você tiver uma entrega em andamento</p>
                   </div>
                 </div>
-              ) : showMap && getDeliveryCoords(activeDelivery) ? (
-                <div className="h-full w-full">
-                  <MapDisplay
-                    pickupCoords={getPickupCoords(activeDelivery)}
-                    deliveryCoords={getDeliveryCoords(activeDelivery)}
-                  />
-                </div>
               ) : (
-                <div className="h-full overflow-y-auto bg-gray-50 p-4">
-                  <div className="bg-white p-4 rounded-xl shadow-sm border max-w-sm mx-auto">
-                    <h3 className="font-semibold mb-2 text-gray-800">Entrega ativa #{activeDelivery.id.substring(0, 8)}</h3>
+                <div>
+                  {/* MAPA embutido (rota até o restaurante e depois até o cliente) */}
+                  {showMap && (getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery)) ? (
+                    <div style={{ height: '240px' }} className="w-full">
+                      <MapDisplay
+                        driverCoords={driverCoords}
+                        pickupCoords={getPickupCoords(activeDelivery)}
+                        deliveryCoords={getDeliveryCoords(activeDelivery)}
+                        phase={isDeliveryPhase ? 'delivery' : 'pickup'}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ height: '110px' }} className="flex items-center justify-center bg-gray-50 px-4 text-center">
+                      <p className="text-sm text-gray-500">
+                        {(getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery))
+                          ? 'Toque no 👁️ acima para ver o mapa da rota.'
+                          : 'Localização ainda não disponível para o mapa.'}
+                      </p>
+                    </div>
+                  )}
 
-                    {activeDelivery.pickup_code && (
-                      <div className="mb-3 bg-purple-50 p-2 rounded border border-purple-200">
+                  {/* INFO + AÇÕES — sempre visível abaixo do mapa */}
+                  <div className="p-4 space-y-3 border-t">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-gray-800 text-sm">Entrega ativa #{activeDelivery.id.substring(0, 8)}</h3>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                        {isDeliveryPhase ? 'Indo ao cliente' : 'Indo ao restaurante'}
+                      </span>
+                    </div>
+
+                    {activeDelivery.pickup_code && !isDeliveryPhase && (
+                      <div className="bg-purple-50 p-2 rounded border border-purple-200">
                         <p className="text-xs text-purple-700 mb-1">Código de Retirada:</p>
                         <p className="text-lg font-bold text-purple-800 tracking-widest">{activeDelivery.pickup_code}</p>
                       </div>
                     )}
 
-                    <p className="text-sm text-gray-600 mb-3">
-                      {activeDelivery.customer?.name || activeDelivery.client_name || 'Cliente não informado'}
+                    {activeDelivery.payment_method === 'cash' && (
+                      <div className="bg-orange-50 border border-orange-200 rounded p-2 text-sm font-bold text-orange-700">
+                        💵 Cobrar R$ {Number(activeDelivery.total_amount || 0).toFixed(2)} em dinheiro
+                      </div>
+                    )}
+
+                    <p className="text-sm text-gray-600 break-words">
+                      <span className="font-medium">{activeDelivery.client_name || 'Cliente'}</span>
+                      {activeDelivery.delivery_address ? ` — ${activeDelivery.delivery_address}` : ''}
                     </p>
+
                     <div className="flex gap-2">
                       <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => {
-                          const address = activeDelivery.deliveryAddress?.street || activeDelivery.delivery_address;
-                          window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}`, '_blank');
-                        }}
+                        size="sm" variant="outline" className="flex-1 min-w-0"
+                        onClick={() => window.open(`https://waze.com/ul?q=${encodeURIComponent(navAddress)}`, '_blank')}
                       >
-                        <ExternalLink className="w-4 h-4 mr-1" /> Waze
+                        <ExternalLink className="w-4 h-4 mr-1 shrink-0" /> Waze
                       </Button>
                       <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => {
-                          const address = activeDelivery.deliveryAddress?.street || activeDelivery.delivery_address;
-                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
-                        }}
+                        size="sm" variant="outline" className="flex-1 min-w-0"
+                        onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(navAddress)}`, '_blank')}
                       >
-                        <Route className="w-4 h-4 mr-1" /> Maps
+                        <Route className="w-4 h-4 mr-1 shrink-0" /> Maps
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => window.open(`tel:${activeDelivery.customer?.phone}`, '_self')}>
+                      <Button size="sm" variant="outline" className="shrink-0" onClick={() => window.open(`tel:${activeDelivery.customer?.phone || ''}`, '_self')}>
                         <Phone className="w-4 h-4" />
                       </Button>
                     </div>
+
                     <button
                       onClick={() => setIncidentOrderId(activeDelivery.id)}
-                      className="mt-3 w-full text-sm font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
+                      className="w-full text-sm font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
                     >
                       <AlertTriangle className="w-4 h-4" /> Não consegui entregar
                     </button>
-                    {showMap && !getDeliveryCoords(activeDelivery) && (
-                      <p className="text-xs text-amber-600 mt-2 text-center">Localização do cliente ainda não disponível para o mapa.</p>
-                    )}
                   </div>
                 </div>
               )}
