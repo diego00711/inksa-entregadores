@@ -1,0 +1,51 @@
+workflows:
+  ios-workflow:
+    name: Inksa Entregador iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.inksa.entregador
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APP_STORE_APPLE_ID: ""
+      xcode: latest
+      cocoapods: default
+      node: 20
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "ios-entregador-v*"
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+      - name: Build web app
+        script: npm run build
+      - name: Capacitor sync iOS
+        script: npx cap sync ios
+      - name: Cocoapods install
+        script: cd ios/App && pod install
+      - name: Set build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $(($BUILD_NUMBER + 1))
+      - name: Build ipa for distribution
+        script: |
+          xcode-project use-profiles
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Testadores Inksa

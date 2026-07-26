@@ -47,6 +47,7 @@ export function DeliveryDetailModal({
 }) {
   const addToast = useToast();
   const [accepting, setAccepting] = useState(false);
+  const [accepted, setAccepted] = useState(false);         // vira "Pedido aceito" + fecha sozinho
   const [pickupCode, setPickupCode] = useState('');        // ⬅️ novo
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
@@ -63,26 +64,16 @@ export function DeliveryDetailModal({
 
   // aceitar e já buscar o código
   const handleAcceptOrder = async () => {
+    if (accepting || accepted) return;   // trava duplo clique
     try {
       setAccepting(true);
       await acceptDelivery(order.id);
+      setAccepted(true);                 // botão vira "Pedido aceito"
       addToast('Pedido aceito com sucesso! 🎉', 'success');
-
-      // busca o código e mostra dentro do modal
-      try {
-        const res = await getPickupCode(order.id);
-        const code = res?.pickup_code || '';
-        if (code) {
-          setPickupCode(code);
-          await navigator.clipboard?.writeText(code).catch(() => {});
-          addToast('Código de retirada copiado para a área de transferência.', 'info');
-        }
-      } catch (e) {
-        addToast('Não foi possível obter o código de retirada agora.', 'warning');
-      }
-
       onUpdateStatus?.(order.id, 'accepted_by_delivery');
-      // não fecha o modal: deixa o código visível
+      // Fecha sozinho — o código de retirada já aparece no card da entrega
+      // ativa (tela Entregas), não precisa segurar o modal aberto.
+      setTimeout(() => onClose?.(), 1200);
     } catch (error) {
       console.error('Erro ao aceitar pedido:', error);
       addToast('Erro ao aceitar pedido. Tente novamente.', 'error');
@@ -271,10 +262,15 @@ export function DeliveryDetailModal({
                 {isAvailable ? (
                   <Button
                     onClick={handleAcceptOrder}
-                    disabled={accepting}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold min-h-[44px] py-3 text-base"
+                    disabled={accepting || accepted}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold min-h-[44px] py-3 text-base disabled:opacity-100"
                   >
-                    {accepting ? (
+                    {accepted ? (
+                      <>
+                        <CheckCircle className="mr-2 h-5 w-5" />
+                        Pedido aceito!
+                      </>
+                    ) : accepting ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         Aceitando...

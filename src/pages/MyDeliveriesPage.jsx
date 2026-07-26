@@ -10,9 +10,10 @@ import { MapDisplay } from '../components/MapDisplay.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
-import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle } from 'lucide-react';
+import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star } from 'lucide-react';
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
+import ClientReviewForm from '../components/ClientReviewForm.jsx';
 import { DELIVERY_API_URL } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
@@ -63,6 +64,9 @@ export function MyDeliveriesPage() {
   const [confirmingReturn, setConfirmingReturn] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  // Avaliação do cliente após concluir a entrega ("Avaliar / deixar pra depois")
+  const [pendingReviewOrder, setPendingReviewOrder] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -135,7 +139,7 @@ export function MyDeliveriesPage() {
 
   useEffect(() => {
     fetchDeliveries();
-    const id = setInterval(fetchDeliveries, 30000);
+    const id = setInterval(fetchDeliveries, 15000);
     return () => clearInterval(id);
   }, [fetchDeliveries]);
 
@@ -198,11 +202,19 @@ export function MyDeliveriesPage() {
     const deliveryCode = String(finishCode).trim().toUpperCase();
     if (deliveryCode.length < 3) return;
     try {
+      const finishedOrder =
+        (activeDelivery?.id === pendingFinishId ? activeDelivery : null) ||
+        myDeliveries.find(o => o.id === pendingFinishId) || null;
       await completeDelivery(pendingFinishId, deliveryCode);
       handleUpdateStatus(pendingFinishId, 'delivered');
       setPendingFinishId(null);
       setFinishCode('');
       addToast('Entrega concluída com sucesso!', 'success');
+      // Oferece avaliar o cliente antes do pedido sair da lista.
+      if (finishedOrder?.client_id) {
+        setShowReviewForm(false);
+        setPendingReviewOrder(finishedOrder);
+      }
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
       addToast(e?.message || 'Erro ao confirmar entrega. Verifique o código e tente novamente.', 'error');
@@ -498,7 +510,7 @@ export function MyDeliveriesPage() {
 
       {pendingFinishId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
             <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
             <input
@@ -530,6 +542,64 @@ export function MyDeliveriesPage() {
         </div>
       )}
 
+      {/* Avaliar cliente após a entrega — "Avaliar / deixar pra depois".
+          Deixar pra depois não perde nada: o pedido segue na Central de
+          Avaliações pra avaliar quando quiser. */}
+      {pendingReviewOrder && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+            {!showReviewForm ? (
+              <div className="text-center">
+                <div className="text-5xl mb-2">⭐</div>
+                <h3 className="text-lg font-bold text-gray-800">Avaliar o cliente?</h3>
+                <p className="text-sm text-gray-500 mt-1 mb-5">
+                  Pedido entregue para <span className="font-semibold text-gray-700">{pendingReviewOrder.client_name || 'o cliente'}</span>. Que tal deixar uma avaliação rápida?
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Star className="h-4 w-4" />
+                    Avaliar agora
+                  </button>
+                  <button
+                    onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
+                    className="w-full py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                  >
+                    Deixar para depois
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <Star className="h-5 w-5 text-orange-500" />
+                    Avaliar cliente
+                  </h3>
+                  <button
+                    onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
+                    className="text-sm font-semibold text-gray-400 hover:text-gray-600"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                <ClientReviewForm
+                  clientId={pendingReviewOrder.client_id}
+                  orderId={pendingReviewOrder.id}
+                  onSuccess={() => {
+                    addToast('Avaliação enviada! Obrigado 🙌', 'success');
+                    setPendingReviewOrder(null);
+                    setShowReviewForm(false);
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <ReportIncidentModal
         isOpen={!!incidentOrderId}
         orderId={incidentOrderId}
@@ -541,7 +611,7 @@ export function MyDeliveriesPage() {
       {/* Fluxo guiado de devolução ao restaurante (padrão iFood) */}
       {returnOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
             <div className="text-center mb-3">
               <div className="text-4xl mb-2">🔁</div>
               <h3 className="text-lg font-bold text-gray-800">Devolva o pedido ao restaurante</h3>

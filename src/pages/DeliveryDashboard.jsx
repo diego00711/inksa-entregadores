@@ -18,6 +18,7 @@ import { useNotificationSound } from '../hooks/useNotificationSound';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import SocialDayBanner from '../components/SocialDayBanner';
+import ClientReviewForm from '../components/ClientReviewForm';
 import { supabase } from '../lib/supabase';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { haptics } from '../lib/haptics';
@@ -315,6 +316,10 @@ export default function ModernDeliveryDashboard() {
   const [pendingCashConfirm, setPendingCashConfirm] = useState(null);
   const [cashConfirmResult, setCashConfirmResult] = useState(null);
   const [cashConfirmLoading, setCashConfirmLoading] = useState(false);
+  // Pedido recém-entregue esperando a avaliação do cliente (prompt "Avaliar /
+  // deixar para depois" que aparece antes do pedido sumir da tela).
+  const [pendingReviewOrder, setPendingReviewOrder] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [availableCount, setAvailableCount] = useState(0);
   const [newOrderIds, setNewOrderIds] = useState(new Set());
   const knownAvailableRef = useRef(null);
@@ -500,7 +505,7 @@ export default function ModernDeliveryDashboard() {
   useEffect(() => {
     if (profileLoading || !profile?.id) return;
     let intervalId;
-    const start = () => { intervalId = window.setInterval(() => fetchDashboardData(true), 30000); };
+    const start = () => { intervalId = window.setInterval(() => fetchDashboardData(true), 15000); };
     const stop = () => intervalId && window.clearInterval(intervalId);
 
     fetchDashboardData(false);
@@ -589,6 +594,22 @@ export default function ModernDeliveryDashboard() {
     setPendingCode('');
   };
 
+  // Abre o prompt de avaliação do cliente (só se houver client_id pra avaliar).
+  const openClientReview = (order) => {
+    if (!order?.client_id) return;
+    setPendingReviewOrder(order);
+    setShowReviewForm(false);
+  };
+
+  // Fecha o modal de dinheiro e, em seguida, oferece avaliar o cliente daquele
+  // pedido — mantém a sequência entrega → dinheiro → avaliação.
+  const closeCashConfirm = () => {
+    const order = pendingCashConfirm;
+    setPendingCashConfirm(null);
+    setCashConfirmResult(null);
+    if (order?.client_id) openClientReview(order);
+  };
+
   const confirmComplete = async () => {
     const deliveryCode = String(pendingCode).trim().toUpperCase();
     if (deliveryCode.length < 3) { haptics.warn(); addToast('Código inválido.', 'warning'); return; }
@@ -598,9 +619,15 @@ export default function ModernDeliveryDashboard() {
       haptics.notify();
       addToast('Pedido entregue com sucesso! 🎉', 'success');
 
-      if (pendingCompleteOrder?.payment_method === 'cash') {
-        setPendingCashConfirm(pendingCompleteOrder);
+      const completed = pendingCompleteOrder;
+      if (completed?.payment_method === 'cash') {
+        // Dinheiro: confirma o recebimento primeiro; a avaliação abre depois
+        // que esse modal fechar (ver handlers do modal de dinheiro).
+        setPendingCashConfirm(completed);
         setCashConfirmResult(null);
+      } else if (completed?.client_id) {
+        // Cartão/PIX: já oferece avaliar o cliente antes do pedido sumir.
+        openClientReview(completed);
       }
 
       setPendingCompleteId(null);
@@ -942,7 +969,7 @@ export default function ModernDeliveryDashboard() {
       {/* ── Cash payment confirmation modal ───────────────────────────────── */}
       {pendingCashConfirm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
             {cashConfirmResult ? (
               <div className="text-center">
                 <div className="text-5xl mb-3">✅</div>
@@ -965,7 +992,7 @@ export default function ModernDeliveryDashboard() {
                   R$ {toNumber(cashConfirmResult.deve_a_plataforma).toFixed(2)} será descontado do seu próximo repasse online.
                 </p>
                 <button
-                  onClick={() => { setPendingCashConfirm(null); setCashConfirmResult(null); }}
+                  onClick={closeCashConfirm}
                   className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
                 >
                   Entendido!
@@ -991,7 +1018,7 @@ export default function ModernDeliveryDashboard() {
                 </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setPendingCashConfirm(null)}
+                    onClick={closeCashConfirm}
                     className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
                   >
                     Não agora
@@ -1015,7 +1042,7 @@ export default function ModernDeliveryDashboard() {
       {/* ── Delivery code modal ────────────────────────────────────────────── */}
       {pendingCompleteId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-orange-500" />
               Código de Entrega
@@ -1047,6 +1074,66 @@ export default function ModernDeliveryDashboard() {
                 Confirmar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Avaliar cliente após entrega ───────────────────────────────────────
+          Aparece logo depois de confirmar a entrega (e do modal de dinheiro,
+          quando for o caso), oferecendo avaliar o cliente ou deixar pra depois.
+          "Deixar para depois" não perde nada: o pedido continua na lista de
+          avaliações pendentes na Central de Avaliações. */}
+      {pendingReviewOrder && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+            {!showReviewForm ? (
+              <div className="text-center">
+                <div className="text-5xl mb-2">⭐</div>
+                <h3 className="text-lg font-bold text-gray-800">Avaliar o cliente?</h3>
+                <p className="text-sm text-gray-500 mt-1 mb-5">
+                  Pedido entregue para <span className="font-semibold text-gray-700">{pendingReviewOrder.client_name || 'o cliente'}</span>. Que tal deixar uma avaliação rápida?
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Star className="h-4 w-4" />
+                    Avaliar agora
+                  </button>
+                  <button
+                    onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
+                    className="w-full py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                  >
+                    Deixar para depois
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <Star className="h-5 w-5 text-orange-500" />
+                    Avaliar cliente
+                  </h3>
+                  <button
+                    onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
+                    className="text-sm font-semibold text-gray-400 hover:text-gray-600"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                <ClientReviewForm
+                  clientId={pendingReviewOrder.client_id}
+                  orderId={pendingReviewOrder.id}
+                  onSuccess={() => {
+                    addToast('Avaliação enviada! Obrigado 🙌', 'success');
+                    setPendingReviewOrder(null);
+                    setShowReviewForm(false);
+                  }}
+                />
+              </>
+            )}
           </div>
         </div>
       )}

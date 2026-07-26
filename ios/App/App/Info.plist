@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>pt-BR</string>
 	<key>CFBundleDisplayName</key>
-        <string>Inksa Entregador</string>
+	<string>Inksa Entregador</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -20,6 +20,12 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>pt-BR</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -33,19 +39,28 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>O app usa sua localização para rastrear as entregas em tempo real.</string>
+	<string>O Inksa Entregador precisa da sua localização para mostrar pedidos próximos, calcular sua rota até o restaurante e até o cliente, e atualizar a posição em tempo real durante a entrega.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Durante uma entrega ativa, o Inksa Entregador precisa acessar sua localização mesmo com o app em segundo plano para que o cliente acompanhe sua posição até a chegada. A localização é desativada automaticamente ao finalizar a entrega.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Durante uma entrega ativa, o Inksa Entregador precisa acessar sua localização mesmo com o app em segundo plano para que o cliente acompanhe sua posição.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O Inksa Entregador usa a câmera para tirar foto do comprovante de entrega, do estabelecimento na retirada e da sua foto de perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Inksa Entregador acessa suas fotos para você anexar comprovantes ao suporte.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>
