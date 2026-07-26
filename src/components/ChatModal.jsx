@@ -207,8 +207,13 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
             <div ref={bottomRef} />
           </div>
 
-          {/* Input area */}
-          <div className="px-3 py-3 border-t border-gray-200 bg-white rounded-b-2xl sm:rounded-b-2xl">
+          {/* Input area — piso de padding embaixo pra não ficar atrás da barra
+              de navegação do Android (env(safe-area-inset-bottom) volta 0 na
+              navegação de 3 botões, então o max() garante um mínimo). */}
+          <div
+            className="px-3 pt-3 border-t border-gray-200 bg-white rounded-b-2xl sm:rounded-b-2xl"
+            style={{ paddingBottom: 'max(2rem, calc(0.75rem + env(safe-area-inset-bottom)))' }}
+          >
             <div className="flex items-center gap-2">
               <input
                 type="text"

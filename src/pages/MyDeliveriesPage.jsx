@@ -530,7 +530,7 @@ export function MyDeliveriesPage() {
 
       {pendingFinishId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
             <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
             <input
@@ -567,7 +567,7 @@ export function MyDeliveriesPage() {
           recebeu e quanto fica devendo à plataforma. */}
       {cashInfo && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">💵</div>
               <h3 className="text-lg font-bold text-gray-800">Recebimento em dinheiro</h3>
@@ -605,7 +605,7 @@ export function MyDeliveriesPage() {
           Avaliações pra avaliar quando quiser. */}
       {pendingReviewOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             {!showReviewForm ? (
               <div className="text-center">
                 <div className="text-5xl mb-2">⭐</div>
@@ -669,7 +669,7 @@ export function MyDeliveriesPage() {
       {/* Fluxo guiado de devolução ao restaurante (padrão iFood) */}
       {returnOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <div className="text-center mb-3">
               <div className="text-4xl mb-2">🔁</div>
               <h3 className="text-lg font-bold text-gray-800">Devolva o pedido ao restaurante</h3>

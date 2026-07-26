@@ -15,10 +15,23 @@ import './app.css';
 
 
 // REGISTRO DO SERVICE WORKER - PWA
-// SW so em producao: em dev ele intercepta fetches e atrapalha depuracao
+// SW so em producao: em dev ele intercepta fetches e atrapalha depuracao.
+// Auto-update: o app do entregador fica aberto o turno todo, então quando sai
+// um deploy novo o SW antigo continuava servindo a versao velha ate o usuario
+// fechar tudo e limpar cache. Agora checamos update periodicamente e, quando um
+// SW novo assume o controle, recarregamos UMA vez pra pegar os bundles novos.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // Procura versao nova de tempos em tempos (app aberto por horas).
+      setInterval(() => { reg.update().catch(() => {}); }, 60 * 1000);
+    }).catch(() => {});
   });
 }
 
