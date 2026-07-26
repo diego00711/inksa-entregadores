@@ -67,6 +67,9 @@ export function MyDeliveriesPage() {
   // Avaliação do cliente após concluir a entrega ("Avaliar / deixar pra depois")
   const [pendingReviewOrder, setPendingReviewOrder] = useState(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  // Resumo do dinheiro devolvido pelo backend ao fechar uma entrega em dinheiro
+  // ({voce_recebeu, sua_taxa, deve_a_plataforma, ..., _order}).
+  const [cashInfo, setCashInfo] = useState(null);
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -205,19 +208,36 @@ export function MyDeliveriesPage() {
       const finishedOrder =
         (activeDelivery?.id === pendingFinishId ? activeDelivery : null) ||
         myDeliveries.find(o => o.id === pendingFinishId) || null;
-      await completeDelivery(pendingFinishId, deliveryCode);
+      const res = await completeDelivery(pendingFinishId, deliveryCode);
       handleUpdateStatus(pendingFinishId, 'delivered');
       setPendingFinishId(null);
       setFinishCode('');
       addToast('Entrega concluída com sucesso!', 'success');
-      // Oferece avaliar o cliente antes do pedido sair da lista.
-      if (finishedOrder?.client_id) {
+      // Pedido em dinheiro: o backend já liquidou no fechamento e devolve o
+      // resumo — mostra "você recebeu / deve à plataforma". A avaliação abre
+      // depois que esse modal fechar (ver closeCashInfo).
+      const cash = res?.cash || res?.data?.cash || null;
+      if (cash) {
+        setCashInfo({ ...cash, _order: finishedOrder });
+      } else if (finishedOrder?.client_id) {
+        // Cartão/PIX: já oferece avaliar o cliente antes do pedido sair da lista.
         setShowReviewForm(false);
         setPendingReviewOrder(finishedOrder);
       }
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
       addToast(e?.message || 'Erro ao confirmar entrega. Verifique o código e tente novamente.', 'error');
+    }
+  };
+
+  // Fecha o resumo do dinheiro e, em seguida, oferece avaliar o cliente —
+  // mantém a sequência entrega → dinheiro → avaliação (igual ao dashboard).
+  const closeCashInfo = () => {
+    const order = cashInfo?._order;
+    setCashInfo(null);
+    if (order?.client_id) {
+      setShowReviewForm(false);
+      setPendingReviewOrder(order);
     }
   };
 
@@ -538,6 +558,44 @@ export function MyDeliveriesPage() {
                 Confirmar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resumo do dinheiro recebido (entrega em dinheiro). O backend já
+          registrou a dívida no fechamento; aqui é só o entregador ver quanto
+          recebeu e quanto fica devendo à plataforma. */}
+      {cashInfo && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-2">💵</div>
+              <h3 className="text-lg font-bold text-gray-800">Recebimento em dinheiro</h3>
+              <p className="text-sm text-gray-500 mt-1">Você recebeu este pedido em espécie.</p>
+            </div>
+            <div className="space-y-2 bg-gray-50 rounded-xl p-4 mb-4">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Você recebeu</span>
+                <span className="font-bold text-green-600">R$ {Number(cashInfo.voce_recebeu || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Sua taxa de entrega</span>
+                <span className="font-bold text-blue-600">R$ {Number(cashInfo.sua_taxa || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-sm text-gray-600">Você deve à plataforma</span>
+                <span className="font-bold text-orange-600">R$ {Number(cashInfo.deve_a_plataforma || 0).toFixed(2)}</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mb-4 text-center">
+              R$ {Number(cashInfo.deve_a_plataforma || 0).toFixed(2)} será descontado do seu próximo repasse online.
+            </p>
+            <button
+              onClick={closeCashInfo}
+              className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
+            >
+              Entendido!
+            </button>
           </div>
         </div>
       )}
