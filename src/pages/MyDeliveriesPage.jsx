@@ -217,7 +217,11 @@ export function MyDeliveriesPage() {
 
   const handleUpdateStatus = (orderId, newStatus) => {
     setMyDeliveries((list) => list.map((d) => (d.id === orderId ? { ...d, status: newStatus } : d)));
-    if (activeDelivery?.id === orderId) setActiveDelivery((prev) => ({ ...prev, status: newStatus }));
+    // Guarda o `prev`: se o poll de fundo (15s) zerou o activeDelivery durante o
+    // await do complete, `prev` chega null aqui. `{...null, status}` viraria um
+    // objeto SEM id, e o card estourava em `activeDelivery.id.substring` (tela
+    // branca pós-confirmar código). Se não há mais entrega ativa, não recria.
+    if (activeDelivery?.id === orderId) setActiveDelivery((prev) => (prev ? { ...prev, status: newStatus } : prev));
     if (isModalOpen) setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus } : null));
   };
 
@@ -365,7 +369,7 @@ export function MyDeliveriesPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {!activeDelivery ? (
+              {!activeDelivery?.id ? (
                 <div style={{ height: '280px' }} className="flex items-center justify-center bg-gray-50">
                   <div className="text-center px-4">
                     <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
