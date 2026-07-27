@@ -8,9 +8,10 @@ import { BrowserRouter } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css'; 
 
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
 import { ToastProvider } from './context/ToastContext';
-import './app.css'; 
+import './app.css';
 
 
 
@@ -49,12 +50,14 @@ window.addEventListener('appinstalled', () => {});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <DeliveryProfileProvider>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
-      </DeliveryProfileProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <DeliveryProfileProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </DeliveryProfileProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 );

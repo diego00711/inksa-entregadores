@@ -95,12 +95,21 @@ export function MyDeliveriesPage() {
           if (fromClient && !chatOpen) {
             setChatUnread(n => n + 1);
             addToast('💬 Nova mensagem do cliente', 'info');
+            try {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)();
+              const o = ctx.createOscillator(); const g = ctx.createGain();
+              o.connect(g); g.connect(ctx.destination);
+              o.frequency.value = 880; o.type = 'sine';
+              g.gain.setValueAtTime(0.2, ctx.currentTime);
+              g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+              o.start(); o.stop(ctx.currentTime + 0.25);
+            } catch { /* sem som se o browser bloquear */ }
           }
         }
       } catch { /* silencioso */ }
     };
     check();
-    const id = setInterval(check, 8000);
+    const id = setInterval(check, 5000);
     return () => { alive = false; clearInterval(id); };
   }, [activeDelivery?.id, chatOpen]);
 
@@ -567,8 +576,8 @@ export function MyDeliveriesPage() {
       />
 
       {pendingFinishId && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
             <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
             <input
@@ -604,8 +613,8 @@ export function MyDeliveriesPage() {
           registrou a dívida no fechamento; aqui é só o entregador ver quanto
           recebeu e quanto fica devendo à plataforma. */}
       {cashInfo && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">💵</div>
               <h3 className="text-lg font-bold text-gray-800">Recebimento em dinheiro</h3>
@@ -642,8 +651,8 @@ export function MyDeliveriesPage() {
           Deixar pra depois não perde nada: o pedido segue na Central de
           Avaliações pra avaliar quando quiser. */}
       {pendingReviewOrder && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             {!showReviewForm ? (
               <div className="text-center">
                 <div className="text-5xl mb-2">⭐</div>
@@ -706,8 +715,8 @@ export function MyDeliveriesPage() {
 
       {/* Fluxo guiado de devolução ao restaurante (padrão iFood) */}
       {returnOrder && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: '1.5rem' }}>
             <div className="text-center mb-3">
               <div className="text-4xl mb-2">🔁</div>
               <h3 className="text-lg font-bold text-gray-800">Devolva o pedido ao restaurante</h3>
