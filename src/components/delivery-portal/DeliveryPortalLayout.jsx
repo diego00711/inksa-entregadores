@@ -16,12 +16,15 @@ import {
   Loader2,
   LifeBuoy,
   Banknote,
+  MessageCircle,
 } from 'lucide-react';
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { haptics } from '../../lib/haptics.js';
 import authService from '../../services/authService.js';
 import { useNewOrderAlarm } from '../../hooks/useNewOrderAlarm.js';
+import { useChatAlarm } from '../../hooks/useChatAlarm.js';
+import { ChatModal } from '../ChatModal.jsx';
 
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
@@ -53,6 +56,13 @@ export default function DeliveryPortalLayout() {
 
   // Alarme de novo pedido em qualquer tela enquanto online (não só no Início)
   useNewOrderAlarm(isOnline);
+
+  // Aviso de mensagem do cliente em qualquer tela. Na aba Entregas a própria
+  // página já mostra o alerta (toast/bip/badge no botão de chat do card), então
+  // ali desligamos o alarme global pra não duplicar — só mantemos o FAB oculto.
+  const onEntregas = location.pathname.startsWith('/delivery/entregas');
+  const chat = useChatAlarm(!onEntregas);
+  const showChatFab = !onEntregas && !!chat.orderId;
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -312,6 +322,33 @@ export default function DeliveryPortalLayout() {
           })}
         </div>
       </nav>
+
+      {/* FAB de chat da entrega ativa — visível em QUALQUER tela (menos a aba
+          Entregas, que já tem o botão de chat no card). Fica acima da barra
+          inferior no mobile; a badge vermelha acende quando chega mensagem do
+          cliente. */}
+      {showChatFab && (
+        <button
+          onClick={() => chat.setOpen(true)}
+          aria-label="Abrir chat com o cliente"
+          className="fixed right-4 z-40 h-14 w-14 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}
+        >
+          <MessageCircle className="h-6 w-6" />
+          {chat.unread > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 ring-2 ring-white">
+              {chat.unread > 9 ? '9+' : chat.unread}
+            </span>
+          )}
+        </button>
+      )}
+
+      <ChatModal
+        orderId={chat.orderId}
+        isOpen={showChatFab && chat.open}
+        onClose={() => chat.setOpen(false)}
+        senderType="delivery"
+      />
     </div>
   );
 }
