@@ -14,7 +14,7 @@ import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import ClientReviewForm from '../components/ClientReviewForm.jsx';
-import { DELIVERY_API_URL } from '../services/api';
+import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
@@ -70,6 +70,39 @@ export function MyDeliveriesPage() {
   // Resumo do dinheiro devolvido pelo backend ao fechar uma entrega em dinheiro
   // ({voce_recebeu, sua_taxa, deve_a_plataforma, ..., _order}).
   const [cashInfo, setCashInfo] = useState(null);
+  // Aviso de nova mensagem do cliente (estilo WhatsApp) mesmo com o chat
+  // fechado: checa as mensagens da entrega ativa a cada 8s e, se chegou uma
+  // nova do cliente, mostra um toast e acende o badge do botão de chat. Usa o
+  // endpoint autenticado (o realtime do Supabase não entrega aqui).
+  const lastChatIdRef = useRef(null);
+  useEffect(() => {
+    const oid = activeDelivery?.id;
+    lastChatIdRef.current = null; // recomeça a cada troca de pedido / abrir-fechar chat
+    if (!oid) return;
+    let alive = true;
+    const check = async () => {
+      try {
+        const res = await fetch(`${DELIVERY_API_URL}/api/chat/${oid}/messages`, { headers: createAuthHeaders() });
+        if (!alive || !res.ok) return;
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data?.messages || data?.data || []);
+        if (!list.length) return;
+        const last = list[list.length - 1];
+        if (lastChatIdRef.current === null) { lastChatIdRef.current = last.id; return; } // 1ª leitura só memoriza
+        if (last.id !== lastChatIdRef.current) {
+          lastChatIdRef.current = last.id;
+          const fromClient = (last.sender_type || last.sender) === 'client';
+          if (fromClient && !chatOpen) {
+            setChatUnread(n => n + 1);
+            addToast('💬 Nova mensagem do cliente', 'info');
+          }
+        }
+      } catch { /* silencioso */ }
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => { alive = false; clearInterval(id); };
+  }, [activeDelivery?.id, chatOpen]);
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -372,6 +405,11 @@ export function MyDeliveriesPage() {
                     {activeDelivery.payment_method === 'cash' && (
                       <div className="bg-orange-50 border border-orange-200 rounded p-2 text-sm font-bold text-orange-700">
                         💵 Cobrar R$ {Number(activeDelivery.total_amount || 0).toFixed(2)} em dinheiro
+                        {Number(activeDelivery.change_for || 0) > Number(activeDelivery.total_amount || 0) && (
+                          <div className="mt-0.5 text-xs font-semibold text-orange-600">
+                            Levar troco de R$ {(Number(activeDelivery.change_for) - Number(activeDelivery.total_amount)).toFixed(2)} (cliente vai pagar com R$ {Number(activeDelivery.change_for).toFixed(2)})
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -530,7 +568,7 @@ export function MyDeliveriesPage() {
 
       {pendingFinishId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
             <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
             <input
@@ -567,7 +605,7 @@ export function MyDeliveriesPage() {
           recebeu e quanto fica devendo à plataforma. */}
       {cashInfo && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">💵</div>
               <h3 className="text-lg font-bold text-gray-800">Recebimento em dinheiro</h3>
@@ -605,7 +643,7 @@ export function MyDeliveriesPage() {
           Avaliações pra avaliar quando quiser. */}
       {pendingReviewOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             {!showReviewForm ? (
               <div className="text-center">
                 <div className="text-5xl mb-2">⭐</div>
@@ -669,7 +707,7 @@ export function MyDeliveriesPage() {
       {/* Fluxo guiado de devolução ao restaurante (padrão iFood) */}
       {returnOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <div className="text-center mb-3">
               <div className="text-4xl mb-2">🔁</div>
               <h3 className="text-lg font-bold text-gray-800">Devolva o pedido ao restaurante</h3>

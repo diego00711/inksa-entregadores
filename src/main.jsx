@@ -16,24 +16,27 @@ import './app.css';
 
 // REGISTRO DO SERVICE WORKER - PWA
 // SW so em producao: em dev ele intercepta fetches e atrapalha depuracao.
-// Auto-update: o app do entregador fica aberto o turno todo, então quando sai
-// um deploy novo o SW antigo continuava servindo a versao velha ate o usuario
-// fechar tudo e limpar cache. Agora checamos update periodicamente e, quando um
-// SW novo assume o controle, recarregamos UMA vez pra pegar os bundles novos.
+// IMPORTANTE: NAO recarregar o app sozinho (controllerchange) — isso podia
+// recarregar no meio de uma entrega e dava TELA BRANCA. Aqui só mantemos o SW
+// atualizado em background; o networkFirst já pega o index novo na navegacao.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
     navigator.serviceWorker.register('/sw.js').then((reg) => {
-      // Procura versao nova de tempos em tempos (app aberto por horas).
-      setInterval(() => { reg.update().catch(() => {}); }, 60 * 1000);
+      setInterval(() => { reg.update().catch(() => {}); }, 5 * 60 * 1000);
     }).catch(() => {});
   });
 }
+
+// Recuperação de "tela branca" após deploy: quando um index antigo tenta
+// carregar um bundle que não existe mais (chunk removido no deploy novo), o
+// import dinâmico falha e a tela fica branca. Aqui recarregamos UMA vez pra
+// pegar o index novo — com trava de tempo pra nunca entrar em loop.
+window.addEventListener('vite:preloadError', () => {
+  const last = Number(sessionStorage.getItem('preloadErrReloadAt')) || 0;
+  if (Date.now() - last < 10000) return;
+  sessionStorage.setItem('preloadErrReloadAt', String(Date.now()));
+  window.location.reload();
+});
 
 // BEFORE INSTALL PROMPT - Detecta quando pode instalar como app
 let deferredPrompt;

@@ -969,7 +969,7 @@ export default function ModernDeliveryDashboard() {
       {/* ── Cash payment confirmation modal ───────────────────────────────── */}
       {pendingCashConfirm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             {cashConfirmResult ? (
               <div className="text-center">
                 <div className="text-5xl mb-3">✅</div>
@@ -1042,7 +1042,7 @@ export default function ModernDeliveryDashboard() {
       {/* ── Delivery code modal ────────────────────────────────────────────── */}
       {pendingCompleteId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-orange-500" />
               Código de Entrega
@@ -1085,7 +1085,7 @@ export default function ModernDeliveryDashboard() {
           avaliações pendentes na Central de Avaliações. */}
       {pendingReviewOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(2.75rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: 'max(3.5rem, calc(1.5rem + env(safe-area-inset-bottom)))' }}>
             {!showReviewForm ? (
               <div className="text-center">
                 <div className="text-5xl mb-2">⭐</div>

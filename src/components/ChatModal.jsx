@@ -23,6 +23,17 @@ function playBeep() {
   } catch { /* silencioso */ }
 }
 
+// created_at vem do banco como "timestamp without time zone" em UTC, SEM 'Z'.
+// new Date() interpretaria isso como hora LOCAL — e mostrava 3h a mais (o valor
+// UTC como se fosse de SP). Aqui, se não houver fuso na string, assumimos UTC.
+function fmtHora(ts) {
+  if (!ts) return '';
+  let s = String(ts);
+  if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(s)) s = s.replace(' ', 'T') + 'Z';
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
 export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -64,31 +75,38 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
     onUnreadChange?.(0);
     fetchMessages(); // carga inicial
 
-    if (!supabase) return; // fallback se env vars não configuradas
+    // Polling: o realtime do Supabase NÃO entrega aqui (a tabela chat_messages
+    // tem RLS ligada e sem policy pro anon do supabase-js), por isso a mensagem
+    // demorava a aparecer. Buscamos a cada 3s enquanto o chat está aberto —
+    // garante que a mensagem do outro lado chega rápido.
+    const pollId = setInterval(fetchMessages, 3000);
 
-    const channel = supabase
-      .channel(`chat-delivery-${orderId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `order_id=eq.${orderId}`,
-      }, (payload) => {
-        setMessages(prev => {
-          const updated = [...prev, payload.new];
-          if (payload.new?.sender_type !== senderType) {
-            playBeep();
-            if (!isOpen) {
-              unreadRef.current += 1;
-              onUnreadChange?.(unreadRef.current);
-            }
-          }
-          return updated;
-        });
-      })
-      .subscribe();
+    // Mantém a assinatura realtime também: se um dia a RLS permitir, entra na
+    // hora; enquanto não, é inofensiva.
+    let channel = null;
+    if (supabase) {
+      channel = supabase
+        .channel(`chat-delivery-${orderId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `order_id=eq.${orderId}`,
+        }, (payload) => {
+          setMessages(prev => {
+            if (prev.some(m => m.id === payload.new?.id)) return prev; // evita duplicar com o poll
+            const updated = [...prev, payload.new];
+            if (payload.new?.sender_type !== senderType) playBeep();
+            return updated;
+          });
+        })
+        .subscribe();
+    }
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      clearInterval(pollId);
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [isOpen, orderId, fetchMessages]);
 
   // Scroll to bottom when new messages arrive
@@ -194,10 +212,7 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
                           isDelivery ? 'text-white/70' : 'text-gray-400'
                         }`}
                       >
-                        {new Date(msg.created_at).toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtHora(msg.created_at)}
                       </p>
                     )}
                   </div>
@@ -212,7 +227,7 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
               navegação de 3 botões, então o max() garante um mínimo). */}
           <div
             className="px-3 pt-3 border-t border-gray-200 bg-white rounded-b-2xl sm:rounded-b-2xl"
-            style={{ paddingBottom: 'max(2rem, calc(0.75rem + env(safe-area-inset-bottom)))' }}
+            style={{ paddingBottom: 'max(3rem, calc(0.75rem + env(safe-area-inset-bottom)))' }}
           >
             <div className="flex items-center gap-2">
               <input
