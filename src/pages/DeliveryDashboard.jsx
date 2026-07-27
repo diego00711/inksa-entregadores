@@ -313,6 +313,7 @@ export default function ModernDeliveryDashboard() {
   const [pendingCompleteId, setPendingCompleteId] = useState(null);
   const [pendingCompleteOrder, setPendingCompleteOrder] = useState(null);
   const [pendingCode, setPendingCode] = useState('');
+  const [completing, setCompleting] = useState(false); // trava anti-duplo-clique no "Confirmar" do código
   const [pendingCashConfirm, setPendingCashConfirm] = useState(null);
   const [cashConfirmResult, setCashConfirmResult] = useState(null);
   const [cashConfirmLoading, setCashConfirmLoading] = useState(false);
@@ -611,8 +612,10 @@ export default function ModernDeliveryDashboard() {
   };
 
   const confirmComplete = async () => {
+    if (completing) return; // já está confirmando — ignora cliques repetidos
     const deliveryCode = String(pendingCode).trim().toUpperCase();
     if (deliveryCode.length < 3) { haptics.warn(); addToast('Código inválido.', 'warning'); return; }
+    setCompleting(true);
     try {
       await completeDelivery(pendingCompleteId, deliveryCode);
       playSound('delivered');
@@ -636,6 +639,8 @@ export default function ModernDeliveryDashboard() {
       fetchDashboardData(true);
     } catch (err) {
       addToast(err?.message || 'Erro ao completar entrega.', 'error');
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -1061,17 +1066,17 @@ export default function ModernDeliveryDashboard() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setPendingCompleteId(null); setPendingCode(''); }}
-                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                disabled={completing}
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmComplete}
-                disabled={pendingCode.trim().length < 3}
+                disabled={completing || pendingCode.trim().length < 3}
                 className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <CheckCircle className="h-4 w-4" />
-                Confirmar
+                {completing ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Confirmando...</>) : (<><CheckCircle className="h-4 w-4" /> Confirmar</>)}
               </button>
             </div>
           </div>

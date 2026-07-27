@@ -58,6 +58,7 @@ export function MyDeliveriesPage() {
   const [driverCoords, setDriverCoords] = useState(null); // posição do entregador ao vivo (GPS)
   const [pendingFinishId, setPendingFinishId] = useState(null);
   const [finishCode, setFinishCode] = useState('');
+  const [finishing, setFinishing] = useState(false); // trava anti-duplo-clique no "Confirmar" do código
   const [incidentOrderId, setIncidentOrderId] = useState(null);
   const [incidentSubmitting, setIncidentSubmitting] = useState(false);
   const [returnOrder, setReturnOrder] = useState(null);
@@ -248,8 +249,10 @@ export function MyDeliveriesPage() {
   };
 
   const confirmFinish = async () => {
+    if (finishing) return; // já está confirmando — ignora cliques repetidos
     const deliveryCode = String(finishCode).trim().toUpperCase();
     if (deliveryCode.length < 3) return;
+    setFinishing(true);
     try {
       const finishedOrder =
         (activeDelivery?.id === pendingFinishId ? activeDelivery : null) ||
@@ -273,6 +276,8 @@ export function MyDeliveriesPage() {
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
       addToast(e?.message || 'Erro ao confirmar entrega. Verifique o código e tente novamente.', 'error');
+    } finally {
+      setFinishing(false);
     }
   };
 
@@ -597,16 +602,17 @@ export function MyDeliveriesPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setPendingFinishId(null); setFinishCode(''); }}
-                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                disabled={finishing}
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmFinish}
-                disabled={finishCode.trim().length < 3}
-                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold disabled:opacity-50"
+                disabled={finishing || finishCode.trim().length < 3}
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Confirmar
+                {finishing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Confirmando...</>) : 'Confirmar'}
               </button>
             </div>
           </div>
