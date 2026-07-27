@@ -16,7 +16,6 @@ import {
   Loader2,
   LifeBuoy,
   Banknote,
-  MessageCircle,
 } from 'lucide-react';
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -57,13 +56,12 @@ export default function DeliveryPortalLayout() {
   // Alarme de novo pedido em qualquer tela enquanto online (não só no Início)
   useNewOrderAlarm(isOnline);
 
-  // Aviso de mensagem do cliente em qualquer tela — fonte ÚNICA (compartilhada
-  // via ChatAlarmContext). O FAB aparece em todas as telas MENOS a aba Entregas
-  // (lá o card da entrega ativa já tem o botão "Chat com cliente" com o badge,
-  // que lê o mesmo `unread`). O ChatModal abre em qualquer aba.
-  const onEntregas = location.pathname.startsWith('/delivery/entregas');
+  // Aviso de mensagem do cliente — fonte ÚNICA (compartilhada via
+  // ChatAlarmContext). O SOM + toast tocam em qualquer tela (pra não perder
+  // mensagem), mas o chat só se abre pelo botão "Chat com cliente" do card da
+  // entrega ativa (aba Entregas) — não tem mais FAB flutuante na Início. O
+  // ChatModal vive aqui no layout e abre via chat.setOpen.
   const chat = useChatAlarm();
-  const showChatFab = !onEntregas && !!chat.orderId;
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -325,28 +323,8 @@ export default function DeliveryPortalLayout() {
         </div>
       </nav>
 
-      {/* FAB de chat da entrega ativa — visível em QUALQUER tela (menos a aba
-          Entregas, que já tem o botão de chat no card). Fica acima da barra
-          inferior no mobile; a badge vermelha acende quando chega mensagem do
-          cliente. */}
-      {showChatFab && (
-        <button
-          onClick={() => chat.setOpen(true)}
-          aria-label="Abrir chat com o cliente"
-          className="fixed right-4 z-40 h-14 w-14 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}
-        >
-          <MessageCircle className="h-6 w-6" />
-          {chat.unread > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 ring-2 ring-white">
-              {chat.unread > 9 ? '9+' : chat.unread}
-            </span>
-          )}
-        </button>
-      )}
-
-      {/* ChatModal global — abre em QUALQUER aba (inclusive Entregas, pelo botão
-          do card). Por isso não depende do FAB estar visível. */}
+      {/* ChatModal global — vive aqui no layout e abre pelo botão "Chat com
+          cliente" do card (aba Entregas) via chat.setOpen. Sem FAB flutuante. */}
       <ChatModal
         orderId={chat.orderId}
         isOpen={chat.open && !!chat.orderId}
