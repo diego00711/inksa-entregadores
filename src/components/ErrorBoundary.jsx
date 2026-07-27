@@ -7,17 +7,29 @@ import React from 'react';
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, msg: '', where: '' };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, msg: (error && (error.message || String(error))) || 'Erro desconhecido' };
   }
 
   componentDidCatch(error, info) {
     // Loga pra aparecer no console/Sentry — assim dá pra descobrir a causa se
     // acontecer de novo, sem depender de "ficou branco".
     console.error('[ErrorBoundary] erro de render capturado:', error, info);
+    // Guarda as 3 primeiras linhas do component stack pra mostrar na tela QUAL
+    // componente quebrou — assim um print já revela a causa exata, sem console.
+    try {
+      const stack = (info && info.componentStack) ? String(info.componentStack) : '';
+      const where = stack
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .slice(0, 3)
+        .join('  ›  ');
+      if (where) this.setState({ where });
+    } catch { /* noop */ }
     try {
       if (window.Sentry?.captureException) window.Sentry.captureException(error);
     } catch { /* noop */ }
@@ -52,6 +64,30 @@ export default class ErrorBoundary extends React.Component {
           Tivemos um erro inesperado. Toque em recarregar pra continuar — sua
           entrega não foi perdida.
         </p>
+        {(this.state.msg || this.state.where) && (
+          <code
+            style={{
+              display: 'block',
+              maxWidth: 340,
+              fontSize: '.72rem',
+              color: '#b91c1c',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '.5rem',
+              padding: '.6rem .75rem',
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
+              textAlign: 'left',
+            }}
+          >
+            {this.state.msg}
+            {this.state.where && (
+              <span style={{ display: 'block', marginTop: '.4rem', color: '#7f1d1d', opacity: 0.85 }}>
+                em: {this.state.where}
+              </span>
+            )}
+          </code>
+        )}
         <button
           onClick={this.handleReload}
           style={{
