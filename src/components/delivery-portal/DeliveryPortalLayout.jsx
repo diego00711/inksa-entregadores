@@ -23,7 +23,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { haptics } from '../../lib/haptics.js';
 import authService from '../../services/authService.js';
 import { useNewOrderAlarm } from '../../hooks/useNewOrderAlarm.js';
-import { useChatAlarm } from '../../hooks/useChatAlarm.js';
+import { useChatAlarm, ChatAlarmContext } from '../../hooks/useChatAlarm.js';
 import { ChatModal } from '../ChatModal.jsx';
 
 // Navegação principal (aparece na sidebar e na barra inferior)
@@ -57,11 +57,12 @@ export default function DeliveryPortalLayout() {
   // Alarme de novo pedido em qualquer tela enquanto online (não só no Início)
   useNewOrderAlarm(isOnline);
 
-  // Aviso de mensagem do cliente em qualquer tela. Na aba Entregas a própria
-  // página já mostra o alerta (toast/bip/badge no botão de chat do card), então
-  // ali desligamos o alarme global pra não duplicar — só mantemos o FAB oculto.
+  // Aviso de mensagem do cliente em qualquer tela — fonte ÚNICA (compartilhada
+  // via ChatAlarmContext). O FAB aparece em todas as telas MENOS a aba Entregas
+  // (lá o card da entrega ativa já tem o botão "Chat com cliente" com o badge,
+  // que lê o mesmo `unread`). O ChatModal abre em qualquer aba.
   const onEntregas = location.pathname.startsWith('/delivery/entregas');
-  const chat = useChatAlarm(!onEntregas);
+  const chat = useChatAlarm();
   const showChatFab = !onEntregas && !!chat.orderId;
 
   const closeSidebar = () => setSidebarOpen(false);
@@ -228,6 +229,7 @@ export default function DeliveryPortalLayout() {
   );
 
   return (
+    <ChatAlarmContext.Provider value={chat}>
     <div className="min-h-screen bg-gray-50 flex">
       {/* Overlay mobile */}
       {sidebarOpen && (
@@ -343,12 +345,15 @@ export default function DeliveryPortalLayout() {
         </button>
       )}
 
+      {/* ChatModal global — abre em QUALQUER aba (inclusive Entregas, pelo botão
+          do card). Por isso não depende do FAB estar visível. */}
       <ChatModal
         orderId={chat.orderId}
-        isOpen={showChatFab && chat.open}
+        isOpen={chat.open && !!chat.orderId}
         onClose={() => chat.setOpen(false)}
         senderType="delivery"
       />
     </div>
+    </ChatAlarmContext.Provider>
   );
 }

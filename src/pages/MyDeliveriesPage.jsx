@@ -5,7 +5,6 @@ import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx';
 import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
-import { ChatModal } from '../components/ChatModal.jsx';
 import { MapDisplay } from '../components/MapDisplay.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,8 @@ import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import ClientReviewForm from '../components/ClientReviewForm.jsx';
-import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
+import { DELIVERY_API_URL } from '../services/api';
+import { useChatAlarmCtx } from '../hooks/useChatAlarm.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
@@ -63,56 +63,19 @@ export function MyDeliveriesPage() {
   const [incidentSubmitting, setIncidentSubmitting] = useState(false);
   const [returnOrder, setReturnOrder] = useState(null);
   const [confirmingReturn, setConfirmingReturn] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatUnread, setChatUnread] = useState(0);
+  // Chat: fonte ÚNICA compartilhada com o FAB do layout (ChatAlarmContext). O
+  // badge do botão de chat do card lê o MESMO `unread`, então mensagem que
+  // chegou em outra tela (Início) continua contando aqui — e abrir o chat pelo
+  // card ou pelo FAB é o mesmo estado.
+  const chat = useChatAlarmCtx();
   // Avaliação do cliente após concluir a entrega ("Avaliar / deixar pra depois")
   const [pendingReviewOrder, setPendingReviewOrder] = useState(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   // Resumo do dinheiro devolvido pelo backend ao fechar uma entrega em dinheiro
   // ({voce_recebeu, sua_taxa, deve_a_plataforma, ..., _order}).
   const [cashInfo, setCashInfo] = useState(null);
-  // Aviso de nova mensagem do cliente (estilo WhatsApp) mesmo com o chat
-  // fechado: checa as mensagens da entrega ativa a cada 8s e, se chegou uma
-  // nova do cliente, mostra um toast e acende o badge do botão de chat. Usa o
-  // endpoint autenticado (o realtime do Supabase não entrega aqui).
-  const lastChatIdRef = useRef(null);
-  useEffect(() => {
-    const oid = activeDelivery?.id;
-    lastChatIdRef.current = null; // recomeça a cada troca de pedido / abrir-fechar chat
-    if (!oid) return;
-    let alive = true;
-    const check = async () => {
-      try {
-        const res = await fetch(`${DELIVERY_API_URL}/api/chat/${oid}/messages`, { headers: createAuthHeaders() });
-        if (!alive || !res.ok) return;
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data?.messages || data?.data || []);
-        if (!list.length) return;
-        const last = list[list.length - 1];
-        if (lastChatIdRef.current === null) { lastChatIdRef.current = last.id; return; } // 1ª leitura só memoriza
-        if (last.id !== lastChatIdRef.current) {
-          lastChatIdRef.current = last.id;
-          const fromClient = (last.sender_type || last.sender) === 'client';
-          if (fromClient && !chatOpen) {
-            setChatUnread(n => n + 1);
-            addToast('💬 Nova mensagem do cliente', 'info');
-            try {
-              const ctx = new (window.AudioContext || window.webkitAudioContext)();
-              const o = ctx.createOscillator(); const g = ctx.createGain();
-              o.connect(g); g.connect(ctx.destination);
-              o.frequency.value = 880; o.type = 'sine';
-              g.gain.setValueAtTime(0.2, ctx.currentTime);
-              g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-              o.start(); o.stop(ctx.currentTime + 0.25);
-            } catch { /* sem som se o browser bloquear */ }
-          }
-        }
-      } catch { /* silencioso */ }
-    };
-    check();
-    const id = setInterval(check, 5000);
-    return () => { alive = false; clearInterval(id); };
-  }, [activeDelivery?.id, chatOpen]);
+  // (O aviso de nova mensagem do cliente — toast/bip/badge — agora é ÚNICO e vive
+  // no layout via useChatAlarm/ChatAlarmContext; este card só LÊ o `unread`.)
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
@@ -459,13 +422,13 @@ export function MyDeliveriesPage() {
                         que o cliente mandou mensagem. */}
                     {['accepted_by_delivery', 'ready', 'picked_up', 'on_the_way', 'delivering'].includes(activeDelivery.status) && (
                       <button
-                        onClick={() => { setChatOpen(true); setChatUnread(0); }}
+                        onClick={() => chat.setOpen(true)}
                         className="relative w-full text-sm font-bold text-[#FF6F00] border-2 border-[#FF6F00] bg-white hover:bg-orange-50 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
                       >
                         <MessageCircle className="w-4 h-4" /> Chat com cliente
-                        {chatUnread > 0 && (
-                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
-                            {chatUnread > 9 ? '9+' : chatUnread}
+                        {chat.unread > 0 && (
+                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 ring-2 ring-white">
+                            {chat.unread > 9 ? '9+' : chat.unread}
                           </span>
                         )}
                       </button>
@@ -575,14 +538,8 @@ export function MyDeliveriesPage() {
         />
       )}
 
-      {/* Chat com o cliente da entrega ativa (aberto pelo botão do card) */}
-      <ChatModal
-        orderId={activeDelivery?.id}
-        isOpen={chatOpen}
-        onClose={() => setChatOpen(false)}
-        senderType="delivery"
-        onUnreadChange={(n) => { if (!chatOpen) setChatUnread(n); }}
-      />
+      {/* O ChatModal do chat com o cliente vive no layout (global), aberto pelo
+          botão do card via chat.setOpen — não é mais montado aqui. */}
 
       {pendingFinishId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

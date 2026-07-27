@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import DeliveryService from '../services/deliveryService';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -24,18 +24,19 @@ const ONGOING = ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on
 // só existia dentro da aba Entregas, então em Início/Ganhos/etc. o cliente
 // mandava mensagem e o entregador não percebia.
 //
-// `enabled=false` (usado na própria aba Entregas, que já tem o alerta dela)
-// desliga o alarme pra não duplicar toast/bip.
-export function useChatAlarm(enabled = true) {
+// É a ÚNICA fonte de "não-lidas" do app: o FAB (Início/etc.) e o botão de chat
+// do card da entrega ativa (aba Entregas) leem o mesmo `unread` via
+// ChatAlarmContext. Como o hook vive no layout (sempre montado), o contador
+// sobrevive à troca de abas — mensagem que chegou na Início continua contada ao
+// ir pra Entregas.
+export function useChatAlarm() {
   const addToast = useToast();
   const [orderId, setOrderId] = useState(null);
   const [unread, setUnread] = useState(0);
   const [open, setOpenState] = useState(false);
   const lastIdRef = useRef(null);
   const openRef = useRef(false);
-  const enabledRef = useRef(enabled);
   openRef.current = open;
-  enabledRef.current = enabled;
 
   // 1) Descobre a entrega ativa (poll leve). Ao trocar de pedido, zera o
   //    controle de "última mensagem vista" e o badge.
@@ -59,8 +60,8 @@ export function useChatAlarm(enabled = true) {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  // 2) Poll do chat da entrega ativa. Só dispara toast/bip quando a mensagem
-  //    nova é do CLIENTE, o chat global não está aberto e o alarme está ligado.
+  // 2) Poll do chat da entrega ativa. Dispara toast/bip quando a mensagem nova é
+  //    do CLIENTE e o chat não está aberto; e sempre acende o badge (unread).
   useEffect(() => {
     if (!orderId) return;
     let alive = true;
@@ -77,10 +78,8 @@ export function useChatAlarm(enabled = true) {
           lastIdRef.current = last.id;
           const fromClient = (last.sender_type || last.sender) === 'client';
           if (fromClient && !openRef.current) {
-            if (enabledRef.current) {
-              addToast('💬 Nova mensagem do cliente', 'info');
-              playBeep();
-            }
+            addToast('💬 Nova mensagem do cliente', 'info');
+            playBeep();
             setUnread((n) => n + 1);
           }
         }
@@ -94,6 +93,13 @@ export function useChatAlarm(enabled = true) {
   const setOpen = (v) => { setOpenState(v); if (v) setUnread(0); };
 
   return { orderId, unread, open, setOpen };
+}
+
+// Context pra compartilhar o MESMO estado de chat (orderId/unread/open) entre o
+// layout (FAB) e as páginas (botão de chat do card). O provider vive no layout.
+export const ChatAlarmContext = createContext(null);
+export function useChatAlarmCtx() {
+  return useContext(ChatAlarmContext) || { orderId: null, unread: 0, open: false, setOpen: () => {} };
 }
 
 export default useChatAlarm;
