@@ -36,6 +36,41 @@ function bindUnlockOnce() {
   );
 }
 
+// Voz da marca por CLIPE GRAVADO (MP3 em /sons/). Toca em QUALQUER celular sem
+// depender do TTS do aparelho (que no WebView costuma ficar mudo). Tocamos pelo
+// MESMO AudioContext do jingle — que já é desbloqueado no 1º gesto — então o
+// autoplay não bloqueia. Se o arquivo não existir, cai no TTS/silêncio.
+const BRAND_VOICE_URL = '/sons/nova-entrega.mp3';
+let _voiceBuffer = null;
+let _voiceTried = false;
+
+function loadVoiceBuffer() {
+  if (_voiceBuffer || _voiceTried) return;
+  _voiceTried = true; // tenta uma vez; se não houver arquivo, não insiste
+  const ctx = getAudioCtx();
+  if (!ctx) { _voiceTried = false; return; }
+  fetch(BRAND_VOICE_URL)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('sem clipe'))))
+    .then((buf) => ctx.decodeAudioData(buf))
+    .then((decoded) => { _voiceBuffer = decoded; })
+    .catch(() => { /* sem MP3 -> segue com TTS/jingle */ });
+}
+
+// Toca o clipe gravado. Retorna true se tocou; false se ainda não há buffer.
+function playVoiceBuffer() {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx || !_voiceBuffer) return false;
+    const src = ctx.createBufferSource();
+    src.buffer = _voiceBuffer;
+    src.connect(ctx.destination);
+    src.start();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Fala a marca em pt-BR. Degrada sem erro se o aparelho não tiver TTS.
 function speakInksa(text) {
   try {
@@ -59,6 +94,7 @@ function speakInksa(text) {
 export function useNotificationSound() {
   // liga o desbloqueio na 1ª vez que algum componente usa o hook
   bindUnlockOnce();
+  loadVoiceBuffer(); // pré-carrega o clipe de voz (se existir em /sons/)
 
   const beep = useCallback((notes, duration = 0.18, waveType = 'sine') => {
     const ctx = getAudioCtx();
@@ -92,7 +128,7 @@ export function useNotificationSound() {
           // …e a voz da marca logo após o jingle. Grafia FONÉTICA de propósito
           // ("Incasa" em vez de "Inksa"): o TTS pt-BR lê "Inksa" com o K
           // travado; "Incasa" sai com a dicção certa da marca. Não trocar.
-          setTimeout(() => speakInksa('Nova entrega no Incasa!'), 680);
+          setTimeout(() => { if (!playVoiceBuffer()) speakInksa('Nova entrega no Incasa!'); }, 680);
           break;
         case 'accepted':
           beep([{ f: 440, t: 0 }, { f: 554, t: 0.12 }, { f: 659, t: 0.24 }], 0.28);
