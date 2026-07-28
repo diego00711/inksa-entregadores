@@ -449,12 +449,17 @@ export function MyDeliveriesPage() {
                       </button>
                     )}
 
-                    <button
-                      onClick={() => setIncidentOrderId(activeDelivery.id)}
-                      className="w-full text-sm font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
-                    >
-                      <AlertTriangle className="w-4 h-4" /> Não consegui entregar
-                    </button>
+                    {/* "Não consegui entregar" só faz sentido DEPOIS de retirar o
+                        pedido no restaurante (isDeliveryPhase). Antes disso, se
+                        deu problema, é só não retirar / falar com o restaurante. */}
+                    {isDeliveryPhase && activeDelivery.status !== 'delivered' && (
+                      <button
+                        onClick={() => setIncidentOrderId(activeDelivery.id)}
+                        className="w-full text-sm font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
+                      >
+                        <AlertTriangle className="w-4 h-4" /> Não consegui entregar
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -546,7 +551,7 @@ export function MyDeliveriesPage() {
           botão do card via chat.setOpen — não é mais montado aqui. */}
 
       {pendingFinishId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
             <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
@@ -584,7 +589,7 @@ export function MyDeliveriesPage() {
           registrou a dívida no fechamento; aqui é só o entregador ver quanto
           recebeu e quanto fica devendo à plataforma. */}
       {cashInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">💵</div>
@@ -622,7 +627,7 @@ export function MyDeliveriesPage() {
           Deixar pra depois não perde nada: o pedido segue na Central de
           Avaliações pra avaliar quando quiser. */}
       {pendingReviewOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             {!showReviewForm ? (
               <div className="text-center">
@@ -688,7 +693,7 @@ export function MyDeliveriesPage() {
           Aguardando restaurante → mostra o código pra QUANDO ele pedir a
           devolução (é o RESTAURANTE que valida o código, não o entregador). */}
       {returnOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: '1.5rem' }}>
             {returnOrder._outcome === 'dispose' ? (
               <>

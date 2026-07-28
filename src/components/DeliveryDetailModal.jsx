@@ -74,6 +74,11 @@ export function DeliveryDetailModal({
   const subtotal = toNumber(order.total_amount_items ?? (order.total_amount - order.delivery_fee));
   const deliveryFee = toNumber(order.delivery_fee);
   const total = toNumber(order.total_amount);
+  // O que o ENTREGADOR de fato recebe (frete menos a taxa da plataforma). A
+  // "Taxa de Entrega" acima é a linha do pedido do cliente (subtotal+frete=total);
+  // esta é a que o entregador ganha, pra não confundir o frete cheio com o ganho.
+  const _net = toNumber(order.valor_repassado_entregador);
+  const earn = _net > 0 ? _net : deliveryFee;
 
   // aceitar e já buscar o código
   const handleAcceptOrder = async () => {
@@ -230,6 +235,13 @@ export function DeliveryDetailModal({
                     <span>Total do Pedido:</span>
                     <span className="text-orange-600">R$ {formatCurrency(total)}</span>
                   </div>
+                </div>
+
+                {/* Ganho REAL do entregador nesta entrega (líquido, já sem a taxa
+                    da plataforma) — destacado pra não confundir com o frete cheio. */}
+                <div className="mt-3 flex justify-between items-center rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                  <span className="text-sm font-semibold text-green-800">💰 Você recebe por esta entrega</span>
+                  <span className="text-lg font-extrabold text-green-700">R$ {formatCurrency(earn)}</span>
                 </div>
               </div>
 

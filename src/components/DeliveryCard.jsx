@@ -34,7 +34,11 @@ const StatusBadge = ({ status }) => {
 
 export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
   const [inlineCode, setInlineCode] = useState('');
-  const deliveryFee = formatCurrency(delivery.delivery_fee);
+  // O entregador vê o LÍQUIDO (o que cai pra ele, já sem a taxa da plataforma),
+  // não o frete cheio — senão parece que ganha mais do que ganha. Só cai pro
+  // frete bruto se, por algum motivo, o líquido não tiver sido calculado.
+  const _net = Number(delivery.valor_repassado_entregador);
+  const deliveryFee = formatCurrency(_net > 0 ? _net : delivery.delivery_fee);
   const totalAmount = formatCurrency(delivery.total_amount);
   const restaurantName = delivery.restaurant_name || 'Restaurante não informado';
   const restaurantAddress = delivery.restaurant_address || 'Endereço não disponível';
@@ -136,7 +140,7 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
         <div className="flex flex-wrap justify-between items-center gap-2">
           <div className="flex gap-4">
             <div>
-              <p className="text-xs text-gray-500 mb-0.5">Taxa</p>
+              <p className="text-xs text-gray-500 mb-0.5">Você recebe</p>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3 text-green-600" />
                 <span className="font-bold text-sm text-green-600">R$ {deliveryFee}</span>

@@ -48,6 +48,9 @@ export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase =
   );
 
   return (
+    // isolate: cria um stacking context próprio pro mapa, senão os controles do
+    // Leaflet (z-index ~1000) "furam" e ficam por cima dos modais da página.
+    <div className="isolate w-full h-full">
     <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -76,6 +79,7 @@ export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase =
 
       <FitBounds points={[driverCoords, destination]} />
     </MapContainer>
+    </div>
   );
 }
 
