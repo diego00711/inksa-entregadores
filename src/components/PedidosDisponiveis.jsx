@@ -150,12 +150,12 @@ export default function PedidosDisponiveis() {
     }
   };
 
-  // Polling suave: 15s; pausa quando a aba não está visível
+  // Polling: 6s; pausa quando a aba não está visível
   const startPolling = () => {
     stopPolling();
     pollingRef.current = setInterval(() => {
       if (document.visibilityState === 'visible') fetchPedidos();
-    }, 15000);
+    }, 6000);
   };
   const stopPolling = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);

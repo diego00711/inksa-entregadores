@@ -26,7 +26,7 @@ export function useNewOrderAlarm(enabled) {
     check();
     const id = setInterval(() => {
       if (document.visibilityState === 'visible') check();
-    }, 20000);
+    }, 8000);
     return () => { alive = false; clearInterval(id); };
   }, [enabled]);
 
