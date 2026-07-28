@@ -712,32 +712,29 @@ export default function ModernDeliveryDashboard() {
         </div>
       </div>
 
-      {/* Atalho pro mapa da rota: quando já aceitou, o entregador vai direto pra
-          tela de Entregas (mapa ao vivo restaurante→cliente) sem caçar a aba. */}
-      {activeOrders.some((o) => ['accepted', 'ready', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'delivering'].includes(o?.status)) && (
-        <button
-          onClick={() => navigate('/delivery/entregas')}
-          className="w-full mb-4 min-h-[44px] rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
-        >
-          <MapPin className="h-4 w-4" /> Ver rota no mapa
-        </button>
-      )}
-
       {backgroundLoading && activeOrders.length === 0 ? (
         <DeliverySkeleton count={2} />
       ) : activeOrders.length ? (
-        <div className="space-y-4">
-          {activeOrders.map((order) => (
-            <ModernActiveOrderCard
-              key={order.id}
-              order={order}
-              isNew={newOrderIds.has(order.id)}
-              isAccepting={acceptingId === order.id}
-              onAcceptOrder={handleAcceptOrder}
-              onCompleteOrder={handleCompleteOrder}
-            />
-          ))}
-        </div>
+        // A gestão da entrega ativa (código de retirada, rota, cobrar, confirmar
+        // entrega) vive SÓ na aba Entregas agora — aqui na Início fica só um
+        // atalho, pra não duplicar o card inteiro em duas telas.
+        <Card className="p-6 text-center shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <div className="text-4xl mb-3">🛵</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-1">
+            {activeOrders.length > 1
+              ? `${activeOrders.length} entregas em andamento`
+              : 'Você tem uma entrega em andamento'}
+          </h3>
+          <p className="text-gray-600 text-sm mb-4">
+            Abra a aba <span className="font-semibold">Entregas</span> para ver rota, código e confirmar a entrega.
+          </p>
+          <button
+            onClick={() => navigate('/delivery/entregas')}
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg inline-flex items-center gap-2"
+          >
+            <Package className="h-4 w-4" /> Abrir em Entregas
+          </button>
+        </Card>
       ) : (
         <Card className="p-8 text-center shadow-xl border-0 bg-white/90 backdrop-blur-sm">
           <div className="text-6xl mb-4">🎯</div>
