@@ -13,14 +13,27 @@ import { ChatModal } from './ChatModal';
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
 const formatCurrency = (v) => toNumber(v).toFixed(2);
 
-const parseItems = (items) => {
+// Normaliza a lista de itens vinda em formatos variados (igual o restaurante):
+// array puro, string JSON, ou objeto aninhado { items: [...] }. Sem isto, o
+// pedido gravado como objeto aninhado mostrava "Nenhum item encontrado".
+const parseItems = (raw) => {
+  let items = raw;
   if (!items) return [];
-  if (Array.isArray(items)) return items;
   if (typeof items === 'string') {
-    try { const p = JSON.parse(items); return Array.isArray(p) ? p : []; } catch { return []; }
+    try { items = JSON.parse(items); } catch { return []; }
   }
-  return [];
+  if (items && !Array.isArray(items) && Array.isArray(items.items)) {
+    items = items.items;
+  }
+  return Array.isArray(items) ? items : [];
 };
+
+// Nome/quantidade/preço unitário tolerantes ao esquema (o app cliente grava
+// title/unit_price; outros caminhos usam name/price/product_name).
+const itemName = (it) => it.title || it.name || it.product_name || 'Item';
+const itemQty = (it) => Number(it.quantity ?? it.qty ?? 1) || 1;
+const itemUnit = (it) => toNumber(it.unit_price ?? it.price ?? it.preco ?? 0);
+const isDeliveryFeeItem = (it) => /taxa de entrega/i.test(itemName(it));
 
 const parseAddress = (address) => {
   if (!address) return 'Endereço não disponível';
@@ -54,7 +67,7 @@ export function DeliveryDetailModal({
 
   if (!order) return null;
 
-  const items = parseItems(order.items);
+  const items = parseItems(order.items ?? order.itens).filter((it) => !isDeliveryFeeItem(it));
   const deliveryAddress = parseAddress(order.delivery_address);
   const restaurantAddress = order.restaurant_address || 'Endereço do restaurante não disponível';
 
@@ -185,12 +198,12 @@ export function DeliveryDetailModal({
                   <div className="space-y-2">
                     {items.map((it, i) => (
                       <div key={i} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-800">{it.name || 'Item'}</p>
-                          <p className="text-sm text-gray-600">Qtd: {it.quantity || 1}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800 break-words">{itemName(it)}</p>
+                          <p className="text-sm text-gray-600">Qtd: {itemQty(it)}</p>
                         </div>
-                        <p className="font-semibold text-gray-800">
-                          R$ {formatCurrency((it.price || 0) * (it.quantity || 1))}
+                        <p className="font-semibold text-gray-800 shrink-0">
+                          R$ {formatCurrency(itemUnit(it) * itemQty(it))}
                         </p>
                       </div>
                     ))}
