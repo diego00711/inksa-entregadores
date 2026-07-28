@@ -17,18 +17,13 @@ const REASONS = [
   { code: 'customer_absent',    emoji: '⏰', label: 'Ninguém para receber' },
   { code: 'payment_issue',      emoji: '💵', label: 'Problema no pagamento (dinheiro)' },
   { code: 'courier_issue',      emoji: '🛵', label: 'Problema comigo (acidente, moto, etc.)' },
-];
-
-const OUTCOMES = [
-  { code: 'return_to_restaurant', emoji: '🔁', label: 'Devolver ao restaurante', hint: 'Leve o pedido de volta ao estabelecimento' },
-  { code: 'dispose',             emoji: '🗑️', label: 'Descartar o pedido',       hint: 'Perecível ou sem condições de devolver' },
+  { code: 'courier_damaged',    emoji: '📦', label: 'Eu derrubei / danifiquei o pedido' },
 ];
 
 export default function ReportIncidentModal({ isOpen, orderId, onClose, onConfirm, submitting }) {
   const [reason, setReason] = useState(null);
   const [notes, setNotes] = useState('');
   const [tried, setTried] = useState(false);
-  const [outcome, setOutcome] = useState(null);
   const [waitLeft, setWaitLeft] = useState(0);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -61,17 +56,19 @@ export default function ReportIncidentModal({ isOpen, orderId, onClose, onConfir
 
   // Para "cliente não localizado/ausente" exigimos: tentar contato + aguardar o tempo
   const needsContact = reason === 'customer_not_found' || reason === 'customer_absent';
+  const needsPhoto = reason === 'courier_damaged'; // "danifiquei" exige foto-comprovante
   const waitDone = waitLeft === 0;
-  const canSubmit = !!reason && (!needsContact || (tried && waitDone)) && !!outcome && !submitting;
+  const canSubmit = !!reason && (!needsContact || (tried && waitDone)) && (!needsPhoto || !!photoUrl) && !submitting;
   const mmss = `${String(Math.floor(waitLeft / 60)).padStart(2, '0')}:${String(waitLeft % 60).padStart(2, '0')}`;
 
   const handleConfirm = () => {
     if (!canSubmit) return;
+    // O desfecho (devolver/descartar) NÃO é escolhido aqui — o sistema decide
+    // (bot + restaurante). O entregador só descreve o que houve.
     onConfirm({
       reason,
       notes: notes.trim(),
       contactAttempts: needsContact ? { tried_contact: true, waited: true } : {},
-      outcome,
       photoUrl,
     });
   };
@@ -136,9 +133,11 @@ export default function ReportIncidentModal({ isOpen, orderId, onClose, onConfir
             />
           </div>
 
-          {/* Foto-comprovante (opcional) */}
+          {/* Foto-comprovante (obrigatória quando "danifiquei o pedido") */}
           <div>
-            <label className="text-sm text-gray-600">Foto-comprovante (opcional)</label>
+            <label className="text-sm text-gray-600">
+              Foto-comprovante {needsPhoto ? <span className="text-red-600 font-semibold">(obrigatória)</span> : '(opcional)'}
+            </label>
             <label className="mt-1 flex items-center justify-center gap-2 w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50">
               {uploading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
@@ -152,26 +151,12 @@ export default function ReportIncidentModal({ isOpen, orderId, onClose, onConfir
             {photoUrl && <img src={photoUrl} alt="comprovante" className="mt-2 w-full max-h-40 object-cover rounded-lg border" />}
           </div>
 
-          {/* O que fazer com o pedido (padrão iFood) */}
           {reason && (
-            <div className="pt-1">
-              <p className="text-sm font-medium text-gray-700 mb-2">O que fazer com o pedido?</p>
-              <div className="space-y-2">
-                {OUTCOMES.map((o) => (
-                  <button
-                    key={o.code}
-                    onClick={() => setOutcome(o.code)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors
-                      ${outcome === o.code ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}
-                  >
-                    <span className="text-xl">{o.emoji}</span>
-                    <span>
-                      <span className="block text-sm font-semibold text-gray-800">{o.label}</span>
-                      <span className="block text-xs text-gray-500">{o.hint}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+              ℹ️ Você não precisa decidir o que fazer com o pedido. Ao registrar, o
+              sistema resolve na hora: <b>descartar</b> (danificado ou restaurante
+              fechado) ou <b>perguntar ao restaurante</b> se quer a devolução — e aí
+              aparece um código pra você mostrar no balcão.
             </div>
           )}
 

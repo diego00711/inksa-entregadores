@@ -255,21 +255,25 @@ export function MyDeliveriesPage() {
     }
   };
 
-  const handleReportIncident = async ({ reason, notes, contactAttempts, outcome, photoUrl }) => {
+  const handleReportIncident = async ({ reason, notes, contactAttempts, photoUrl }) => {
     if (!incidentOrderId) return;
     setIncidentSubmitting(true);
     const orderForReturn = activeDelivery; // captura antes de limpar
     try {
-      await reportIncident(incidentOrderId, { reason, notes, contactAttempts, outcome, photoUrl });
+      // O BOT decide o desfecho no backend e devolve outcome/return_code/instrução.
+      const res = await reportIncident(incidentOrderId, { reason, notes, contactAttempts, photoUrl });
       handleUpdateStatus(incidentOrderId, 'delivery_failed');
       setIncidentOrderId(null);
       addToast('Ocorrência registrada.', 'success');
-      // Padrão iFood: se for devolver, guia o entregador até o restaurante
-      if (outcome === 'return_to_restaurant' && orderForReturn) {
-        setReturnOrder(orderForReturn);
-      } else {
-        setActiveDelivery(null);
-      }
+      // Mostra a orientação do bot. QUEM confirma a devolução agora é o
+      // RESTAURANTE (validando o código) — o entregador só leva e mostra o código.
+      setReturnOrder({
+        ...(orderForReturn || {}),
+        _outcome: res?.outcome || null,          // 'dispose' | 'awaiting_restaurant'
+        _returnCode: res?.return_code || null,
+        _instruction: res?.instruction || '',
+      });
+      setActiveDelivery(null);
       fetchDeliveries();
     } catch (e) {
       console.error('Erro ao reportar ocorrência:', e);
@@ -680,37 +684,54 @@ export function MyDeliveriesPage() {
         onConfirm={handleReportIncident}
       />
 
-      {/* Fluxo guiado de devolução ao restaurante (padrão iFood) */}
+      {/* Resultado da ocorrência: o BOT já decidiu. Descartar → só confirma;
+          Aguardando restaurante → mostra o código pra QUANDO ele pedir a
+          devolução (é o RESTAURANTE que valida o código, não o entregador). */}
       {returnOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" style={{ paddingBottom: '1.5rem' }}>
-            <div className="text-center mb-3">
-              <div className="text-4xl mb-2">🔁</div>
-              <h3 className="text-lg font-bold text-gray-800">Devolva o pedido ao restaurante</h3>
-              <p className="text-sm text-gray-500 mt-1">Leve o pedido de volta ao estabelecimento e confirme abaixo.</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm">
-              <p className="font-semibold text-gray-800">{returnOrder.restaurant_name || returnOrder.restaurant?.name || 'Restaurante'}</p>
-              <p className="text-gray-500">{returnOrder.restaurant_address || returnOrder.restaurant?.address || ''}</p>
-            </div>
+            {returnOrder._outcome === 'dispose' ? (
+              <>
+                <div className="text-center mb-3">
+                  <div className="text-4xl mb-2">🗑️</div>
+                  <h3 className="text-lg font-bold text-gray-800">Pode descartar o pedido</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {returnOrder._instruction || 'Ocorrência registrada — nossa equipe cuida do resto.'}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-3">
+                  <div className="text-4xl mb-2">🔁</div>
+                  <h3 className="text-lg font-bold text-gray-800">Aguarde o restaurante</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {returnOrder._instruction || 'O restaurante vai dizer se quer a devolução.'}
+                  </p>
+                </div>
+                {returnOrder._returnCode && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mb-4 text-center">
+                    <p className="text-xs text-purple-700 mb-1">Se pedirem a devolução, mostre este código no balcão:</p>
+                    <p className="text-2xl font-extrabold text-purple-800 tracking-widest">{returnOrder._returnCode}</p>
+                    <p className="text-[11px] text-purple-600 mt-1">O restaurante confirma a devolução com ele.</p>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    const addr = returnOrder.restaurant_address || returnOrder.restaurant?.address || returnOrder.restaurant_name || '';
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`, '_blank');
+                  }}
+                  className="w-full mb-2 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+                >
+                  <Route className="w-4 h-4" /> Rota até o restaurante
+                </button>
+              </>
+            )}
             <button
-              onClick={() => {
-                const addr = returnOrder.restaurant_address || returnOrder.restaurant?.address || returnOrder.restaurant_name || '';
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`, '_blank');
-              }}
-              className="w-full mb-2 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+              onClick={() => { setReturnOrder(null); setActiveDelivery(null); }}
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold"
             >
-              <Route className="w-4 h-4" /> Rota até o restaurante
-            </button>
-            <button
-              onClick={handleConfirmReturn}
-              disabled={confirmingReturn}
-              className="w-full min-h-[44px] py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {confirmingReturn && <Loader2 className="w-4 h-4 animate-spin" />} Confirmei a devolução
-            </button>
-            <button onClick={() => { setReturnOrder(null); setActiveDelivery(null); }} className="w-full mt-2 text-xs text-gray-400">
-              Confirmar depois
+              Entendi
             </button>
           </div>
         </div>
