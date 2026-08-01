@@ -2,7 +2,7 @@
 // Mapa embutido da entrega: mostra o entregador AO VIVO, o destino ativo
 // (restaurante na retirada -> cliente na entrega) e a linha até ele.
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -42,10 +42,39 @@ function FitBounds({ points }) {
 export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase = 'pickup' }) {
   const destination = phase === 'delivery' ? deliveryCoords : pickupCoords;
   const center = driverCoords || destination || deliveryCoords || pickupCoords || [-27.8167, -50.3264]; // Lages/SC
-  const routeLine = useMemo(
+
+  // Linha RETA (fallback) entre entregador e destino.
+  const straightLine = useMemo(
     () => (driverCoords && destination ? [driverCoords, destination] : null),
     [driverCoords, destination]
   );
+
+  // ROTA REAL pelas ruas (OSRM público): o entregador vê o trajeto no próprio
+  // app, sem precisar abrir Waze/Maps (que seguem como opção nos botões). Se o
+  // OSRM falhar, cai na linha reta. Coords do OSRM vêm [lng,lat] -> viramos [lat,lng].
+  // OBS: router.project-osrm.org é demo público (baixo volume); pra escala, self-host.
+  const [routeGeo, setRouteGeo] = useState(null);
+  const dLat = driverCoords?.[0], dLng = driverCoords?.[1];
+  const tLat = destination?.[0], tLng = destination?.[1];
+  useEffect(() => {
+    if (dLat == null || dLng == null || tLat == null || tLng == null) { setRouteGeo(null); return; }
+    let alive = true;
+    const ctrl = new AbortController();
+    const url = `https://router.project-osrm.org/route/v1/driving/${dLng},${dLat};${tLng},${tLat}?overview=full&geometries=geojson`;
+    fetch(url, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('osrm'))))
+      .then((data) => {
+        const coords = data?.routes?.[0]?.geometry?.coordinates;
+        if (alive && Array.isArray(coords) && coords.length) {
+          setRouteGeo(coords.map(([lng, lat]) => [lat, lng]));
+        }
+      })
+      .catch(() => { if (alive) setRouteGeo(null); });
+    return () => { alive = false; ctrl.abort(); };
+  }, [dLat, dLng, tLat, tLng]);
+
+  const routeLine = routeGeo || straightLine;
+  const fitPoints = routeGeo || [driverCoords, destination];
 
   return (
     // isolate: cria um stacking context próprio pro mapa, senão os controles do
@@ -74,10 +103,13 @@ export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase =
       )}
 
       {routeLine && (
-        <Polyline positions={routeLine} pathOptions={{ color: '#FF6B35', weight: 4, opacity: 0.85, dashArray: '8 10' }} />
+        <Polyline
+          positions={routeLine}
+          pathOptions={{ color: '#FF6B35', weight: 5, opacity: 0.9, dashArray: routeGeo ? null : '8 10' }}
+        />
       )}
 
-      <FitBounds points={[driverCoords, destination]} />
+      <FitBounds points={fitPoints} />
     </MapContainer>
     </div>
   );
