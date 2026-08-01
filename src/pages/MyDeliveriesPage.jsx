@@ -12,7 +12,7 @@ import { Header } from '../components/Header.jsx';
 import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star } from 'lucide-react';
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
-import ClientReviewForm from '../components/ClientReviewForm.jsx';
+import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { DELIVERY_API_URL } from '../services/api';
 import { useChatAlarmCtx } from '../hooks/useChatAlarm.js';
 import { useToast } from '../context/ToastContext.jsx';
@@ -629,54 +629,28 @@ export function MyDeliveriesPage() {
       {pendingReviewOrder && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
-            {!showReviewForm ? (
-              <div className="text-center">
-                <div className="text-5xl mb-2">⭐</div>
-                <h3 className="text-lg font-bold text-gray-800">Avaliar o cliente?</h3>
-                <p className="text-sm text-gray-500 mt-1 mb-5">
-                  Pedido entregue para <span className="font-semibold text-gray-700">{pendingReviewOrder.client_name || 'o cliente'}</span>. Que tal deixar uma avaliação rápida?
-                </p>
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => setShowReviewForm(true)}
-                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Star className="h-4 w-4" />
-                    Avaliar agora
-                  </button>
-                  <button
-                    onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
-                    className="w-full py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-                  >
-                    Deixar para depois
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <Star className="h-5 w-5 text-orange-500" />
-                    Avaliar cliente
-                  </h3>
-                  <button
-                    onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
-                    className="text-sm font-semibold text-gray-400 hover:text-gray-600"
-                  >
-                    Fechar
-                  </button>
-                </div>
-                <ClientReviewForm
-                  clientId={pendingReviewOrder.client_id}
-                  orderId={pendingReviewOrder.id}
-                  onSuccess={() => {
-                    addToast('Avaliação enviada! Obrigado 🙌', 'success');
-                    setPendingReviewOrder(null);
-                    setShowReviewForm(false);
-                  }}
-                />
-              </>
-            )}
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Star className="h-5 w-5 text-orange-500" /> Avalie esta entrega
+              </h3>
+              <button
+                onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
+                className="text-sm font-semibold text-gray-400 hover:text-gray-600"
+              >
+                Depois
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Entrega concluída{pendingReviewOrder.client_name ? ` para ${pendingReviewOrder.client_name}` : ''}. Toque nas estrelas:
+            </p>
+            <PostDeliveryRating
+              order={pendingReviewOrder}
+              onDone={() => {
+                addToast('Avaliação enviada! Obrigado 🙌', 'success');
+                setPendingReviewOrder(null);
+                setShowReviewForm(false);
+              }}
+            />
           </div>
         </div>
       )}
