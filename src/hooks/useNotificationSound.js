@@ -43,6 +43,7 @@ function bindUnlockOnce() {
 const BRAND_VOICE_URL = '/sons/nova-entrega.mp3';
 let _voiceBuffer = null;
 let _voiceTried = false;
+let _voicePlaying = false; // trava anti-sobreposição (não empilha 2 vozes)
 
 function loadVoiceBuffer() {
   if (_voiceBuffer || _voiceTried) return;
@@ -56,17 +57,22 @@ function loadVoiceBuffer() {
     .catch(() => { /* sem MP3 -> segue com TTS/jingle */ });
 }
 
-// Toca o clipe gravado. Retorna true se tocou; false se ainda não há buffer.
+// Toca o clipe gravado. Retorna true se tocou OU se já está tocando (pra o
+// chamador não cair no TTS); false só se ainda não há buffer.
 function playVoiceBuffer() {
   try {
     const ctx = getAudioCtx();
     if (!ctx || !_voiceBuffer) return false;
+    if (_voicePlaying) return true; // já falando -> não sobrepõe
     const src = ctx.createBufferSource();
     src.buffer = _voiceBuffer;
     src.connect(ctx.destination);
+    src.onended = () => { _voicePlaying = false; };
+    _voicePlaying = true;
     src.start();
     return true;
   } catch {
+    _voicePlaying = false;
     return false;
   }
 }
