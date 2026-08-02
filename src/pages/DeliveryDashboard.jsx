@@ -338,9 +338,16 @@ export default function ModernDeliveryDashboard() {
     const faltando = [];
     if (!String(p.first_name || '').trim()) faltando.push('nome');
     if (!String(p.phone || '').trim()) faltando.push('telefone');
+    if (!String(p.cpf || '').trim()) faltando.push('CPF');
+    // Endereço é obrigatório: sem ele o backend não consegue filtrar por raio
+    // (e o entregador ficaria "online" sem receber pedido nenhum).
+    if (!String(p.address_street || '').trim() || !String(p.address_city || '').trim())
+      faltando.push('endereço');
     if (!String(p.vehicle_type || '').trim()) faltando.push('tipo de veículo');
-    if (p.vehicle_type && p.vehicle_type !== 'bicicleta' && !String(p.vehicle_plate || '').trim())
-      faltando.push('placa');
+    // Motorizado (moto/carro) exige placa E CNH — igual à trava do backend.
+    const motorizado = ['moto', 'carro'].includes(p.vehicle_type);
+    if (motorizado && !String(p.vehicle_plate || '').trim()) faltando.push('placa');
+    if (motorizado && !String(p.cnh || '').trim()) faltando.push('CNH');
     if (!String(p.pix_key || '').trim()) faltando.push('chave PIX');
     return faltando;
   }, [profile]);

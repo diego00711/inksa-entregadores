@@ -27,6 +27,8 @@ export default function DeliveryProfilePage() {
         vehicle_plate: '',
         vehicle_model: '',
         vehicle_color: '',
+        cnh: '',
+        cnh_category: '',
         address_street: '',
         address_number: '',
         address_complement: '',
@@ -66,6 +68,8 @@ export default function DeliveryProfilePage() {
                 vehicle_plate: contextProfile.vehicle_plate || '',
                 vehicle_model: contextProfile.vehicle_model || '',
                 vehicle_color: contextProfile.vehicle_color || '',
+                cnh: contextProfile.cnh || '',
+                cnh_category: contextProfile.cnh_category || '',
                 address_street: contextProfile.address_street || '',
                 address_number: contextProfile.address_number || '',
                 address_complement: contextProfile.address_complement || '',
@@ -413,6 +417,22 @@ export default function DeliveryProfilePage() {
                                         maxLength={8}
                                         className="uppercase placeholder:normal-case"
                                     />
+                                </div>
+                                <div>
+                                    <Label htmlFor="cnh">
+                                        CNH (carteira de motorista){['moto', 'carro'].includes(formData.vehicle_type) ? ' *' : ''}
+                                    </Label>
+                                    <Input
+                                        id="cnh"
+                                        value={formData.cnh}
+                                        onChange={handleChange}
+                                        disabled={!isEditing}
+                                        placeholder="Número da CNH"
+                                        inputMode="numeric"
+                                    />
+                                    {['moto', 'carro'].includes(formData.vehicle_type) && (
+                                        <p className="text-xs text-gray-400 mt-1">Obrigatória para veículo motorizado.</p>
+                                    )}
                                 </div>
                                 <div>
                                     <Label htmlFor="vehicle_model">Modelo / Marca</Label>
