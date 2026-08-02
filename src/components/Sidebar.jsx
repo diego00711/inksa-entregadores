@@ -14,7 +14,7 @@ export function Sidebar() {
     { name: 'Entregas', icon: List, path: '/delivery/entregas' },
     { name: 'Avaliações', icon: Star, path: '/delivery/avaliacoes' }, // ✅ NOVO ITEM ADICIONADO
     { name: 'Ganhos', icon: BarChart2, path: '/delivery/ganhos' },
-    { name: 'Gamificação', icon: Trophy, path: '/delivery/gamificacao' },
+    { name: 'Clube Inksa', icon: Trophy, path: '/delivery/clube' },
     { name: 'Meu Perfil', icon: User, path: '/delivery/meu-perfil' },
   ];
 

@@ -24,7 +24,6 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const DeliveryProfilePage = lazy(() => import('./pages/DeliveryProfilePage.jsx'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
 const GamificationPage = lazy(() => import('./pages/GamificationPage.jsx'));
-const ClubePage = lazy(() => import('./pages/ClubePage.jsx'));
 const DeliverymanEvaluationsCenter = lazy(() => import('./pages/DeliverymanEvaluationsCenter.jsx'));
 const SuportePage = lazy(() => import('./pages/SuportePage.jsx'));
 const PagamentoDinheiroPage = lazy(() => import('./pages/PagamentoDinheiroPage.jsx'));
@@ -100,8 +99,9 @@ function App() {
                 <Route path="entregas" element={<MyDeliveriesPage />} />
                 <Route path="ganhos" element={<EarningsPage />} />
                 <Route path="meu-perfil" element={<DeliveryProfilePage />} />
-                <Route path="gamificacao" element={<GamificationPage />} />
-                <Route path="clube" element={<ClubePage />} />
+                {/* Clube Inksa unificado (absorveu a antiga Gamificação) */}
+                <Route path="clube" element={<GamificationPage />} />
+                <Route path="gamificacao" element={<Navigate to="/delivery/clube" replace />} />
                 <Route path="avaliacoes" element={<DeliverymanEvaluationsCenter />} />
                 <Route path="suporte" element={<SuportePage />} />
                 <Route path="pagamento-dinheiro" element={<PagamentoDinheiroPage />} />

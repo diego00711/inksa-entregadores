@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Trophy, TrendingUp, Target, Star, Zap,
   Loader2, AlertCircle, Gift, Clock, CheckCircle,
-  Package, BarChart2
+  Package, BarChart2, Crown
 } from 'lucide-react';
 import { DELIVERY_API_URL, createAuthHeaders, processResponse } from '../services/api';
 import { useProfile } from '../context/DeliveryProfileContext';
@@ -695,9 +695,125 @@ function HowToEarnSection() {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
+// ─── Clube Inksa (nível por entregas/mês) ───────────────────────────────────────
+
+const CLUB_GRADIENT = {
+  bronze:   'from-amber-400 to-amber-600',
+  prata:    'from-slate-300 to-slate-500',
+  ouro:     'from-yellow-400 to-yellow-600',
+  diamante: 'from-cyan-400 to-cyan-600',
+};
+
+// Hero: identidade do entregador (nível do mês por ENTREGAS) + pontos como MOEDA.
+// Um nível só — o do Clube. Pontos viram saldo pra Loja de Recompensas abaixo.
+function ClubHeroCard({ status, points, unit = 'entrega' }) {
+  const cur = status?.current_level;
+  const next = status?.next_level;
+  const orders = status?.orders_this_month ?? 0;
+  const grad = CLUB_GRADIENT[cur?.level] || CLUB_GRADIENT.bronze;
+  const label = cur?.label || cur?.name || 'Bronze';
+  const totalPoints = Number(points?.points ?? points?.total_points ?? 0);
+  const pctBar = next?.min_orders ? Math.min(100, Math.round((orders / next.min_orders) * 100)) : 100;
+  const toNext = next ? Math.max(0, (next.min_orders || 0) - orders) : 0;
+  const plural = (n) => (n !== 1 ? 's' : '');
+  return (
+    <div className={`rounded-2xl bg-gradient-to-br ${grad} p-4 sm:p-6 text-white shadow-xl`}>
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <p className="text-white/70 text-xs uppercase tracking-widest mb-1">Seu nível no Clube</p>
+          <h2 className="text-3xl font-black flex items-center gap-2"><span>{cur?.emoji}</span> {label}</h2>
+        </div>
+        <div className="bg-white/20 rounded-full p-3"><Crown className="w-8 h-8 text-white" /></div>
+      </div>
+      <p className="text-white/90 text-sm mb-4">{orders} {unit}{plural(orders)} este mês</p>
+      {next ? (
+        <>
+          <div className="bg-black/20 rounded-full h-2.5 overflow-hidden">
+            <div className="bg-white h-2.5 rounded-full transition-all duration-700 ease-out" style={{ width: `${pctBar}%` }} />
+          </div>
+          <p className="text-white/80 text-xs mt-2">
+            Faltam <span className="font-bold text-white">{toNext} {unit}{plural(toNext)}</span> para {next.label || next.name} {next.emoji}
+          </p>
+        </>
+      ) : (
+        <p className="text-white/90 text-sm font-semibold">Nível máximo do Clube atingido! 🎉</p>
+      )}
+      {status?.motivation && <p className="text-white/90 text-sm font-semibold mt-2">{status.motivation}</p>}
+      <div className="mt-4 pt-4 border-t border-white/25 flex items-center gap-2">
+        <Star className="w-5 h-5 fill-white text-white shrink-0" />
+        <span className="text-lg font-black tabular-nums">{totalPoints.toLocaleString('pt-BR')}</span>
+        <span className="text-white/80 text-sm">pontos · troque por recompensas ↓</span>
+      </div>
+    </div>
+  );
+}
+
+function ClubBenefitsCard({ status }) {
+  const cur = status?.current_level;
+  const next = status?.next_level;
+  if (!cur?.benefits?.length && !next?.benefits?.length) return null;
+  const lockedNext = next?.benefits?.filter((b) => !cur?.benefits?.includes(b)) || [];
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <SectionTitle icon={Gift} color="text-green-600">Seus benefícios</SectionTitle>
+      <ul className="space-y-2">
+        {cur?.benefits?.map((b, i) => (
+          <li key={i} className="flex items-center gap-2 text-sm text-gray-700"><CheckCircle className="w-4 h-4 text-green-500 shrink-0" /> {b}</li>
+        ))}
+        {!cur?.benefits?.length && <li className="text-sm text-gray-400">Nenhum benefício ativo ainda.</li>}
+      </ul>
+      {lockedNext.length > 0 && (
+        <>
+          <p className="text-xs font-bold text-gray-400 uppercase mt-4 mb-2">Desbloqueie no nível {next.label || next.name}</p>
+          <ul className="space-y-2 opacity-60">
+            {lockedNext.map((b, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm text-gray-500"><Star className="w-4 h-4 shrink-0" /> {b}</li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ClubLevelsCard({ levels, currentLevel, unit = 'entrega' }) {
+  if (!levels?.length) return null;
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <SectionTitle icon={Trophy} color="text-amber-500">Todos os níveis do Clube</SectionTitle>
+      <div className="space-y-2">
+        {levels.map((lvl) => {
+          const isCurrent = lvl.level === currentLevel;
+          return (
+            <div key={lvl.level} className={`rounded-xl p-3 border ${isCurrent ? 'border-orange-300 ring-2 ring-orange-200 bg-orange-50/40' : 'border-gray-100'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{lvl.emoji}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-gray-800">
+                    {lvl.label || lvl.name}
+                    {isCurrent && <span className="ml-2 text-xs font-semibold bg-orange-500 text-white px-1.5 py-0.5 rounded-full">Você está aqui</span>}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {lvl.max_orders ? `${lvl.min_orders}–${lvl.max_orders}` : `${lvl.min_orders}+`} {unit}s/mês
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Página principal (Clube Inksa unificado) ───────────────────────────────────
+
 export default function GamificationPage() {
   const { profile, loading: profileLoading } = useProfile();
   const addToast = useToast();
+
+  const [clubStatus, setClubStatus] = useState(null);
+  const [clubLevels, setClubLevels] = useState([]);
 
   const [userPoints, setUserPoints] = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -724,9 +840,26 @@ export default function GamificationPage() {
     }
   }, [userId]);
 
+  // Clube Inksa: status (nível do mês + benefícios) + tabela de níveis.
+  // Fail-soft: se falhar, a página ainda mostra pontos/recompensas.
+  const fetchClub = useCallback(async () => {
+    try {
+      const [stRes, lvRes] = await Promise.all([
+        fetch(`${DELIVERY_API_URL}/api/club/status`, { headers: createAuthHeaders() }),
+        fetch(`${DELIVERY_API_URL}/api/club/levels?audience=delivery`),
+      ]);
+      const st = stRes.ok ? await stRes.json() : null;
+      const lv = lvRes.ok ? await lvRes.json() : null;
+      setClubStatus(st?.data ?? null);
+      setClubLevels(Array.isArray(lv?.data) ? lv.data : []);
+    } catch {
+      setClubStatus(null);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!profileLoading) fetchUserPoints();
-  }, [fetchUserPoints, profileLoading]);
+    if (!profileLoading) { fetchUserPoints(); fetchClub(); }
+  }, [fetchUserPoints, fetchClub, profileLoading]);
 
   // ── Estados de carregamento / erro ─────────────────────────────────────────
 
@@ -753,26 +886,39 @@ export default function GamificationPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-4 pb-12">
       <div className="max-w-lg mx-auto space-y-4 sm:space-y-5">
 
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center pt-2">
-          Minha Gamificação
-        </h1>
+        <div className="text-center pt-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
+            <Trophy className="w-6 h-6 text-amber-500" /> Clube Inksa
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">Quanto mais você entrega, mais benefícios e recompensas</p>
+        </div>
 
-        {/* 1. Card de Pontos e Nível */}
-        <LevelCard userPoints={userPoints} />
+        {/* 1. Hero: nível do Clube (por entregas) + pontos como moeda */}
+        {clubStatus ? (
+          <ClubHeroCard status={clubStatus} points={userPoints} unit="entrega" />
+        ) : (
+          <LevelCard userPoints={userPoints} />
+        )}
 
-        {/* 2. Como ganhar pontos */}
+        {/* 2. Benefícios do Clube */}
+        <ClubBenefitsCard status={clubStatus} />
+
+        {/* 3. Como ganhar pontos */}
         <HowToEarnSection />
 
-        {/* 3. Desafios Diários e Semanais */}
+        {/* 4. Desafios Diários e Semanais */}
         {userId && <ChallengesSection userId={userId} />}
 
-        {/* 4. Ranking */}
+        {/* 5. Ranking */}
         <LeaderboardSection currentUserId={userId} />
 
-        {/* 5. Loja de Recompensas */}
+        {/* 6. Loja de Recompensas */}
         <RewardsSection userPoints={userPoints} onPointsRefresh={fetchUserPoints} />
 
-        {/* 6. Histórico de Pontos */}
+        {/* 7. Todos os níveis do Clube */}
+        <ClubLevelsCard levels={clubLevels} currentLevel={clubStatus?.current_level?.level} unit="entrega" />
+
+        {/* 8. Histórico de Pontos */}
         <PointsHistorySection history={history} />
 
       </div>
