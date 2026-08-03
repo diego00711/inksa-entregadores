@@ -32,6 +32,12 @@ const fetchWithAuth = async (url, options = {}) => {
 
 // === Ações do entregador ===
 
+// Recusa a oferta (motor de atribuição): entra em cooldown e o pedido passa
+// pro próximo entregador mais próximo.
+export const declineDelivery = async (orderId) => {
+  return fetchWithAuth(`${API_URL}/api/orders/${orderId}/decline`, { method: 'POST' });
+};
+
 export const acceptDelivery = async (orderId) => {
   return fetchWithAuth(`${API_URL}/api/orders/${orderId}/accept`, { method: 'POST' });
 };

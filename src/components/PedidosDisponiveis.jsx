@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   getAvailableOrders,
   acceptDelivery,
+  declineDelivery,
   getPickupCode,
 } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
@@ -33,11 +34,30 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const CardPedido = ({ pedido, onAceitar }) => {
+const CardPedido = ({ pedido, onAceitar, onRecusar }) => {
   const shortId = String(pedido.id || '').slice(0, 8);
+  const isOffer = !!pedido.offer_expires_at;
+
+  // Contagem regressiva da oferta (motor de atribuição).
+  const [secsLeft, setSecsLeft] = useState(() =>
+    isOffer ? Math.max(0, Math.round((new Date(pedido.offer_expires_at).getTime() - Date.now()) / 1000)) : null
+  );
+  useEffect(() => {
+    if (!isOffer) return;
+    const tick = () => setSecsLeft(Math.max(0, Math.round((new Date(pedido.offer_expires_at).getTime() - Date.now()) / 1000)));
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [isOffer, pedido.offer_expires_at]);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 m-2 shadow-sm bg-white">
+    <div className={`border rounded-lg p-4 m-2 shadow-sm bg-white ${isOffer ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-200'}`}>
+      {isOffer && (
+        <div className="mb-2 flex items-center justify-between rounded-md bg-orange-50 px-3 py-1.5">
+          <span className="text-xs font-bold text-orange-700">⚡ Oferta pra você — o mais próximo</span>
+          <span className="text-sm font-black text-orange-700 tabular-nums">{secsLeft}s</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-bold text-gray-800">Pedido #{shortId}</h3>
         <StatusBadge status={pedido.status} />
@@ -75,13 +95,21 @@ const CardPedido = ({ pedido, onAceitar }) => {
         )}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 flex gap-2">
         <button
           onClick={() => onAceitar(pedido.id)}
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-500"
+          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-500"
         >
-          Aceitar Pedido
+          Aceitar {isOffer ? 'Oferta' : 'Pedido'}
         </button>
+        {isOffer && (
+          <button
+            onClick={() => onRecusar(pedido.id)}
+            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50"
+          >
+            Recusar
+          </button>
+        )}
       </div>
     </div>
   );
@@ -150,6 +178,17 @@ export default function PedidosDisponiveis() {
     }
   };
 
+  const handleRecusarPedido = async (pedidoId) => {
+    // Remove o card na hora (feedback imediato); o próximo poll confirma.
+    setPedidos((list) => list.filter((p) => p.id !== pedidoId));
+    try {
+      const res = await declineDelivery(pedidoId);
+      addToast(res?.message || 'Oferta recusada.', 'info');
+    } catch (error) {
+      addToast(error?.message || 'Erro ao recusar a oferta.', 'error');
+    }
+  };
+
   // Polling: 6s; pausa quando a aba não está visível
   const startPolling = () => {
     stopPolling();
@@ -202,7 +241,7 @@ export default function PedidosDisponiveis() {
         <p className="text-sm text-gray-600">Nenhum pedido disponível no momento. Aguardando...</p>
       ) : (
         pedidos.map((pedido) => (
-          <CardPedido key={pedido.id} pedido={pedido} onAceitar={handleAceitarPedido} />
+          <CardPedido key={pedido.id} pedido={pedido} onAceitar={handleAceitarPedido} onRecusar={handleRecusarPedido} />
         ))
       )}
 
