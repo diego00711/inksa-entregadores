@@ -23,7 +23,11 @@ import { haptics } from '../../lib/haptics.js';
 import authService from '../../services/authService.js';
 import { useNewOrderAlarm } from '../../hooks/useNewOrderAlarm.js';
 import { useChatAlarm, ChatAlarmContext } from '../../hooks/useChatAlarm.js';
+import { useIdleLogout } from '../../hooks/useIdleLogout.js';
 import { ChatModal } from '../ChatModal.jsx';
+
+// Desloga sozinho após 1h sem nenhuma interação (segurança de sessão esquecida).
+const IDLE_LOGOUT_MS = 60 * 60 * 1000;
 
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
@@ -61,6 +65,16 @@ export default function DeliveryPortalLayout() {
   // entrega ativa (aba Entregas) — não tem mais FAB flutuante na Início. O
   // ChatModal vive aqui no layout e abre via chat.setOpen.
   const chat = useChatAlarm();
+
+  // Logoff automático após 1h sem interação (toque/clique/tecla/rolagem).
+  // authService.logout() marca is_available=false antes de sair.
+  useIdleLogout({
+    timeoutMs: IDLE_LOGOUT_MS,
+    onIdle: () => {
+      try { addToast('Sessão encerrada por inatividade.', 'info'); } catch {}
+      authService.logout();
+    },
+  });
 
   const closeSidebar = () => setSidebarOpen(false);
 
