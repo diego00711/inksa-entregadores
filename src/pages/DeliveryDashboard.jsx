@@ -553,6 +553,12 @@ export default function ModernDeliveryDashboard() {
   // ── Toggle availability ────────────────────────────────────────────────────
   const toggleAvailability = async () => {
     if (!profile || profileLoading) return addToast('Perfil não carregado.', 'warning');
+    // Gate: entregador precisa ser aprovado pelo admin antes de operar.
+    if (!isAvailable && profile.approved === false) {
+      haptics.warn();
+      addToast('Seu cadastro está em análise pelo Inksa. Você poderá ficar online assim que for aprovado.', 'warning');
+      return;
+    }
     // Gate: não deixa ficar ONLINE sem o cadastro mínimo — senão entra pedido
     // sem como pagar (PIX) nem contatar o entregador em produção.
     if (!isAvailable && cadastroPendente.length > 0) {
@@ -840,6 +846,19 @@ export default function ModernDeliveryDashboard() {
       </div>
 
       <div className="p-4 sm:p-6">
+        {/* ── Cadastro em análise: admin ainda não aprovou (não recebe pedidos) ── */}
+        {!profileLoading && profile?.approved === false && (
+          <div className="mb-6 p-4 rounded-2xl border border-yellow-200 bg-yellow-50 flex items-start gap-3">
+            <div className="text-2xl leading-none">⏳</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-yellow-800">Cadastro em análise</p>
+              <p className="text-sm text-yellow-700 mt-0.5">
+                O Inksa está revisando seu cadastro. Assim que for aprovado, você poderá ficar online e receber pedidos. Aproveite pra deixar seus dados completos.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Cadastro incompleto: bloqueia ficar online (igual restaurante) ── */}
         {!profileLoading && cadastroPendente.length > 0 && (
           <div className="mb-6 p-4 rounded-2xl border border-amber-200 bg-amber-50 flex items-start gap-3">
