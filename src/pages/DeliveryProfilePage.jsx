@@ -1,6 +1,7 @@
 // Ficheiro: src/pages/DeliveryProfilePage.jsx (VERSÃO CORRIGIDA - TODOS OS BUGS)
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DeliveryService from '../services/deliveryService';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
@@ -10,11 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
-import { CameraIcon, MapPin, Loader2 } from 'lucide-react';
+import { CameraIcon, MapPin, Loader2, ArrowLeft } from 'lucide-react';
 
 export default function DeliveryProfilePage() {
     const { profile: contextProfile, updateProfile: updateContextProfile, loading: profileLoading } = useProfile();
     const addToast = useToast();
+    const navigate = useNavigate();
 
     // Estado para os dados do formulário
     const [formData, setFormData] = useState({
@@ -233,7 +235,17 @@ export default function DeliveryProfilePage() {
         <div className="profile-container p-4 sm:p-6 bg-gray-50 min-h-screen">
             {/* Header com botão funcional */}
             <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Meu Perfil</h1>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        className="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                        aria-label="Voltar"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Meu Perfil</h1>
+                </div>
                 {!isEditing ? (
                     <Button onClick={() => setIsEditing(true)} className="bg-orange-500 hover:bg-orange-600 text-white min-h-[44px]">
                         Editar Perfil
