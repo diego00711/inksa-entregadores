@@ -52,6 +52,7 @@ export default function DeliveryProfilePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [cepLoading, setCepLoading] = useState(false);
 
     // Estados para a gestão da imagem do perfil
     const [selectedFile, setSelectedFile] = useState(null);
@@ -163,6 +164,36 @@ export default function DeliveryProfilePage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         await handleSave();
+    };
+
+    // CEP → preenche rua/bairro/cidade/UF automaticamente (ViaCEP), igual ao
+    // restaurante. Cidade e UF vêm do ViaCEP (nome oficial dos Correios). Ao
+    // salvar, o backend geocoda pra latitude/longitude (dispatch por raio).
+    const handleCepChange = async (e) => {
+        const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 8);
+        const masked = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+        setFormData(prev => ({ ...prev, address_zipcode: masked }));
+        if (digits.length !== 8) return;
+        try {
+            setCepLoading(true);
+            const resp = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+            const data = await resp.json();
+            if (data?.erro) {
+                addToast('CEP não encontrado.', 'warning');
+                return;
+            }
+            setFormData(prev => ({
+                ...prev,
+                address_street: data.logradouro || prev.address_street,
+                address_neighborhood: data.bairro || prev.address_neighborhood,
+                address_city: data.localidade || prev.address_city,
+                address_state: (data.uf || prev.address_state || '').toUpperCase(),
+            }));
+        } catch {
+            addToast('Não foi possível buscar o CEP.', 'warning');
+        } finally {
+            setCepLoading(false);
+        }
     };
 
     // ✅ CORREÇÃO: Função para buscar coordenadas automaticamente
@@ -352,6 +383,14 @@ export default function DeliveryProfilePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="col-span-full sm:col-span-1">
+                            <Label htmlFor="address_zipcode">
+                                CEP {cepLoading && <span className="text-orange-600 font-normal text-xs">buscando…</span>}
+                            </Label>
+                            <Input id="address_zipcode" inputMode="numeric" maxLength={9} placeholder="00000-000"
+                                value={formData.address_zipcode} onChange={handleCepChange} disabled={!isEditing} />
+                            <p className="text-xs text-gray-500 mt-1">Preenche o endereço automaticamente.</p>
+                        </div>
                         <div>
                             <Label htmlFor="address_street">Rua</Label>
                             <Input id="address_street" value={formData.address_street} onChange={handleChange} disabled={!isEditing} />
@@ -376,11 +415,6 @@ export default function DeliveryProfilePage() {
                             <Label htmlFor="address_state">Estado</Label>
                             <Input id="address_state" value={formData.address_state} onChange={handleChange} disabled={!isEditing} />
                         </div>
-                        <div className="col-span-full sm:col-span-1">
-                            <Label htmlFor="address_zipcode">CEP</Label>
-                            <Input id="address_zipcode" value={formData.address_zipcode} onChange={handleChange} disabled={!isEditing} />
-                        </div>
-                        
                         {/* ✅ CORREÇÃO: Coordenadas ocultas mas mostradas como informação */}
                         {(formData.latitude || formData.longitude) && (
                             <div className="col-span-full">
