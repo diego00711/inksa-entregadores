@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { DELIVERY_API_URL } from '../../services/api.js';
 import {
   Home,
   Package,
@@ -66,10 +67,25 @@ export default function DeliveryPortalLayout() {
   // ChatModal vive aqui no layout e abre via chat.setOpen.
   const chat = useChatAlarm();
 
-  // Logoff automático após 1h sem interação (toque/clique/tecla/rolagem).
-  // authService.logout() marca is_available=false antes de sair.
+  // Logoff automático por inatividade — tempo CONFIGURÁVEL no admin
+  // (platform_settings.idle_logout_minutes; 0 = desligado). authService.logout()
+  // marca is_available=false antes de sair. Enquanto não busca, usa 1h.
+  const [idleMs, setIdleMs] = useState(IDLE_LOGOUT_MS);
+  useEffect(() => {
+    let alive = true;
+    fetch(`${DELIVERY_API_URL}/api/public/app-config`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!alive) return;
+        const min = Number(d?.idle_logout_minutes);
+        if (Number.isFinite(min)) setIdleMs(min > 0 ? min * 60000 : 0);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
   useIdleLogout({
-    timeoutMs: IDLE_LOGOUT_MS,
+    timeoutMs: idleMs,
+    enabled: idleMs > 0,
     onIdle: () => {
       try { addToast('Sessão encerrada por inatividade.', 'info'); } catch {}
       authService.logout();
