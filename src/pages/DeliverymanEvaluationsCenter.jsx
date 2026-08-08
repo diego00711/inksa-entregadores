@@ -6,6 +6,7 @@ import { useProfile } from '../context/DeliveryProfileContext';
 import { getMyDeliveryReviews } from '../services/reviewService';
 import useDeliveredOrders from '../hooks/useDeliveredOrders';
 import ClientReviewForm from '../components/ClientReviewForm';
+import RestaurantReviewForm from '../components/RestaurantReviewForm';
 import { useToast } from '../context/ToastContext';
 
 // Card para uma avaliação recebida (com mais estilo)
@@ -155,16 +156,41 @@ export default function DeliverymanEvaluationsCenter() {
                       </button>
                     </div>
                     {highlightOrderId === order.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <ClientReviewForm
-                          clientId={order.client_id}
-                          orderId={order.id}
-                          onSuccess={() => {
-                            addToast('Avaliação enviada com sucesso!', 'success');
-                            setHighlightOrderId(null);
-                            refetch();
-                          }}
-                        />
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-5">
+                        {/* Cliente */}
+                        <div>
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                            🙋 Avaliar o cliente
+                          </p>
+                          <ClientReviewForm
+                            clientId={order.client_id}
+                            orderId={order.id}
+                            onSuccess={() => {
+                              addToast('Avaliação do cliente enviada!', 'success');
+                              refetch();
+                            }}
+                          />
+                        </div>
+
+                        {/* Parceiro/restaurante — o entregador também avalia de
+                            quem retirou o pedido (espera, organização). Antes só
+                            existia o formulário do cliente aqui. */}
+                        {order.restaurant_id && (
+                          <div className="pt-4 border-t border-gray-200">
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                              🍔 Avaliar o parceiro
+                            </p>
+                            <RestaurantReviewForm
+                              restaurantId={order.restaurant_id}
+                              restaurantName={order.restaurant_name}
+                              orderId={order.id}
+                              onSuccess={() => {
+                                addToast('Avaliação do parceiro enviada!', 'success');
+                                refetch();
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

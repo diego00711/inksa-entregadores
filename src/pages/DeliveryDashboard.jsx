@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeliveryService from '../services/deliveryService';
-import { acceptDelivery, completeDelivery } from '../services/orderService';
+import { acceptDelivery, completeDelivery, getOrdersToReview } from '../services/orderService';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -638,11 +638,21 @@ export default function ModernDeliveryDashboard() {
       haptics.notify();
       addToast('Pedido entregue com sucesso! 🎉', 'success');
 
-      // Fallback: se o estado do pedido se perdeu (refetch entre abrir o modal e
-      // confirmar), reencontra pelo id — senão a avaliação não abriria.
-      const completed = pendingCompleteOrder
+      // Resolve o pedido a avaliar pela MESMA fonte da Central de Avaliações
+      // (/pending-delivery-review). Antes dependíamos só do objeto em memória —
+      // se ele se perdesse no refetch, o modal não abria e o entregador tinha
+      // que ir na Central. Agora, se aparece na Central, aparece aqui.
+      const local = pendingCompleteOrder
         || activeOrders.find(o => o.id === pendingCompleteId)
         || null;
+      let completed = local;
+      try {
+        const pendentes = await getOrdersToReview();
+        const achado = pendentes.find(o => String(o.id) === String(pendingCompleteId));
+        if (achado) completed = { ...achado, payment_method: local?.payment_method, change_for: local?.change_for, total_amount: achado.total_amount ?? local?.total_amount };
+      } catch {
+        /* rede fora: segue com o objeto local */
+      }
       if (completed?.payment_method === 'cash') {
         // Dinheiro: confirma o recebimento primeiro; a avaliação abre depois
         // que esse modal fechar (ver handlers do modal de dinheiro).

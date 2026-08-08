@@ -35,6 +35,7 @@ export function useChatAlarm() {
   const [unread, setUnread] = useState(0);
   const [open, setOpenState] = useState(false);
   const lastIdRef = useRef(null);
+  const baselineDoneRef = useRef(false);
   const openRef = useRef(false);
   openRef.current = open;
 
@@ -50,7 +51,7 @@ export function useChatAlarm() {
         if (!alive) return;
         const next = ongoing?.id || null;
         setOrderId((prev) => {
-          if (next !== prev) { lastIdRef.current = null; setUnread(0); setOpenState(false); }
+          if (next !== prev) { lastIdRef.current = null; baselineDoneRef.current = false; setUnread(0); setOpenState(false); }
           return next;
         });
       } catch { /* silencioso */ }
@@ -71,9 +72,17 @@ export function useChatAlarm() {
         if (!alive || !res.ok) return;
         const data = await res.json();
         const listM = Array.isArray(data) ? data : (data?.messages || data?.data || []);
-        if (!listM.length) return;
-        const last = listM[listM.length - 1];
-        if (lastIdRef.current === null) { lastIdRef.current = last.id; return; } // 1ª leitura só memoriza
+        const last = listM.length ? listM[listM.length - 1] : null;
+        // 1ª leitura só memoriza a linha de base — INCLUSIVE com a conversa
+        // vazia. Antes saíamos antes disso quando não havia mensagem nenhuma,
+        // então a PRIMEIRA mensagem do cliente virava a base e não avisava:
+        // só a segunda acendia o badge.
+        if (!baselineDoneRef.current) {
+          baselineDoneRef.current = true;
+          lastIdRef.current = last?.id ?? null;
+          return;
+        }
+        if (!last) return;
         if (last.id !== lastIdRef.current) {
           lastIdRef.current = last.id;
           const fromClient = (last.sender_type || last.sender) === 'client';

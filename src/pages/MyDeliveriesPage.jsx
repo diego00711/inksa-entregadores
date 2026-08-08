@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
 import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star } from 'lucide-react';
-import { acceptDelivery, completeDelivery, reportIncident, confirmReturn } from '../services/orderService';
+import { acceptDelivery, completeDelivery, reportIncident, confirmReturn, getOrdersToReview } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { DELIVERY_API_URL } from '../services/api';
@@ -211,31 +211,52 @@ export function MyDeliveriesPage() {
     setFinishCode('');
   };
 
+  // Busca o pedido recém-entregue na lista de "avaliações pendentes" do backend
+  // — a mesma que alimenta a Central de Avaliações. Traz client_id/client_name e
+  // restaurant_id/restaurant_name, que é o que o formulário precisa. Cai no
+  // objeto local se a chamada falhar.
+  const resolveReviewOrder = async (orderId, fallback) => {
+    try {
+      const pendentes = await getOrdersToReview();
+      const achado = pendentes.find(o => String(o.id) === String(orderId));
+      if (achado) return achado;
+    } catch {
+      /* rede fora: usa o que já temos em memória */
+    }
+    return fallback;
+  };
+
   const confirmFinish = async () => {
     if (finishing) return; // já está confirmando — ignora cliques repetidos
     const deliveryCode = String(finishCode).trim().toUpperCase();
     if (deliveryCode.length < 3) return;
     setFinishing(true);
     try {
+      const finishedId = pendingFinishId;
       const finishedOrder =
-        (activeDelivery?.id === pendingFinishId ? activeDelivery : null) ||
-        myDeliveries.find(o => o.id === pendingFinishId) || null;
-      const res = await completeDelivery(pendingFinishId, deliveryCode);
-      handleUpdateStatus(pendingFinishId, 'delivered');
+        (activeDelivery?.id === finishedId ? activeDelivery : null) ||
+        myDeliveries.find(o => o.id === finishedId) || null;
+      const res = await completeDelivery(finishedId, deliveryCode);
+      handleUpdateStatus(finishedId, 'delivered');
       setPendingFinishId(null);
       setFinishCode('');
       addToast('Entrega concluída com sucesso!', 'success');
       // Pedido em dinheiro: o backend já liquidou no fechamento e devolve o
       // resumo — mostra "você recebeu / deve à plataforma". A avaliação abre
       // depois que esse modal fechar (ver closeCashInfo).
+      // Resolve o pedido a avaliar pela MESMA fonte da Central de Avaliações
+      // (/pending-delivery-review). Antes dependíamos só do objeto em memória —
+      // se ele não fosse encontrado (refetch entre abrir e confirmar, lista já
+      // atualizada), o modal simplesmente não abria e o entregador tinha que ir
+      // na Central. Agora, se aparece na Central, aparece aqui.
+      const reviewOrder = await resolveReviewOrder(finishedId, finishedOrder);
+
       const cash = res?.cash || res?.data?.cash || null;
       if (cash) {
-        setCashInfo({ ...cash, _order: finishedOrder });
-      } else if (finishedOrder?.client_id || finishedOrder?.restaurant_id) {
-        // Cartão/PIX: já oferece avaliar antes do pedido sair da lista. Basta ter
-        // cliente OU restaurante — exigir client_id fazia a avaliação não abrir.
+        setCashInfo({ ...cash, _order: reviewOrder });
+      } else if (reviewOrder) {
         setShowReviewForm(false);
-        setPendingReviewOrder(finishedOrder);
+        setPendingReviewOrder(reviewOrder);
       }
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
