@@ -9,6 +9,7 @@ import {
 import { DELIVERY_API_URL, createAuthHeaders, processResponse } from '../services/api';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
+import MyRedemptions from '../components/MyRedemptions';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -818,6 +819,8 @@ export default function GamificationPage() {
   const [userPoints, setUserPoints] = useState(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
+  // Muda a cada resgate concluído para a lista "Meus resgates" recarregar.
+  const [redemptionsKey, setRedemptionsKey] = useState(0);
 
   const userId = profile?.id ?? profile?.user_id ?? null;
 
@@ -913,7 +916,13 @@ export default function GamificationPage() {
         <LeaderboardSection currentUserId={userId} />
 
         {/* 6. Loja de Recompensas */}
-        <RewardsSection userPoints={userPoints} onPointsRefresh={fetchUserPoints} />
+        <RewardsSection
+          userPoints={userPoints}
+          onPointsRefresh={() => { fetchUserPoints(); setRedemptionsKey(k => k + 1); }}
+        />
+
+        {/* 6b. Meus resgates */}
+        <MyRedemptions refreshKey={redemptionsKey} />
 
         {/* 7. Todos os níveis do Clube */}
         <ClubLevelsCard levels={clubLevels} currentLevel={clubStatus?.current_level?.level} unit="entrega" />
