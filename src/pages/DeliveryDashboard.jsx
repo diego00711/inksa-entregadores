@@ -608,9 +608,12 @@ export default function ModernDeliveryDashboard() {
     setPendingCode('');
   };
 
-  // Abre o prompt de avaliação do cliente (só se houver client_id pra avaliar).
+  // Abre o prompt de avaliação pós-entrega (restaurante + cliente). Basta ter UM
+  // dos dois pra valer a pena abrir: antes exigia client_id e, quando o pedido
+  // vinha sem esse campo, a avaliação simplesmente não aparecia — o entregador
+  // terminava a entrega e nada acontecia.
   const openClientReview = (order) => {
-    if (!order?.client_id) return;
+    if (!order || (!order.client_id && !order.restaurant_id)) return;
     setPendingReviewOrder(order);
     setShowReviewForm(false);
   };
@@ -621,7 +624,7 @@ export default function ModernDeliveryDashboard() {
     const order = pendingCashConfirm;
     setPendingCashConfirm(null);
     setCashConfirmResult(null);
-    if (order?.client_id) openClientReview(order);
+    openClientReview(order);
   };
 
   const confirmComplete = async () => {
@@ -635,14 +638,18 @@ export default function ModernDeliveryDashboard() {
       haptics.notify();
       addToast('Pedido entregue com sucesso! 🎉', 'success');
 
-      const completed = pendingCompleteOrder;
+      // Fallback: se o estado do pedido se perdeu (refetch entre abrir o modal e
+      // confirmar), reencontra pelo id — senão a avaliação não abriria.
+      const completed = pendingCompleteOrder
+        || activeOrders.find(o => o.id === pendingCompleteId)
+        || null;
       if (completed?.payment_method === 'cash') {
         // Dinheiro: confirma o recebimento primeiro; a avaliação abre depois
         // que esse modal fechar (ver handlers do modal de dinheiro).
         setPendingCashConfirm(completed);
         setCashConfirmResult(null);
-      } else if (completed?.client_id) {
-        // Cartão/PIX: já oferece avaliar o cliente antes do pedido sumir.
+      } else {
+        // Cartão/PIX: já oferece avaliar antes do pedido sumir da lista.
         openClientReview(completed);
       }
 

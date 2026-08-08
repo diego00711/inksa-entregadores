@@ -231,8 +231,9 @@ export function MyDeliveriesPage() {
       const cash = res?.cash || res?.data?.cash || null;
       if (cash) {
         setCashInfo({ ...cash, _order: finishedOrder });
-      } else if (finishedOrder?.client_id) {
-        // Cartão/PIX: já oferece avaliar o cliente antes do pedido sair da lista.
+      } else if (finishedOrder?.client_id || finishedOrder?.restaurant_id) {
+        // Cartão/PIX: já oferece avaliar antes do pedido sair da lista. Basta ter
+        // cliente OU restaurante — exigir client_id fazia a avaliação não abrir.
         setShowReviewForm(false);
         setPendingReviewOrder(finishedOrder);
       }
@@ -249,7 +250,7 @@ export function MyDeliveriesPage() {
   const closeCashInfo = () => {
     const order = cashInfo?._order;
     setCashInfo(null);
-    if (order?.client_id) {
+    if (order?.client_id || order?.restaurant_id) {
       setShowReviewForm(false);
       setPendingReviewOrder(order);
     }

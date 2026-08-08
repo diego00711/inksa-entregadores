@@ -26,12 +26,37 @@ function playBeep() {
 // created_at vem do banco como "timestamp without time zone" em UTC, SEM 'Z'.
 // new Date() interpretaria isso como hora LOCAL — e mostrava 3h a mais (o valor
 // UTC como se fosse de SP). Aqui, se não houver fuso na string, assumimos UTC.
-function fmtHora(ts) {
-  if (!ts) return '';
+function toMs(ts) {
+  if (!ts) return 0;
   let s = String(ts);
   if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(s)) s = s.replace(' ', 'T') + 'Z';
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const t = new Date(s).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function fmtHora(ts) {
+  const t = toMs(ts);
+  return t ? new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+}
+
+// Une o que já está na tela com o que veio do servidor, SEM substituir a lista.
+// Antes o poll fazia setMessages(list) direto: uma resposta lenta, disparada
+// ANTES da mensagem existir, chegava DEPOIS do envio e apagava a mensagem
+// recém-enviada da tela (dava a impressão de "sumiu / só enviou uma").
+// Mensagens locais ainda não confirmadas (_pending) ficam no fim até o servidor
+// devolver a versão real.
+function mergeMessages(prev, incoming) {
+  const byId = new Map();
+  for (const m of prev) if (!m?._pending && m?.id != null) byId.set(String(m.id), m);
+  for (const m of incoming) if (m?.id != null) byId.set(String(m.id), m);
+
+  const confirmed = [...byId.values()].sort((a, b) => toMs(a.created_at) - toMs(b.created_at));
+  // Se o servidor já trouxe a mensagem equivalente, descarta a bolha pendente.
+  const pending = prev.filter(m =>
+    m?._pending &&
+    !confirmed.some(c => c.sender_type === m.sender_type && (c.message ?? c.text) === m.message)
+  );
+  return [...confirmed, ...pending];
 }
 
 export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', onUnreadChange }) {
@@ -42,9 +67,13 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
   const bottomRef = useRef(null);
   const lastMessageIdRef = useRef(null);
   const unreadRef = useRef(0);
+  // Sequência das buscas: resposta de uma busca antiga que chega atrasada é
+  // descartada (não pode sobrescrever um estado mais novo).
+  const seqRef = useRef(0);
 
   const fetchMessages = useCallback(async () => {
     if (!orderId) return;
+    const seq = ++seqRef.current;
     try {
       const res = await fetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
         headers: createAuthHeaders(),
@@ -52,7 +81,8 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
       if (!res.ok) return;
       const data = await res.json();
       const list = Array.isArray(data) ? data : (data?.messages || data?.data || []);
-      setMessages(list);
+      if (seq !== seqRef.current) return; // chegou fora de ordem — ignora
+      setMessages(prev => mergeMessages(prev, list));
       setLoadError(false);
       if (list.length > 0) {
         lastMessageIdRef.current = list[list.length - 1]?.id;
@@ -95,9 +125,8 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
         }, (payload) => {
           setMessages(prev => {
             if (prev.some(m => m.id === payload.new?.id)) return prev; // evita duplicar com o poll
-            const updated = [...prev, payload.new];
             if (payload.new?.sender_type !== senderType) playBeep();
-            return updated;
+            return mergeMessages(prev, [payload.new]);
           });
         })
         .subscribe();
@@ -118,7 +147,20 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text || sending || !orderId) return;
+    if (!text || !orderId) return;
+    // Eco otimista: a bolha aparece NA HORA, antes de falar com o servidor. Antes
+    // era POST + GET (duas idas) para só então desenhar — no 4G isso levava
+    // segundos e parecia que a mensagem não tinha sido enviada.
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const optimistic = {
+      id: tempId,
+      _pending: true,
+      sender_type: senderType,
+      message: text,
+      created_at: new Date().toISOString(),
+    };
+    setInputText('');
+    setMessages(prev => [...prev, optimistic]);
     setSending(true);
     try {
       const res = await fetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
@@ -126,12 +168,20 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, sender_type: senderType }),
       });
-      if (res.ok) {
-        setInputText('');
-        await fetchMessages();
-      }
+      if (!res.ok) throw new Error('envio falhou');
+      // O POST já devolve a mensagem criada — troca a bolha pendente pela real
+      // sem precisar de um GET extra.
+      let saved = null;
+      try { saved = await res.json(); } catch { /* corpo vazio */ }
+      setMessages(prev => {
+        const semTemp = prev.filter(m => m.id !== tempId);
+        return saved?.id ? mergeMessages(semTemp, [saved]) : semTemp;
+      });
+      if (!saved?.id) fetchMessages();
     } catch {
-      // falha silenciosa — mensagem permanece no input para reenvio
+      // Falhou: tira a bolha pendente e devolve o texto pro input pra reenviar.
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setInputText(prev => (prev ? prev : text));
     } finally {
       setSending(false);
     }
@@ -199,11 +249,11 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
                   className={`flex ${isDelivery ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm break-words ${
+                    className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm break-words transition-opacity ${
                       isDelivery
                         ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-br-sm'
                         : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'
-                    }`}
+                    } ${msg._pending ? 'opacity-60' : ''}`}
                   >
                     <p className="leading-relaxed">{msg.message || msg.text || msg.content}</p>
                     {msg.created_at && (
@@ -212,7 +262,7 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
                           isDelivery ? 'text-white/70' : 'text-gray-400'
                         }`}
                       >
-                        {fmtHora(msg.created_at)}
+                        {msg._pending ? 'enviando…' : fmtHora(msg.created_at)}
                       </p>
                     )}
                   </div>
@@ -236,12 +286,11 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Digite uma mensagem..."
-                disabled={sending}
-                className="flex-1 border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent disabled:opacity-50"
+                className="flex-1 border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
               />
               <button
                 onClick={handleSend}
-                disabled={!inputText.trim() || sending}
+                disabled={!inputText.trim()}
                 className="p-2.5 bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg flex items-center justify-center min-h-[40px] min-w-[40px]"
                 aria-label="Enviar mensagem"
               >
