@@ -153,6 +153,21 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
                 <span className="font-semibold text-sm text-gray-700">R$ {totalAmount}</span>
               </div>
             </div>
+            {/* PORTE do pedido — quantas unidades vai carregar. Sem isso ele
+                aceita às cegas e só descobre o tamanho na porta da loja; numa
+                compra de mercado, é viagem perdida. Acima de 10 itens fica
+                laranja pra chamar atenção antes do aceite. */}
+            {delivery.items_count > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Volume</p>
+                <div className="flex items-center gap-1">
+                  <Package className={`h-3 w-3 ${delivery.items_count > 10 ? 'text-orange-600' : 'text-gray-600'}`} />
+                  <span className={`font-semibold text-sm ${delivery.items_count > 10 ? 'text-orange-600' : 'text-gray-700'}`}>
+                    {delivery.items_count} {delivery.items_count === 1 ? 'item' : 'itens'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {delivery.created_at && (
