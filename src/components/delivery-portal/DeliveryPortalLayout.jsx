@@ -128,16 +128,33 @@ export default function DeliveryPortalLayout() {
         .catch(() => {});
     };
 
-    const ping = () => {
-      // GPS é um bônus: se negar a permissão ou demorar, bate sem coordenada —
-      // o que importa é não perder o sinal de vida.
-      if (!navigator.geolocation) return enviar(null, null);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => enviar(pos.coords.latitude, pos.coords.longitude),
-        () => enviar(null, null),
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
-      );
+    // No APK o `navigator.geolocation` puro não dispara o pedido de permissão
+    // nativa — o WebView do Capacitor devolve erro em silêncio e o GPS nunca
+    // chega. Tem que passar pelo plugin, que é quem abre o diálogo do Android.
+    // No navegador o import falha e cai no caminho de sempre.
+    const pegarCoords = async () => {
+      try {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        try { await Geolocation.requestPermissions(); } catch { /* web ignora */ }
+        const p = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: false, timeout: 8000, maximumAge: 60000,
+        });
+        return [p.coords.latitude, p.coords.longitude];
+      } catch {
+        if (!navigator.geolocation) return [null, null];
+        return new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve([pos.coords.latitude, pos.coords.longitude]),
+            () => resolve([null, null]),
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
+          );
+        });
+      }
     };
+
+    // GPS é um bônus: se negar a permissão ou demorar, bate sem coordenada —
+    // o que importa é não perder o sinal de vida.
+    const ping = () => { pegarCoords().then(([la, ln]) => enviar(la, ln)); };
 
     ping();
     const id = setInterval(ping, 2 * 60 * 1000);
