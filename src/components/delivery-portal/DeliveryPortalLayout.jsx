@@ -103,6 +103,12 @@ export default function DeliveryPortalLayout() {
   // current_lat/lng, que é o que o despacho usa pra achar quem está perto.
   // O servidor devolve o is_available dele — se o job já tiver desligado,
   // o botão do app se corrige sozinho no ping seguinte.
+  // updateProfile por ref: se o contexto recriar a função a cada render, tê-la
+  // nas deps faria o efeito remontar sem parar — o intervalo seria descartado e
+  // recriado, disparando um ping a cada render em vez de a cada 2 min.
+  const updateProfileRef = React.useRef(updateProfile);
+  useEffect(() => { updateProfileRef.current = updateProfile; }, [updateProfile]);
+
   useEffect(() => {
     if (!isOnline) return undefined;
 
@@ -116,7 +122,7 @@ export default function DeliveryPortalLayout() {
         .then((d) => {
           const server = d?.data?.is_available;
           if (typeof server === 'boolean' && server !== isOnline) {
-            updateProfile({ is_available: server });
+            updateProfileRef.current?.({ is_available: server });
           }
         })
         .catch(() => {});
@@ -143,7 +149,7 @@ export default function DeliveryPortalLayout() {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [isOnline, updateProfile]);
+  }, [isOnline]);
 
   const closeSidebar = () => setSidebarOpen(false);
 
