@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { DELIVERY_API_URL } from '../../services/api.js';
+import { DELIVERY_API_URL, createAuthHeaders } from '../../services/api.js';
+import apiFetch from '../../services/apiClient.js';
 import {
   Home,
   Package,
@@ -91,6 +92,58 @@ export default function DeliveryPortalLayout() {
       authService.logout();
     },
   });
+
+  // Heartbeat: prova de vida a cada 2 min ENQUANTO ONLINE. Sem isso,
+  // `is_available` era pegajosa — só voltava a false pelo botão de sair ou
+  // pelo timer de inatividade acima, que morre junto com o app. Havia
+  // entregador marcado como online havia 25 horas, e o motor de despacho
+  // gastava oferta de pedido com quem tinha ido embora.
+  //
+  // Manda o GPS junto: o mesmo ping que prova que ele está vivo alimenta
+  // current_lat/lng, que é o que o despacho usa pra achar quem está perto.
+  // O servidor devolve o is_available dele — se o job já tiver desligado,
+  // o botão do app se corrige sozinho no ping seguinte.
+  useEffect(() => {
+    if (!isOnline) return undefined;
+
+    const enviar = (latitude, longitude) => {
+      apiFetch(`${DELIVERY_API_URL}/api/delivery/heartbeat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+        body: JSON.stringify(latitude != null ? { latitude, longitude } : {}),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const server = d?.data?.is_available;
+          if (typeof server === 'boolean' && server !== isOnline) {
+            updateProfile({ is_available: server });
+          }
+        })
+        .catch(() => {});
+    };
+
+    const ping = () => {
+      // GPS é um bônus: se negar a permissão ou demorar, bate sem coordenada —
+      // o que importa é não perder o sinal de vida.
+      if (!navigator.geolocation) return enviar(null, null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => enviar(pos.coords.latitude, pos.coords.longitude),
+        () => enviar(null, null),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
+      );
+    };
+
+    ping();
+    const id = setInterval(ping, 2 * 60 * 1000);
+    // Voltou pro app depois de um tempo em segundo plano: bate na hora, em vez
+    // de esperar o próximo ciclo e correr o risco de já ter sido desligado.
+    const onVisible = () => { if (document.visibilityState === 'visible') ping(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isOnline, updateProfile]);
 
   const closeSidebar = () => setSidebarOpen(false);
 

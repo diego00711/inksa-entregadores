@@ -10,10 +10,15 @@ export function useGPSTracking({ enabled = false, onPositionUpdate } = {}) {
     if (pendingRef.current) return;
     pendingRef.current = true;
     try {
-      await fetch(`${DELIVERY_API_URL}/api/delivery/location`, {
-        method: 'PATCH',
+      // Aponta pro /heartbeat. O destino anterior era `PATCH
+      // /api/delivery/location`, que NUNCA existiu no backend — todo push de
+      // GPS tomava 404 e morria no catch silencioso abaixo. Por isso
+      // current_lat/location_updated_at estavam null pra todo mundo, e o motor
+      // de despacho só conseguia usar o endereço cadastrado.
+      await fetch(`${DELIVERY_API_URL}/api/delivery/heartbeat`, {
+        method: 'POST',
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng }),
+        body: JSON.stringify({ latitude: lat, longitude: lng }),
       });
       onPositionUpdate?.({ lat, lng });
     } catch {
