@@ -41,4 +41,8 @@
     <!-- Localização do entregador (GPS) para rastreamento das entregas -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Push: o @capacitor/push-notifications PEDE esta permissão em tempo de
+         execução (Android 13+), mas NÃO a declara no manifesto dele. Sem esta
+         linha o pedido é negado na hora, sem mostrar o diálogo. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

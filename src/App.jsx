@@ -12,6 +12,7 @@ import OnboardingSlides from './components/onboarding/OnboardingSlides.jsx';
 import GuidedTour from './components/onboarding/GuidedTour.jsx';
 import WakingUpScreen from './components/WakingUpScreen.jsx';
 import SupportButton from './components/SupportButton.jsx';
+import { configurarAcoesDePush } from './services/notificationService.js';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt.jsx';
 
 // --- Lazy-loaded pages ---
@@ -50,6 +51,10 @@ function App() {
       setShowTour(true);
     }
   }, [isAuthenticated, profileLoading]);
+
+  // Toque na notificação leva pras Entregas (só no app instalado). No
+  // navegador quem faz isso é o notificationclick do service worker.
+  useEffect(() => { configurarAcoesDePush(navigate); }, [navigate]);
 
   useEffect(() => {
     const handleUnauthorized = () => {

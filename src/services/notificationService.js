@@ -1,5 +1,10 @@
 // src/services/notificationService.js
 //
+// DOIS CAMINHOS, um arquivo: navegador/PWA usa Web Push (VAPID + service
+// worker); o APK instalado usa @capacitor/push-notifications (FCM nativo),
+// porque o WebView do Android não implementa a Notification API.
+import { Capacitor } from '@capacitor/core';
+//
 // Mesma implementação do app Cliente (inksa-clientes). Os três apps caíam no
 // mesmo buraco: getToken sem service worker registrado, catch que devolvia
 // null e um saveFcmToken que ignorava a resposta do servidor.
@@ -17,6 +22,106 @@ const FIREBASE_CONFIG = {
 // 23/05/2026). Chave PÚBLICA — pode ficar no bundle, é isso que o navegador
 // manda pro serviço de push.
 const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeTo71A8gOxuCCQlEh_MQWNEOu7rxmlT4iaN9zim4FKurj2dwPAPc";
+
+/** Roda dentro do APK/IPA (Capacitor), e não no navegador. */
+export function ehAppNativo() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Token FCM pelo caminho NATIVO (@capacitor/push-notifications).
+ *
+ * Sem chave VAPID e sem service worker: o token vem do FCM do Android, e o
+ * que amarra o app ao projeto Firebase é o `android/app/google-services.json`.
+ * Sem esse arquivo no APK, o register() dispara `registrationError` — ou não
+ * responde nunca, daí o timeout com mensagem própria em vez de tela girando.
+ */
+async function obterTokenNativo() {
+  let PushNotifications;
+  try {
+    ({ PushNotifications } = await import('@capacitor/push-notifications'));
+  } catch (e) {
+    return { token: null, erro: `Plugin de push ausente neste APK: ${e?.message || e}` };
+  }
+
+  try {
+    let perm = await PushNotifications.checkPermissions();
+    // Android 13+ exige permissão em tempo de execução (POST_NOTIFICATIONS).
+    if (perm.receive !== 'granted') {
+      perm = await PushNotifications.requestPermissions();
+    }
+    if (perm.receive !== 'granted') {
+      return { token: null, erro: `Permissão ${perm.receive}.` };
+    }
+  } catch (e) {
+    return { token: null, erro: `Falha ao pedir permissão: ${e?.message || e}` };
+  }
+
+  let resolver;
+  const espera = new Promise((r) => { resolver = r; });
+  const inscricoes = [];
+  let respondido = false;
+
+  const finalizar = (resultado) => {
+    if (respondido) return;
+    respondido = true;
+    clearTimeout(relogio);
+    inscricoes.forEach((h) => { try { h.remove(); } catch { /* já removido */ } });
+    resolver(resultado);
+  };
+
+  const relogio = setTimeout(() => finalizar({
+    token: null,
+    erro: 'o FCM não respondeu em 15s — normalmente é google-services.json ausente no APK.',
+  }), 15000);
+
+  try {
+    inscricoes.push(await PushNotifications.addListener(
+      'registration', (t) => finalizar({ token: t?.value || null, erro: t?.value ? null : 'registro sem token.' }),
+    ));
+    inscricoes.push(await PushNotifications.addListener(
+      'registrationError', (e) => finalizar({ token: null, erro: `registro nativo falhou: ${e?.error || JSON.stringify(e)}` }),
+    ));
+    await PushNotifications.register();
+  } catch (e) {
+    finalizar({ token: null, erro: e?.message || String(e) });
+  }
+
+  return espera;
+}
+
+/** Estado da permissão no app instalado: 'granted' | 'denied' | 'prompt' | null. */
+export async function estadoPermissaoNativa() {
+  if (!ehAppNativo()) return null;
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const p = await PushNotifications.checkPermissions();
+    return p?.receive || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Tocar na notificação abre as Entregas, não a home. */
+let listenersDeAcaoProntos = false;
+export async function configurarAcoesDePush(navegarPara) {
+  if (!ehAppNativo() || listenersDeAcaoProntos) return;
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    await PushNotifications.addListener('pushNotificationActionPerformed', (acao) => {
+      const d = acao?.notification?.data || {};
+      const destino = d.url || '/delivery/entregas';
+      try { navegarPara(destino); } catch { window.location.href = destino; }
+    });
+    listenersDeAcaoProntos = true;
+  } catch (e) {
+    console.warn('Push: não consegui registrar o listener de toque:', e);
+  }
+}
 
 /**
  * Confere o FORMATO da chave VAPID antes de usar. Devolve null se está boa,
@@ -79,6 +184,10 @@ function esperarAtivar(registration, limiteMs = 10000) {
  * registrado, domínio não autorizado no projeto), era jogada fora.
  */
 export async function obterTokenFCM() {
+  // No APK instalado o caminho web NUNCA funciona — o WebView não tem a
+  // Notification API. Desviar aqui, antes de qualquer checagem de navegador.
+  if (ehAppNativo()) return obterTokenNativo();
+
   if (!('Notification' in window) || !('serviceWorker' in navigator)) {
     return { token: null, erro: 'Este navegador não expõe a API de notificação.' };
   }
