@@ -16,6 +16,34 @@ const FIREBASE_CONFIG = {
 const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeeTo71A8gOxuCCQIEh_MQWNEOu7rxmIT4iaN9zim4FKurj2dwPAPc";
 
 /**
+ * Confere o FORMATO da chave VAPID antes de usar. Devolve null se está boa,
+ * ou a descrição do defeito.
+ *
+ * Existe porque a chave que ficou aqui por semanas era inválida: 88
+ * caracteres em vez de 87, decodificando em 66 bytes em vez de 65. O
+ * navegador só reclamava lá no fim, com "applicationServerKey must contain a
+ * valid P-256 public key" — depois de pedir permissão, registrar service
+ * worker e falar com o Firebase. Erro de configuração tem que aparecer no
+ * primeiro passo, não no último.
+ *
+ * VAPID válida = ponto P-256 não comprimido: 65 bytes (0x04 + X32 + Y32),
+ * que em base64url sem padding dá exatamente 87 caracteres.
+ */
+function defeitoDaChaveVapid(k) {
+  if (typeof k !== 'string' || !k) return 'está vazia';
+  if (k.length !== 87) return `tem ${k.length} caracteres (o correto são 87)`;
+  let bin;
+  try {
+    bin = atob(k.replace(/-/g, '+').replace(/_/g, '/'));
+  } catch {
+    return 'não é base64url válido';
+  }
+  if (bin.length !== 65) return `decodifica em ${bin.length} bytes (o correto são 65)`;
+  if (bin.charCodeAt(0) !== 0x04) return 'não começa com o byte 0x04 de chave pública não comprimida';
+  return null;
+}
+
+/**
  * Espera o service worker recém-registrado ficar ATIVO.
  *
  * getToken() chama pushManager.subscribe na registration; com o worker ainda
@@ -59,6 +87,15 @@ export async function obterTokenFCM() {
 
   if (!FIREBASE_CONFIG.apiKey) {
     return { token: null, erro: 'FIREBASE_CONFIG não preenchido no app.' };
+  }
+
+  const defeito = defeitoDaChaveVapid(FCM_VAPID_KEY);
+  if (defeito) {
+    return {
+      token: null,
+      erro: `a chave VAPID do app ${defeito}. Copie de novo em Firebase → `
+          + 'Configurações do projeto → Cloud Messaging → Certificados push da Web.',
+    };
   }
 
   try {
