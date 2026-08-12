@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "2366391589",
+    "project_id": "inksa-delivery",
+    "storage_bucket": "inksa-delivery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2366391589:android:7da94bbba032a65255c6cc",
+        "android_client_info": {
+          "package_name": "com.inksa.cliente"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_gtGEqIXoc9btOC7TXJ12VR3T4HDPg3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2366391589:android:efb9b1b8b5780bf055c6cc",
+        "android_client_info": {
+          "package_name": "com.inksa.entregador"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_gtGEqIXoc9btOC7TXJ12VR3T4HDPg3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2366391589:android:c3538501a5e9336455c6cc",
+        "android_client_info": {
+          "package_name": "com.inksa.restaurante"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_gtGEqIXoc9btOC7TXJ12VR3T4HDPg3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
