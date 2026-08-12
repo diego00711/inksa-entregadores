@@ -13,7 +13,10 @@ const FIREBASE_CONFIG = {
   measurementId: "G-5E4ND4JN1H"
 };
 
-const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeeTo71A8gOxuCCQIEh_MQWNEOu7rxmIT4iaN9zim4FKurj2dwPAPc";
+// Certificado push da Web do projeto inksa-delivery (par de chaves de
+// 23/05/2026). Chave PÚBLICA — pode ficar no bundle, é isso que o navegador
+// manda pro serviço de push.
+const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeTo71A8gOxuCCQlEh_MQWNEOu7rxmlT4iaN9zim4FKurj2dwPAPc";
 
 /**
  * Confere o FORMATO da chave VAPID antes de usar. Devolve null se está boa,
