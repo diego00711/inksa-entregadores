@@ -3,7 +3,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import  authService  from '../services/authService.js';
 import DeliveryService from '../services/deliveryService.js';
-import { requestNotificationPermission, saveFcmToken } from '../services/notificationService.js';
+import { obterTokenFCM, saveFcmToken } from '../services/notificationService.js';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api.js';
 
 const DeliveryProfileContext = createContext(null);
@@ -17,6 +17,30 @@ export function DeliveryProfileProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  /**
+   * Registra o aparelho pra receber push. Idempotente: salvar o mesmo token
+   * de novo não faz mal, e o servidor sobrescreve.
+   *
+   * Precisa rodar TAMBÉM na retomada de sessão, não só no login. O entregador
+   * abre o app já logado por semanas a fio — se o registro acontece apenas
+   * dentro do login(), quem não deslogar nunca é perguntado. Era exatamente
+   * essa a causa dos 6 entregadores com ZERO token: nenhum deles ia refazer
+   * login só pra isso.
+   */
+  const registrarPush = useCallback(async () => {
+    try {
+      const { token, erro } = await obterTokenFCM();
+      if (!token) {
+        console.warn('Push: token não gerado —', erro);
+        return;
+      }
+      const r = await saveFcmToken(token, DELIVERY_API_URL, createAuthHeaders());
+      if (!r?.ok) console.warn('Push: servidor não salvou o token —', r?.motivo);
+    } catch (e) {
+      console.warn('Push: falha ao registrar (não bloqueia o app):', e);
+    }
+  }, []);
+
   useEffect(() => {
     const checkAuthStatus = async () => {
       if (authService.isAuthenticated()) {
@@ -24,6 +48,7 @@ export function DeliveryProfileProvider({ children }) {
           const profileData = await DeliveryService.getDeliveryProfile();
           setProfile(profileData);
           setIsAuthenticated(true);
+          registrarPush();
         } catch (error) {
           console.error("Sessão inválida. Realizando logout forçado.", error);
           authService.logout();
@@ -32,7 +57,7 @@ export function DeliveryProfileProvider({ children }) {
       setLoading(false);
     };
     checkAuthStatus();
-  }, []);
+  }, [registrarPush]);
 
   const login = async (email, password) => {
     await authService.login(email, password);
@@ -40,14 +65,7 @@ export function DeliveryProfileProvider({ children }) {
     setProfile(profileData);
     setIsAuthenticated(true);
 
-    // FCM: solicita permissão e salva token — falha silenciosa
-    try {
-      const fcmToken = await requestNotificationPermission();
-      await saveFcmToken(fcmToken, DELIVERY_API_URL, createAuthHeaders());
-    } catch (fcmErr) {
-      console.warn('FCM init error (non-blocking):', fcmErr);
-    }
-
+    await registrarPush();
     return profileData;
   };
 
