@@ -155,23 +155,12 @@ self.addEventListener('message', (event) => {
 });
 
 // =========== Push (futuro) ===========
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-  const data = event.data.json();
-  const title = data.title || 'Inksa Entregadores';
-  const options = {
-    body: data.body || 'Nova entrega disponível!',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    vibrate: [100, 50, 100],
-    data: { dateOfArrival: Date.now(), primaryKey: 1 },
-    actions: [
-      { action: 'explore', title: 'Ver Detalhes' },
-      { action: 'close', title: 'Fechar' },
-    ],
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
-});
+// SEM listener de `push` aqui, de proposito. Quem recebe push e a
+// registration do FCM (firebase-messaging-sw.js, no escopo dele) —
+// ninguem chama pushManager.subscribe neste worker, entao este listener
+// era codigo morto. Pior: dois workers capazes de desenhar notificacao e
+// uma armadilha, porque no dia em que alguem inscrever este aqui, volta a
+// aparecer notificacao duplicada — e o motivo estaria em outro arquivo.
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

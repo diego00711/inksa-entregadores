@@ -26,8 +26,15 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const n = payload.notification || {};
   const d = payload.data || {};
-  self.registration.showNotification(n.title || 'Inksa Entregador', {
-    body: n.body || '',
+  // O title/body vem em `data`, nao em `notification`. E de proposito: com o
+  // bloco `notification` no topo, o SDK do Firebase DESENHA a notificacao
+  // sozinho no web — e este handler desenhava outra. Eram duas por push.
+  // Agora o backend manda so dados pro web (o bloco de notificacao vai em
+  // `android`, que o web ignora) e este worker e o unico que desenha.
+  // O `n.` continua na frente por compatibilidade: aparelho que receber uma
+  // mensagem antiga, ainda no formato velho, segue funcionando.
+  self.registration.showNotification(n.title || d.title || 'Inksa Entregador', {
+    body: n.body || d.body || '',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
     tag: d.order_id || d.tag || 'inksa-entregador',
