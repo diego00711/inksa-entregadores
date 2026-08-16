@@ -443,10 +443,15 @@ export default function DeliveryProfilePage() {
                                     <SelectValue placeholder="Selecione o tipo de veículo" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
-                                    <SelectItem value="moto">Moto</SelectItem>
-                                    <SelectItem value="carro">Carro</SelectItem>
-                                    <SelectItem value="bicicleta">Bicicleta</SelectItem>
-                                    <SelectItem value="outro">Outro</SelectItem>
+                                    <SelectItem value="bicicleta">Bicicleta (até 8 kg)</SelectItem>
+                                    <SelectItem value="moto">Moto (até 20 kg)</SelectItem>
+                                    <SelectItem value="carro">Carro (até 80 kg)</SelectItem>
+                                    {/* "Outro" saiu daqui. Quem escolhia ficava
+                                        online e não recebia pedido NENHUM, calado:
+                                        o filtro de carga é fail-closed pra veículo
+                                        que ele não reconhece. Uma opção que garante
+                                        zero entrega não devia existir. */}
+                                    <SelectItem value="utilitario">Utilitário / Van (até 300 kg)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
