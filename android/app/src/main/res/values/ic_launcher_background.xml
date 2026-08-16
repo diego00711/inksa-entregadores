@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FF7130</color>
+    <!-- Fundo do ícone adaptativo. É o MESMO laranja do `primary` do Tailwind
+         usado na interface dos 3 apps. Antes era #FF7130, que não batia com
+         nenhuma tela do app — a diferença aparece quando o ícone abre. -->
+    <color name="ic_launcher_background">#F97316</color>
 </resources>

@@ -33,6 +33,18 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Ícone da barra de status do Android. Sem isto o sistema usa o
+             ícone do app, que é colorido: o Android transforma qualquer coisa
+             não-monocromática num QUADRADO BRANCO na barra. O ic_stat_inksa é
+             a silhueta branca com os vazados preservados.
+             A cor tinge o ícone e o cabeçalho da notificação. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_inksa" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/ic_launcher_background" />
     </application>
 
     <!-- Permissions -->
