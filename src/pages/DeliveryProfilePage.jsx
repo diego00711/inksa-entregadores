@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeliveryService from '../services/deliveryService';
+import { DELIVERY_API_URL } from '../services/api';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -205,28 +206,29 @@ export default function DeliveryProfilePage() {
             return;
         }
 
-        const fullAddress = `${address_street}, ${address_number}, ${address_city}, ${address_state}`;
-        
         try {
             addToast("Buscando coordenadas...", "info");
-            
-            // Usando API gratuita do OpenStreetMap Nominatim
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
-            );
-            
-            const data = await response.json();
-            
-            if (data && data.length > 0) {
-                const { lat, lon } = data[0];
-                
+
+            // Passa pelo NOSSO backend, não direto no Nominatim: lá tem cache
+            // e o User-Agent que a política deles exige (o navegador não deixa
+            // definir). Trocar de provedor um dia não pede app novo.
+            const p = new URLSearchParams({
+                street: address_street || '', number: address_number || '',
+                city: address_city || '', state: address_state || '',
+            });
+            const response = await fetch(`${DELIVERY_API_URL}/api/public/geocode?${p}`);
+            const j = response.ok ? await response.json() : null;
+            const lat = Number(j?.data?.lat);
+            const lon = Number(j?.data?.lng);
+
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
                 // Atualizar latitude e longitude automaticamente
                 setFormData(prev => ({
                     ...prev,
                     latitude: lat,
                     longitude: lon
                 }));
-                
+
                 addToast("Coordenadas encontradas automaticamente!", "success");
             } else {
                 addToast("Não foi possível encontrar as coordenadas do endereço", "warning");
