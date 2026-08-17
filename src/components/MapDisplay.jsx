@@ -37,6 +37,9 @@ const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION
 // A chincheta azul padrão do Leaflet é metade do "cara de app velho". Estes
 // são desenhados: o entregador é um ponto (posição exata), a loja e o cliente
 // são alfinetes com cor própria, então dá pra saber quem é quem sem tocar.
+// Ponto simples: usado quando NÃO se sabe o veículo. Hoje 2 dos 6 entregadores
+// estão com vehicle_type em branco — desenhar uma moto pra quem está de
+// bicicleta seria inventar informação num mapa, que é o pior lugar pra isso.
 const driverIcon = L.divIcon({
   className: '',
   html:
@@ -45,6 +48,29 @@ const driverIcon = L.divIcon({
   iconSize: [20, 20],
   iconAnchor: [10, 10],
 });
+
+// Quando o veículo é conhecido, ele vira o marcador — como no app do
+// concorrente. Os apelidos legados ('motorcycle', 'car') entram porque o
+// CHECK da tabela ainda os aceita e ignorá-los faria a moto virar bolinha.
+const VEICULOS = {
+  bicicleta: '🚲', bike: '🚲',
+  moto: '🛵', motorcycle: '🛵',
+  carro: '🚗', car: '🚗',
+  utilitario: '🚐',
+};
+const iconeDoVeiculo = (tipo) => {
+  const emoji = VEICULOS[String(tipo || '').trim().toLowerCase()];
+  if (!emoji) return driverIcon;
+  return L.divIcon({
+    className: '',
+    html:
+      '<div style="width:38px;height:38px;border-radius:50%;background:#fff;' +
+      'border:3px solid #2563EB;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 6px rgba(37,99,235,.18);' +
+      `display:flex;align-items:center;justify-content:center;font-size:19px;line-height:1">${emoji}</div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+  });
+};
 
 // Alfinete: círculo colorido com um "bico" embaixo apontando o ponto exato.
 const alfinete = (cor, emoji) => L.divIcon({
@@ -104,7 +130,7 @@ function FitBounds({ points, resetKey }) {
 //   gente jogava fora — era a informação mais útil da tela indo pro lixo.
 export function MapDisplay({
   driverCoords, pickupCoords, deliveryCoords, phase = 'pickup',
-  fullscreen = false, onRouteInfo,
+  fullscreen = false, onRouteInfo, vehicle,
 }) {
   const destination = phase === 'delivery' ? deliveryCoords : pickupCoords;
   const center = driverCoords || destination || deliveryCoords || pickupCoords || [-27.8167, -50.3264]; // Lages/SC
@@ -207,8 +233,8 @@ export function MapDisplay({
         </Marker>
       )}
       {driverCoords && (
-        <Marker position={driverCoords} icon={driverIcon}>
-          <Popup>🛵 Você está aqui</Popup>
+        <Marker position={driverCoords} icon={iconeDoVeiculo(vehicle)}>
+          <Popup>Você está aqui</Popup>
         </Marker>
       )}
 

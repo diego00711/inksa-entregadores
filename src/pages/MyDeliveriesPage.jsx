@@ -39,7 +39,7 @@ const getPickupCoords = (o) =>
   );
 
 export function MyDeliveriesPage() {
-  const { loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const addToast = useToast();
   // Se já visitou essa tela antes na mesma sessão, mostra os últimos dados
   // vistos na hora (sem tela de carregamento) enquanto atualiza por baixo —
@@ -406,6 +406,7 @@ export function MyDeliveriesPage() {
                         deliveryCoords={getDeliveryCoords(activeDelivery)}
                         phase={isDeliveryPhase ? 'delivery' : 'pickup'}
                         onRouteInfo={setRouteInfo}
+                        vehicle={profile?.vehicle_type}
                       />
                     </div>
                   ) : (
