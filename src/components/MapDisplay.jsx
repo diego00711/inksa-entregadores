@@ -218,7 +218,11 @@ export function MapDisplay({
       // Em tela cheia o mapa é FUNDO: os controles do Leaflet brigariam com os
       // botões flutuantes da página (e o +/- fica bem onde vai o chip de rota).
       zoomControl={!fullscreen}
-      attributionControl={!fullscreen}
+      // O crédito NUNCA sai. Eu tinha tirado junto com o zoom em tela cheia, e
+      // isso não é questão de estética: a licença do OpenStreetMap exige, e a
+      // do Stadia também vai exigir quando a gente trocar. Em vez de esconder,
+      // fica pequeno e discreto (ver .leaflet-control-attribution no App.css).
+      attributionControl
     >
       <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
 
