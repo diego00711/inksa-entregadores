@@ -464,9 +464,16 @@ export function MyDeliveriesPage() {
                       Teto em dvh e não em %: porcentagem se mede contra o pai,
                       dvh contra a janela. Uma coisa a menos que pode não
                       resolver. */}
-                  <div className="absolute inset-x-0 bottom-0 z-10 !max-h-[38dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                    <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-300" />
-                    <div className="p-4 space-y-3">
+                  <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                    <div className="mx-auto my-2 h-1 w-10 rounded-full bg-gray-300" />
+                    {/* O corte reto no fim do painel parecia informação perdida,
+                        não conteúdo rolável — o Diego leu como bug. A faixa que
+                        desbota embaixo é o que diz "tem mais, continua". Ela
+                        precisa ficar FORA da área que rola, senão desce junto
+                        e desaparece na primeira rolada. */}
+                    <div className="relative">
+                      <div className="!max-h-[34dvh] overflow-y-auto overscroll-contain">
+                        <div className="px-4 pb-6 pt-1 space-y-3">
                     {/* A fase saiu daqui: ela virou o chip laranja/verde sobre o
                         mapa. Repetir no painel gastaria a linha mais nobre com
                         algo que já está na tela. */}
@@ -554,6 +561,9 @@ export function MyDeliveriesPage() {
                         <AlertTriangle className="w-4 h-4" /> Não consegui entregar
                       </button>
                     )}
+                        </div>
+                      </div>
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent" />
                     </div>
                   </div>
                 </div>

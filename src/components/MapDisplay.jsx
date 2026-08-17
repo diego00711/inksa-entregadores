@@ -14,15 +14,55 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Marcador do entregador: bolinha laranja (destaca da chincheta padrão)
+// ── Estilo do mapa ─────────────────────────────────────────────────────────
+// O estilo padrão do OpenStreetMap é a cara de 2010: fundo bege, rótulo de rua
+// em cima de rótulo de rua, estrada amarela grossa. Ao lado do concorrente
+// (que usa Google Maps) parece app velho — e isso é cartografia, não layout.
+//
+// Trocar é UMA variável de ambiente. Não existe basemap moderno gratuito pra
+// uso comercial: os da CARTO são "exclusively with an Enterprise license", e
+// o plano grátis do Stadia/MapTiler é só pra desenvolvimento e avaliação.
+// Por isso o padrão aqui continua o OSM: funciona sem chave e sem mentira.
+//
+// Pra ligar o estilo moderno, basta definir no Vercel:
+//   VITE_MAP_TILE_URL = https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=SUA_CHAVE
+//   VITE_MAP_ATTRIBUTION = &copy; Stadia Maps &copy; OpenStreetMap
+// Nenhum código muda.
+const TILE_URL = import.meta.env.VITE_MAP_TILE_URL
+  || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION
+  || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+// ── Marcadores ─────────────────────────────────────────────────────────────
+// A chincheta azul padrão do Leaflet é metade do "cara de app velho". Estes
+// são desenhados: o entregador é um ponto (posição exata), a loja e o cliente
+// são alfinetes com cor própria, então dá pra saber quem é quem sem tocar.
 const driverIcon = L.divIcon({
   className: '',
   html:
-    '<div style="width:18px;height:18px;border-radius:50%;background:#FF6B35;' +
-    'border:3px solid #fff;box-shadow:0 0 0 3px rgba(255,107,53,.35)"></div>',
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
+    '<div style="width:20px;height:20px;border-radius:50%;background:#2563EB;' +
+    'border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35),0 0 0 6px rgba(37,99,235,.20)"></div>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
+
+// Alfinete: círculo colorido com um "bico" embaixo apontando o ponto exato.
+const alfinete = (cor, emoji) => L.divIcon({
+  className: '',
+  html:
+    `<div style="position:relative;width:34px;height:42px">` +
+      `<div style="width:34px;height:34px;border-radius:50%;background:${cor};` +
+        `border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);` +
+        `display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1">${emoji}</div>` +
+      `<div style="position:absolute;left:50%;top:30px;transform:translateX(-50%);` +
+        `width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;` +
+        `border-top:10px solid ${cor}"></div>` +
+    `</div>`,
+  iconSize: [34, 42],
+  iconAnchor: [17, 42],
+});
+const lojaIcon = alfinete('#FF6F00', '🏪');
+const clienteIcon = alfinete('#16A34A', '🏠');
 
 // Distância em metros entre dois pontos (haversine). Serve pra saber se o
 // entregador andou o bastante pra valer a pena recalcular a rota.
@@ -154,19 +194,16 @@ export function MapDisplay({
       zoomControl={!fullscreen}
       attributionControl={!fullscreen}
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
+      <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
 
       {pickupCoords && (
-        <Marker position={pickupCoords}>
-          <Popup>🍔 Restaurante (coleta)</Popup>
+        <Marker position={pickupCoords} icon={lojaIcon}>
+          <Popup>Loja (retirada)</Popup>
         </Marker>
       )}
       {deliveryCoords && (
-        <Marker position={deliveryCoords}>
-          <Popup>📍 Cliente (entrega)</Popup>
+        <Marker position={deliveryCoords} icon={clienteIcon}>
+          <Popup>Cliente (entrega)</Popup>
         </Marker>
       )}
       {driverCoords && (
@@ -175,10 +212,27 @@ export function MapDisplay({
         </Marker>
       )}
 
+      {/* Duas linhas, não uma: a branca embaixo faz o contorno. É o truque que
+          deixa a rota legível por cima de rua clara E de quarteirão escuro —
+          sem ele, a linha laranja some quando passa sobre avenida amarela.
+          Só no traçado real; no palpite em linha reta seria enfeite. */}
+      {routeLine && routeGeo && (
+        <Polyline
+          positions={routeLine}
+          pathOptions={{ color: '#ffffff', weight: 11, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }}
+        />
+      )}
       {routeLine && (
         <Polyline
           positions={routeLine}
-          pathOptions={{ color: '#FF6B35', weight: 5, opacity: 0.9, dashArray: routeGeo ? null : '8 10' }}
+          pathOptions={{
+            color: '#FF6B35',
+            weight: routeGeo ? 6 : 4,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round',
+            dashArray: routeGeo ? null : '8 10',
+          }}
         />
       )}
 
