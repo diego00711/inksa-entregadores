@@ -39,7 +39,14 @@ function FitBounds({ points }) {
 }
 
 // phase: 'pickup' (indo ao restaurante) | 'delivery' (indo ao cliente)
-export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase = 'pickup' }) {
+// fullscreen: esconde os controles do Leaflet (o mapa vira fundo da tela e quem
+//   manda são os botões flutuantes da página)
+// onRouteInfo: devolve { km, min } da rota real. O OSRM já calculava isso e a
+//   gente jogava fora — era a informação mais útil da tela indo pro lixo.
+export function MapDisplay({
+  driverCoords, pickupCoords, deliveryCoords, phase = 'pickup',
+  fullscreen = false, onRouteInfo,
+}) {
   const destination = phase === 'delivery' ? deliveryCoords : pickupCoords;
   const center = driverCoords || destination || deliveryCoords || pickupCoords || [-27.8167, -50.3264]; // Lages/SC
 
@@ -56,20 +63,38 @@ export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase =
   const [routeGeo, setRouteGeo] = useState(null);
   const dLat = driverCoords?.[0], dLng = driverCoords?.[1];
   const tLat = destination?.[0], tLng = destination?.[1];
+  // Ref pro callback: se entrasse na lista de dependências, um pai que recria a
+  // função a cada render refaria a chamada ao OSRM sem parar.
+  const routeInfoRef = React.useRef(onRouteInfo);
+  React.useEffect(() => { routeInfoRef.current = onRouteInfo; }, [onRouteInfo]);
   useEffect(() => {
-    if (dLat == null || dLng == null || tLat == null || tLng == null) { setRouteGeo(null); return; }
+    if (dLat == null || dLng == null || tLat == null || tLng == null) {
+      setRouteGeo(null);
+      routeInfoRef.current?.(null);
+      return;
+    }
     let alive = true;
     const ctrl = new AbortController();
     const url = `https://router.project-osrm.org/route/v1/driving/${dLng},${dLat};${tLng},${tLat}?overview=full&geometries=geojson`;
     fetch(url, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('osrm'))))
       .then((data) => {
-        const coords = data?.routes?.[0]?.geometry?.coordinates;
-        if (alive && Array.isArray(coords) && coords.length) {
+        if (!alive) return;
+        const rota = data?.routes?.[0];
+        const coords = rota?.geometry?.coordinates;
+        if (Array.isArray(coords) && coords.length) {
           setRouteGeo(coords.map(([lng, lat]) => [lat, lng]));
         }
+        if (Number.isFinite(rota?.distance) && Number.isFinite(rota?.duration)) {
+          // O OSRM calcula pra CARRO. Serve de estimativa pra moto, mas erra
+          // pra bicicleta — por isso a tela mostra "~" e nunca um horário.
+          routeInfoRef.current?.({
+            km: rota.distance / 1000,
+            min: Math.max(1, Math.round(rota.duration / 60)),
+          });
+        }
       })
-      .catch(() => { if (alive) setRouteGeo(null); });
+      .catch(() => { if (alive) { setRouteGeo(null); routeInfoRef.current?.(null); } });
     return () => { alive = false; ctrl.abort(); };
   }, [dLat, dLng, tLat, tLng]);
 
@@ -80,7 +105,16 @@ export function MapDisplay({ driverCoords, pickupCoords, deliveryCoords, phase =
     // isolate: cria um stacking context próprio pro mapa, senão os controles do
     // Leaflet (z-index ~1000) "furam" e ficam por cima dos modais da página.
     <div className="isolate w-full h-full">
-    <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+    <MapContainer
+      center={center}
+      zoom={14}
+      style={{ height: '100%', width: '100%' }}
+      scrollWheelZoom={false}
+      // Em tela cheia o mapa é FUNDO: os controles do Leaflet brigariam com os
+      // botões flutuantes da página (e o +/- fica bem onde vai o chip de rota).
+      zoomControl={!fullscreen}
+      attributionControl={!fullscreen}
+    >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

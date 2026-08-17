@@ -55,6 +55,9 @@ export function MyDeliveriesPage() {
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showMap, setShowMap] = useState(true);
+  // { km, min } da rota real, vindo do mapa. null enquanto não deu pra calcular
+  // — e aí o chip simplesmente não aparece, em vez de mostrar "0 km".
+  const [routeInfo, setRouteInfo] = useState(null);
   const [driverCoords, setDriverCoords] = useState(null); // posição do entregador ao vivo (GPS)
   const [pendingFinishId, setPendingFinishId] = useState(null);
   const [finishCode, setFinishCode] = useState('');
@@ -350,57 +353,96 @@ export function MyDeliveriesPage() {
       <Header />
       <main className="flex-1 p-4 md:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 h-full">
-          {/* MAPA / CARTÃO DA ENTREGA ATIVA (mantido) */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg font-bold flex items-center">
-                  <MapPin className="w-5 h-5 mr-2" /> Mapa de Entregas
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => setShowMap(!showMap)}>
-                  {showMap ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {!activeDelivery?.id ? (
-                <div style={{ height: '280px' }} className="flex items-center justify-center bg-gray-50">
-                  <div className="text-center px-4">
-                    <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium mb-1">Nenhuma entrega ativa no momento</p>
-                    <p className="text-sm text-gray-400">O mapa aparece quando você tiver uma entrega em andamento</p>
+          {/* ENTREGA ATIVA — o mapa é o FUNDO, a informação flutua por cima.
+              Antes era um mapa de 240px dentro de um card, com os dados embaixo:
+              o entregador tinha que escolher entre ver onde está e ver o que
+              fazer. Agora o trajeto ocupa a tela e o painel desliza por cima. */}
+          <Card className="shadow-sm overflow-hidden">
+            {!activeDelivery?.id ? (
+              <>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold flex items-center">
+                    <MapPin className="w-5 h-5 mr-2" /> Mapa de Entregas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div style={{ height: '280px' }} className="flex items-center justify-center bg-gray-50">
+                    <div className="text-center px-4">
+                      <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-600 font-medium mb-1">Nenhuma entrega ativa no momento</p>
+                      <p className="text-sm text-gray-400">O mapa aparece quando você tiver uma entrega em andamento</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div>
-                  {/* MAPA embutido (rota até o restaurante e depois até o cliente) */}
+                </CardContent>
+              </>
+            ) : (
+              <CardContent className="p-0">
+                <div className="relative">
+                  {/* Camada de baixo: o trajeto ocupando a tela toda */}
                   {showMap && (getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery)) ? (
-                    <div style={{ height: '240px' }} className="w-full">
+                    <div className="w-full h-[62vh] min-h-[420px] lg:h-[560px]">
                       <MapDisplay
+                        fullscreen
                         driverCoords={driverCoords}
                         pickupCoords={getPickupCoords(activeDelivery)}
                         deliveryCoords={getDeliveryCoords(activeDelivery)}
                         phase={isDeliveryPhase ? 'delivery' : 'pickup'}
+                        onRouteInfo={setRouteInfo}
                       />
                     </div>
                   ) : (
-                    <div style={{ height: '110px' }} className="flex items-center justify-center bg-gray-50 px-4 text-center">
+                    <div className="w-full h-[62vh] min-h-[420px] lg:h-[560px] flex items-center justify-center bg-gray-100 px-6 text-center">
                       <p className="text-sm text-gray-500">
                         {(getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery))
-                          ? 'Toque no 👁️ acima para ver o mapa da rota.'
+                          ? 'Mapa oculto. Toque no 👁️ para mostrar o trajeto.'
                           : 'Localização ainda não disponível para o mapa.'}
                       </p>
                     </div>
                   )}
 
-                  {/* INFO + AÇÕES — sempre visível abaixo do mapa */}
-                  <div className="p-4 space-y-3 border-t">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-gray-800 text-sm">Entrega ativa #{activeDelivery.id.substring(0, 8)}</h3>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                  {/* ── Faixa de cima: para onde você vai, e quanto falta ──────
+                      pointer-events-none no container pra não roubar o arrasto
+                      do mapa; só o botão do olho recebe toque. */}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex items-start justify-between gap-2 p-3">
+                    <div className="flex flex-col gap-2 min-w-0">
+                      <span className={`inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-bold shadow-lg backdrop-blur ${
+                        isDeliveryPhase ? 'bg-green-600/95 text-white' : 'bg-orange-500/95 text-white'
+                      }`}>
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
                         {isDeliveryPhase ? 'Indo ao cliente' : 'Indo ao restaurante'}
                       </span>
+                      {routeInfo && (
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-gray-800 shadow-lg backdrop-blur">
+                          <Route className="w-3.5 h-3.5 shrink-0 text-[#FF6F00]" />
+                          {routeInfo.km.toFixed(1).replace('.', ',')} km
+                          <span className="text-gray-400">·</span>
+                          ~{routeInfo.min} min
+                        </span>
+                      )}
                     </div>
+                    <button
+                      onClick={() => setShowMap(!showMap)}
+                      className="pointer-events-auto shrink-0 rounded-full bg-white/95 p-2.5 text-gray-700 shadow-lg backdrop-blur active:scale-95"
+                      aria-label={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
+                    >
+                      {showMap ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* ── Painel de vidro por cima da base do mapa ──────────────
+                      max-h + scroll próprio: com pedido em dinheiro + código +
+                      5 botões o conteúdo passa de meia tela, e sem isto ele
+                      cobriria o mapa inteiro (justamente o que a gente quer
+                      evitar). */}
+                  <div className="absolute inset-x-0 bottom-0 z-[500] max-h-[52%] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                    <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-300" />
+                    <div className="p-4 space-y-3">
+                    {/* A fase saiu daqui: ela virou o chip laranja/verde sobre o
+                        mapa. Repetir no painel gastaria a linha mais nobre com
+                        algo que já está na tela. */}
+                    <h3 className="font-semibold text-gray-800 text-sm">
+                      Entrega ativa #{activeDelivery.id.substring(0, 8)}
+                    </h3>
 
                     {activeDelivery.pickup_code && !isDeliveryPhase && (
                       <div className="bg-purple-50 p-2 rounded border border-purple-200">
@@ -482,10 +524,11 @@ export function MyDeliveriesPage() {
                         <AlertTriangle className="w-4 h-4" /> Não consegui entregar
                       </button>
                     )}
+                    </div>
                   </div>
                 </div>
-              )}
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
 
           {/* LISTA DE ENTREGAS */}
