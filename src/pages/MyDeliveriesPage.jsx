@@ -350,7 +350,13 @@ export function MyDeliveriesPage() {
           <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
-      <Header />
+      {/* A saudação ("Boa noite, fulano — confira as entregas disponíveis")
+          é pra quem está sem nada pra fazer. Com entrega em andamento ela
+          rouba ~100px do mapa pra dizer algo que não ajuda em nada na rua.
+          No desktop sobra altura, então lá ela fica. */}
+      <div className={activeDelivery?.id ? 'hidden lg:block' : ''}>
+        <Header />
+      </div>
       <main className="flex-1 p-4 md:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 h-full">
           {/* ENTREGA ATIVA — o mapa é o FUNDO, a informação flutua por cima.
@@ -389,7 +395,7 @@ export function MyDeliveriesPage() {
                     13rem = cabeçalho + barra de baixo + a folga que deixa a
                     lista espiando embaixo — a espiada é de propósito, é o que
                     avisa que tem mais coisa se rolar. */}
-                <div className="relative h-[calc(100dvh-13rem)] min-h-[380px] lg:h-[560px]">
+                <div className="relative h-[calc(100dvh-10rem)] min-h-[380px] lg:h-[560px]">
                   {/* Camada de baixo: o trajeto preenchendo o bloco inteiro */}
                   {showMap && (getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery)) ? (
                     <div className="absolute inset-0">
@@ -415,7 +421,7 @@ export function MyDeliveriesPage() {
                   {/* ── Faixa de cima: para onde você vai, e quanto falta ──────
                       pointer-events-none no container pra não roubar o arrasto
                       do mapa; só o botão do olho recebe toque. */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex items-start justify-between gap-2 p-3">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
                     <div className="flex flex-col gap-2 min-w-0">
                       <span className={`inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-bold shadow-lg backdrop-blur ${
                         isDeliveryPhase ? 'bg-green-600/95 text-white' : 'bg-orange-500/95 text-white'
@@ -458,7 +464,7 @@ export function MyDeliveriesPage() {
                       Teto em dvh e não em %: porcentagem se mede contra o pai,
                       dvh contra a janela. Uma coisa a menos que pode não
                       resolver. */}
-                  <div className="absolute inset-x-0 bottom-0 z-[500] !max-h-[45dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                  <div className="absolute inset-x-0 bottom-0 z-10 !max-h-[38dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
                     <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-300" />
                     <div className="p-4 space-y-3">
                     {/* A fase saiu daqui: ela virou o chip laranja/verde sobre o
