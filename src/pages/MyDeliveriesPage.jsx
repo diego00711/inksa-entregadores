@@ -377,10 +377,22 @@ export function MyDeliveriesPage() {
               </>
             ) : (
               <CardContent className="p-0">
-                <div className="relative">
-                  {/* Camada de baixo: o trajeto ocupando a tela toda */}
+                {/* A ALTURA MORA AQUI, não no filho.
+                    Antes o container tinha altura automática vinda do mapa e
+                    62vh de altura — dava um card alto DENTRO de uma página que
+                    rola. Bastava rolar pra alcançar "Pedidos Disponíveis" e o
+                    mapa sumia atrás do cabeçalho fixo, junto com os chips de
+                    fase e distância. "Mapa de fundo" só é fundo se ele for a
+                    tela.
+                    dvh (e não vh) porque no celular a barra do navegador entra
+                    e sai: com vh o painel fica atrás dela quando ela aparece.
+                    13rem = cabeçalho + barra de baixo + a folga que deixa a
+                    lista espiando embaixo — a espiada é de propósito, é o que
+                    avisa que tem mais coisa se rolar. */}
+                <div className="relative h-[calc(100dvh-13rem)] min-h-[380px] lg:h-[560px]">
+                  {/* Camada de baixo: o trajeto preenchendo o bloco inteiro */}
                   {showMap && (getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery)) ? (
-                    <div className="w-full h-[62vh] min-h-[420px] lg:h-[560px]">
+                    <div className="absolute inset-0">
                       <MapDisplay
                         fullscreen
                         driverCoords={driverCoords}
@@ -391,7 +403,7 @@ export function MyDeliveriesPage() {
                       />
                     </div>
                   ) : (
-                    <div className="w-full h-[62vh] min-h-[420px] lg:h-[560px] flex items-center justify-center bg-gray-100 px-6 text-center">
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 px-6 text-center">
                       <p className="text-sm text-gray-500">
                         {(getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery))
                           ? 'Mapa oculto. Toque no 👁️ para mostrar o trajeto.'
@@ -434,7 +446,19 @@ export function MyDeliveriesPage() {
                       5 botões o conteúdo passa de meia tela, e sem isto ele
                       cobriria o mapa inteiro (justamente o que a gente quer
                       evitar). */}
-                  <div className="absolute inset-x-0 bottom-0 z-[500] max-h-[52%] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                  {/* O "!" não é preciosismo: App.css tem, dentro de
+                      @media (max-width:1023px), um
+                        .overflow-y-auto { max-height: calc(100dvh - 120px) !important }
+                      que sequestra TODA classe de scroll do app no celular.
+                      Era ele que engolia o teto do painel — no aparelho o
+                      painel virava 692px numa área de 604px e cobria o mapa
+                      inteiro, calado. Medido por eliminação: sem overflow o
+                      teto vale (365px), com overflow vira 692px.
+
+                      Teto em dvh e não em %: porcentagem se mede contra o pai,
+                      dvh contra a janela. Uma coisa a menos que pode não
+                      resolver. */}
+                  <div className="absolute inset-x-0 bottom-0 z-[500] !max-h-[45dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
                     <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-300" />
                     <div className="p-4 space-y-3">
                     {/* A fase saiu daqui: ela virou o chip laranja/verde sobre o
