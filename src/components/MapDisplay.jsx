@@ -24,17 +24,36 @@ const driverIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-// Enquadra o mapa pra caber o entregador + o destino ativo
-function FitBounds({ points }) {
+// Distância em metros entre dois pontos (haversine). Serve pra saber se o
+// entregador andou o bastante pra valer a pena recalcular a rota.
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLng = (lng2 - lng1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Enquadra o mapa pra caber o entregador + o destino ativo.
+//
+// Enquadra UMA VEZ por destino. Antes reenquadrava a cada atualização da rota
+// — e como a rota vinha a cada tick do GPS, o mapa se remexia sozinho o tempo
+// todo: dava pra ver o trajeto, mas não dava pra ARRASTAR o mapa, porque em
+// menos de um segundo ele voltava sozinho pro enquadramento automático.
+function FitBounds({ points, resetKey }) {
   const map = useMap();
-  const key = JSON.stringify(points);
+  const jaEnquadrou = React.useRef(null);
   React.useEffect(() => {
     const pts = (points || []).filter(Boolean);
     if (pts.length === 0) return;
+    if (jaEnquadrou.current === resetKey) return;
+    jaEnquadrou.current = resetKey;
     if (pts.length === 1) { map.setView(pts[0], 15); return; }
     try { map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 16 }); } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, key]);
+  }, [map, resetKey, points]);
   return null;
 }
 
@@ -67,12 +86,32 @@ export function MapDisplay({
   // função a cada render refaria a chamada ao OSRM sem parar.
   const routeInfoRef = React.useRef(onRouteInfo);
   React.useEffect(() => { routeInfoRef.current = onRouteInfo; }, [onRouteInfo]);
+
+  // De onde a rota atual foi calculada. Sem isto o roteador é chamado a CADA
+  // atualização do GPS: o watchPosition com enableHighAccuracy dispara ~1x por
+  // segundo com o entregador andando, e o jitter das últimas casas decimais
+  // faz o valor mudar mesmo parado. Dava ~1.200 chamadas numa entrega de 20
+  // min, por entregador — o servidor público bloquearia na primeira semana, e
+  // nenhum plano pago sairia barato nesse volume.
+  const routedFrom = React.useRef(null);
+
   useEffect(() => {
     if (dLat == null || dLng == null || tLat == null || tLng == null) {
       setRouteGeo(null);
       routeInfoRef.current?.(null);
+      routedFrom.current = null;
       return;
     }
+
+    // Recalcula só quando muda o DESTINO (troca de fase) ou quando o
+    // entregador andou de verdade. 120 m ≈ um quarteirão: perto disso a rota
+    // desenhada continua correta, e o "faltam X km" não muda o suficiente pra
+    // alguém notar.
+    const ref = routedFrom.current;
+    const mesmoDestino = ref && ref.tLat === tLat && ref.tLng === tLng;
+    if (mesmoDestino && distanciaMetros(ref.dLat, ref.dLng, dLat, dLng) < 120) return;
+    routedFrom.current = { dLat, dLng, tLat, tLng };
+
     let alive = true;
     const ctrl = new AbortController();
     const url = `https://router.project-osrm.org/route/v1/driving/${dLng},${dLat};${tLng},${tLat}?overview=full&geometries=geojson`;
@@ -143,7 +182,9 @@ export function MapDisplay({
         />
       )}
 
-      <FitBounds points={fitPoints} />
+      {/* resetKey = o destino. Muda quando a fase troca (restaurante -> cliente)
+          e é aí, só aí, que faz sentido reenquadrar por conta própria. */}
+      <FitBounds points={fitPoints} resetKey={`${phase}:${tLat},${tLng}`} />
     </MapContainer>
     </div>
   );
