@@ -406,7 +406,7 @@ export function MyDeliveriesPage() {
                     13rem = cabeçalho + barra de baixo + a folga que deixa a
                     lista espiando embaixo — a espiada é de propósito, é o que
                     avisa que tem mais coisa se rolar. */}
-                <div className="relative h-[calc(100dvh-10rem)] min-h-[380px] lg:h-[560px]">
+                <div className="relative h-[calc(100dvh-8rem)] min-h-[420px] lg:h-[600px]">
                   {/* Camada de baixo: o trajeto preenchendo o bloco inteiro */}
                   {showMap && (getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery)) ? (
                     <div className="absolute inset-0">
@@ -476,7 +476,17 @@ export function MyDeliveriesPage() {
                       Teto em dvh e não em %: porcentagem se mede contra o pai,
                       dvh contra a janela. Uma coisa a menos que pode não
                       resolver. */}
-                  <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                  {/* ALTURA POR FATIA DO HERÓI, não em dvh.
+                      Antes o painel tinha max-h em dvh enquanto o herói tinha
+                      outra conta (100dvh menos um punhado de rem). As duas não
+                      conversavam: alternar mudava um número que não mudava o
+                      que aparece — no aparelho do Diego "abrir" não abria nada.
+                      Com top+bottom a altura vem do próprio bloco do mapa, que
+                      é o que a gente quer dividir. Não depende de dvh, nem do
+                      tamanho da fonte, nem de quanto conteúdo tem dentro. */}
+                  <div className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md ${
+                    painelAberto ? 'top-[12%]' : 'top-[62%]'
+                  }`}>
                     {/* A alca AGORA FUNCIONA. Antes era um risquinho decorativo:
                         parecia arrastavel e nao era, entao o conteudo so rolava
                         e rolar num painel baixo parece corte. Prometer um gesto
@@ -497,10 +507,8 @@ export function MyDeliveriesPage() {
                         desbota embaixo é o que diz "tem mais, continua". Ela
                         precisa ficar FORA da área que rola, senão desce junto
                         e desaparece na primeira rolada. */}
-                    <div className="relative">
-                      <div className={`overflow-y-auto overscroll-contain ${
-                        painelAberto ? '!max-h-[78dvh]' : '!max-h-[34dvh]'
-                      }`}>
+                    <div className="relative min-h-0 flex-1">
+                      <div className="h-full max-h-full overflow-y-auto overscroll-contain">
                         <div className="px-4 pb-6 pt-1 space-y-3">
                     {/* A fase saiu daqui: ela virou o chip laranja/verde sobre o
                         mapa. Repetir no painel gastaria a linha mais nobre com
