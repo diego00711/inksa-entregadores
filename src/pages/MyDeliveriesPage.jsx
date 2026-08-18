@@ -58,6 +58,11 @@ export function MyDeliveriesPage() {
   // { km, min } da rota real, vindo do mapa. null enquanto não deu pra calcular
   // — e aí o chip simplesmente não aparece, em vez de mostrar "0 km".
   const [routeInfo, setRouteInfo] = useState(null);
+  // Painel recolhido (mostra o mapa) x aberto (mostra tudo). Existe porque o
+  // conteudo NAO cabe em meia tela: codigo de retirada + valor em dinheiro +
+  // endereco + 3 botoes + chat + confirmar passa de 400px. Sem isso a escolha
+  // era mapa grande OU informacao inteira, e o Diego pediu os dois.
+  const [painelAberto, setPainelAberto] = useState(false);
   const [driverCoords, setDriverCoords] = useState(null); // posição do entregador ao vivo (GPS)
   const [pendingFinishId, setPendingFinishId] = useState(null);
   const [finishCode, setFinishCode] = useState('');
@@ -363,7 +368,13 @@ export function MyDeliveriesPage() {
               Antes era um mapa de 240px dentro de um card, com os dados embaixo:
               o entregador tinha que escolher entre ver onde está e ver o que
               fazer. Agora o trajeto ocupa a tela e o painel desliza por cima. */}
-          <Card className="shadow-sm overflow-hidden">
+          <Card className={`shadow-sm overflow-hidden ${
+            activeDelivery?.id
+              // Sangra ate a borda no celular: margem em volta de um mapa que
+              // deveria ser fundo denuncia que ele e um card, nao a tela.
+              ? '-mx-4 -mt-4 rounded-none border-x-0 border-t-0 md:mx-0 md:mt-0 md:rounded-lg md:border'
+              : ''
+          }`}>
             {!activeDelivery?.id ? (
               <>
                 <CardHeader className="pb-3">
@@ -466,14 +477,30 @@ export function MyDeliveriesPage() {
                       dvh contra a janela. Uma coisa a menos que pode não
                       resolver. */}
                   <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                    <div className="mx-auto my-2 h-1 w-10 rounded-full bg-gray-300" />
+                    {/* A alca AGORA FUNCIONA. Antes era um risquinho decorativo:
+                        parecia arrastavel e nao era, entao o conteudo so rolava
+                        e rolar num painel baixo parece corte. Prometer um gesto
+                        e nao cumprir e pior que nao ter gesto nenhum. */}
+                    <button
+                      type="button"
+                      onClick={() => setPainelAberto((v) => !v)}
+                      aria-expanded={painelAberto}
+                      className="flex w-full flex-col items-center gap-1 py-2 active:bg-gray-50"
+                    >
+                      <span className="h-1 w-10 rounded-full bg-gray-400" />
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        {painelAberto ? 'tocar para ver o mapa' : 'tocar para ver tudo'}
+                      </span>
+                    </button>
                     {/* O corte reto no fim do painel parecia informação perdida,
                         não conteúdo rolável — o Diego leu como bug. A faixa que
                         desbota embaixo é o que diz "tem mais, continua". Ela
                         precisa ficar FORA da área que rola, senão desce junto
                         e desaparece na primeira rolada. */}
                     <div className="relative">
-                      <div className="!max-h-[34dvh] overflow-y-auto overscroll-contain">
+                      <div className={`overflow-y-auto overscroll-contain ${
+                        painelAberto ? '!max-h-[78dvh]' : '!max-h-[34dvh]'
+                      }`}>
                         <div className="px-4 pb-6 pt-1 space-y-3">
                     {/* A fase saiu daqui: ela virou o chip laranja/verde sobre o
                         mapa. Repetir no painel gastaria a linha mais nobre com
@@ -564,7 +591,9 @@ export function MyDeliveriesPage() {
                     )}
                         </div>
                       </div>
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent" />
+                      {!painelAberto && (
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent" />
+                      )}
                     </div>
                   </div>
                 </div>
