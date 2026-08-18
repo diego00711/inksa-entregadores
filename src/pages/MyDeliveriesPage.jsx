@@ -156,7 +156,7 @@ export function MyDeliveriesPage() {
 
   useEffect(() => {
     fetchDeliveries();
-    const id = setInterval(fetchDeliveries, 6000);
+    const id = setInterval(fetchDeliveries, 20000);
     return () => clearInterval(id);
   }, [fetchDeliveries]);
 

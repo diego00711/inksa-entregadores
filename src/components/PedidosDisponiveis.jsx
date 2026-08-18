@@ -189,12 +189,19 @@ export default function PedidosDisponiveis() {
     }
   };
 
-  // Polling: 6s; pausa quando a aba não está visível
+  // Polling: 20s; pausa quando a aba não está visível.
+  //
+  // Era 6s. Quem avisa pedido novo é o REALTIME do Supabase (canal
+  // delivery-available-orders, dispara em status='ready' sem entregador) —
+  // este intervalo é rede de segurança pra quando o canal cai. Com 6s cada
+  // entregador fazia ~600 requisições por hora ao Render; 20s corta 70% disso
+  // sem atrasar o que o entregador sente, porque o caminho urgente não passa
+  // por aqui. O iFood, pra comparar, varre a cada 30s.
   const startPolling = () => {
     stopPolling();
     pollingRef.current = setInterval(() => {
       if (document.visibilityState === 'visible') fetchPedidos();
-    }, 6000);
+    }, 20000);
   };
   const stopPolling = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);

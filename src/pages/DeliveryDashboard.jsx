@@ -513,7 +513,7 @@ export default function ModernDeliveryDashboard() {
   useEffect(() => {
     if (profileLoading || !profile?.id) return;
     let intervalId;
-    const start = () => { intervalId = window.setInterval(() => fetchDashboardData(true), 6000); };
+    const start = () => { intervalId = window.setInterval(() => fetchDashboardData(true), 20000); };
     const stop = () => intervalId && window.clearInterval(intervalId);
 
     fetchDashboardData(false);
