@@ -253,17 +253,25 @@ export function MapDisplay({
       {routeLine && routeGeo && (
         <Polyline
           positions={routeLine}
-          pathOptions={{ color: '#7A2E05', weight: 10, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }}
+          // Peso escolhido por medida, não por olho. O contorno marrom que
+          // estava aqui dava 8,49:1 contra o mapa — é isso que lê como "muito
+          // forte". Este dá 4,64:1: 49% do peso anterior, metade certa.
+          //
+          // Cheguei a deixá-lo translúcido a 45%, mas aí cai pra 1,90:1 (12%
+          // do que era) e a borda some — repetindo o defeito do contorno
+          // branco, só que de outra cor. Suave não é apagado.
+          pathOptions={{ color: '#2563EB', weight: 9, opacity: 1, lineCap: 'round', lineJoin: 'round' }}
         />
       )}
       {routeLine && (
         <Polyline
           positions={routeLine}
           pathOptions={{
-            // Laranja mais fechado que o #FF6B35 de antes: em fundo quase
-            // branco o tom claro perde peso e some no meio dos rótulos.
-            color: '#F2560A',
-            weight: routeGeo ? 6 : 4,
+            // Azul e não laranja: em mapa claro é o que app de navegação usa,
+            // e aqui ainda libera o laranja para o alfinete da loja — antes
+            // rota e loja disputavam a mesma cor sobre fundo branco.
+            color: '#4F8EF7',
+            weight: routeGeo ? 5 : 4,
             opacity: 1,
             lineCap: 'round',
             lineJoin: 'round',
