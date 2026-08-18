@@ -242,23 +242,29 @@ export function MapDisplay({
         </Marker>
       )}
 
-      {/* Duas linhas, não uma: a branca embaixo faz o contorno. É o truque que
-          deixa a rota legível por cima de rua clara E de quarteirão escuro —
-          sem ele, a linha laranja some quando passa sobre avenida amarela.
-          Só no traçado real; no palpite em linha reta seria enfeite. */}
+      {/* Duas linhas, não uma: a de baixo é o contorno que dá borda à rota.
+          Ela era BRANCA, e branca é o truque certo para mapa colorido (tipo o
+          padrão do OSM, com avenida amarela grossa): o branco separa a linha
+          do fundo. Sobre o basemap claro que passamos a usar, contorno branco
+          se dissolve no fundo — some a borda e o laranja fica lavado.
+          Contorno ESCURO faz o oposto: recorta a rota do papel e o laranja
+          volta a ter força. Só no traçado real; no palpite em linha reta o
+          contorno seria enfeite em cima de um chute. */}
       {routeLine && routeGeo && (
         <Polyline
           positions={routeLine}
-          pathOptions={{ color: '#ffffff', weight: 11, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }}
+          pathOptions={{ color: '#7A2E05', weight: 10, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }}
         />
       )}
       {routeLine && (
         <Polyline
           positions={routeLine}
           pathOptions={{
-            color: '#FF6B35',
+            // Laranja mais fechado que o #FF6B35 de antes: em fundo quase
+            // branco o tom claro perde peso e some no meio dos rótulos.
+            color: '#F2560A',
             weight: routeGeo ? 6 : 4,
-            opacity: 0.95,
+            opacity: 1,
             lineCap: 'round',
             lineJoin: 'round',
             dashArray: routeGeo ? null : '8 10',
