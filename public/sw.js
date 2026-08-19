@@ -4,7 +4,7 @@
 // Bump de versão força o SW a reinstalar e apagar os caches antigos no próximo
 // carregamento (o activate deleta tudo != CACHE_NAME). Suba este número a cada
 // release em que precise garantir que o app pegue a versão nova na hora.
-const CACHE_NAME = 'inksa-entregadores-v1.0.37';
+const CACHE_NAME = 'inksa-entregadores-v1.0.38';
 const API_URL = 'https://inksa-auth-flask-dev.onrender.com';
 
 // =========== Install ===========

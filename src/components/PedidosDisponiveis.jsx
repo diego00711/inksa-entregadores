@@ -189,19 +189,25 @@ export default function PedidosDisponiveis() {
     }
   };
 
-  // Polling: 20s; pausa quando a aba não está visível.
+  // Polling: 8s; pausa quando a aba não está visível.
   //
-  // Era 6s. Quem avisa pedido novo é o REALTIME do Supabase (canal
-  // delivery-available-orders, dispara em status='ready' sem entregador) —
-  // este intervalo é rede de segurança pra quando o canal cai. Com 6s cada
-  // entregador fazia ~600 requisições por hora ao Render; 20s corta 70% disso
-  // sem atrasar o que o entregador sente, porque o caminho urgente não passa
-  // por aqui. O iFood, pra comparar, varre a cada 30s.
+  // ⚠️ ESTE INTERVALO É A ÚNICA DETECÇÃO DE PEDIDO NOVO. Eu tinha baixado
+  // pra 20s achando que o realtime do Supabase cobria o caminho urgente.
+  // NÃO cobre: a política de RLS de `orders` compara auth.uid() com
+  // client_id/restaurant_id, e o app do entregador conecta como anon puro
+  // (sem setSession). Testado com a chave anon do bundle publicado:
+  // GET /rest/v1/orders devolve 0 linhas. Sem leitura, o realtime não
+  // entrega evento nenhum — o canal conecta e fica mudo.
+  //
+  // 8s é o meio-termo: o entregador perde no máximo 8s pra ver a corrida
+  // (contra 6s de antes), e o consumo cai ~25% em vez dos 70% que eu
+  // tinha prometido em cima de uma premissa errada. As outras duas telas
+  // (Início e Entregas) seguem em 20s — lá o atraso não custa corrida.
   const startPolling = () => {
     stopPolling();
     pollingRef.current = setInterval(() => {
       if (document.visibilityState === 'visible') fetchPedidos();
-    }, 20000);
+    }, 8000);
   };
   const stopPolling = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
