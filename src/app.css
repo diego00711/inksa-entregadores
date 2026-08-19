@@ -770,8 +770,25 @@
     margin-bottom: 2rem !important;
   }
 
-  /* Container de scrolling otimizado */
-  .overflow-y-auto {
+  /* Crédito do mapa: obrigatório pela licença (OSM hoje, Stadia depois), mas
+     não precisa gritar. Fica minúsculo e translúcido no canto, sem roubar
+     área útil do trajeto. Esconder não é opção — é o preço do mapa. */
+  .leaflet-control-attribution {
+    font-size: 9px !important;
+    padding: 1px 4px !important;
+    background: rgba(255, 255, 255, .7) !important;
+    opacity: .75;
+  }
+
+  /* Container de scrolling otimizado.
+     O :not() existe porque esta regra é um !important em cima de uma classe
+     utilitária: ela pegava TODO overflow-y-auto do app no celular e mandava
+     na altura de quem já tinha dito qual queria. Os 8 modais que pedem
+     max-h-[90vh] viravam 692px calados, e o painel do mapa da tela de
+     entrega nunca era cortado — cobria o mapa inteiro.
+     Agora só vale pra quem NÃO declarou a própria altura, que era a intenção
+     original: dar um teto pra container de scroll que não tem nenhum. */
+  .overflow-y-auto:not([class*="max-h-"]) {
     max-height: calc(100vh - 120px) !important;
     max-height: calc(100dvh - 120px) !important;
   }

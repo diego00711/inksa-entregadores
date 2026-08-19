@@ -527,20 +527,35 @@ export default function ModernDeliveryDashboard() {
   }, [profileLoading, profile?.id, fetchDashboardData]);
 
   // ── Supabase realtime for new available orders ─────────────────────────────
-  useEffect(() => {
-    if (!supabase) return;
-    const ch = supabase
-      .channel('delivery-available-orders')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
-        if (payload.new?.status === 'ready' && !payload.new?.delivery_id) {
-          // som fica por conta do alarme em loop (useEffect abaixo)
-          addToast('🛵 Novo pedido disponível!', 'success');
-          fetchDashboardData(true);
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [addToast, fetchDashboardData]);
+  // ── Realtime do Supabase REMOVIDO (auditoria de 18/08/2026) ────────────────
+  //
+  // Havia aqui uma inscrição em postgres_changes que NUNCA entregou um evento
+  // sequer. A política de RLS resolve o dono comparando auth.uid() com colunas
+  // que apontam pro PERFIL, não pro usuário do auth — medido no banco:
+  // client_profiles.id = user_id em 0 de 24, delivery_profiles em 0 de 6 (só
+  // restaurant_profiles casa, 17 de 17). E nenhum app chama
+  // supabase.auth.setSession: todos conectam como anon puro, então auth.uid()
+  // é NULL e nenhuma política casa.
+  //
+  // Provado com a chave anon do pacote publicado:
+  //   GET /rest/v1/orders  ->  0 linhas
+  //   GET /rest/v1/chat_messages  ->  0 linhas
+  //   GET /rest/v1/delivery_tracking  ->  0 linhas
+  // Sem leitura não há evento: o canal conectava e ficava mudo.
+  //
+  // Isso está CERTO em segurança (nenhum anônimo lê pedido ou conversa alheia).
+  // O problema era o canal existir e PARECER que funcionava — em 18/08 essa
+  // aparência me levou a afrouxar o polling de 6s pra 20s "porque o realtime
+  // cobre". Não cobria.
+  //
+  // O que ele prometia já vem por dois caminhos que funcionam: o POLLING desta
+  // mesma tela (app aberto) e o PUSH do FCM (app em segundo plano).
+  //
+  // PRA RESSUSCITAR seriam DUAS coisas, nesta ordem: (1) os apps abrirem sessão
+  // no Supabase com setSession e (2) reescrever as políticas pra resolver o
+  // perfil (client_id IN (SELECT id FROM client_profiles WHERE user_id =
+  // auth.uid())). Mexer só numa das duas não liga nada.
+
 
   // Alarme sonoro de novo pedido MOVIDO pro DeliveryPortalLayout (hook
   // useNewOrderAlarm): agora toca em QUALQUER tela enquanto online, não só aqui
