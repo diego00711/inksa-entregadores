@@ -13,21 +13,44 @@
 // decidindo o destino é chegar tarde: não dá tempo de falar com a instituição
 // nem de combinar a entrega. O admin abre cerca de um mês antes.
 //
-// Quem manda o mesmo nome duas vezes não vira dois votos (índice único no
-// banco) e não leva bronca por isso — recebe a mesma resposta boa.
-import { useEffect, useState } from 'react';
-import { HeartHandshake, Check, Loader2, X } from 'lucide-react';
+// UMA INDICAÇÃO POR PESSOA. Indicar de novo TROCA a sua, não soma outra — o
+// banco garante isso com índice único no usuário. Trocar é permitido de
+// propósito: quem digitou errado ou mudou de ideia não pode ficar preso a uma
+// indicação errada pra sempre. O que não pode é uma pessoa valer por cinco.
+import { useCallback, useEffect, useState } from 'react';
+import { HeartHandshake, Check, Loader2, X, Pencil } from 'lucide-react';
 import { createAuthHeaders } from '../services/api';
 
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+const ROTA = `${API}/api/admin/social/nominations`;
 
 export default function IndicarInstituicao() {
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState('');
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const [pronto, setPronto] = useState(null);   // { votos }
   const [erro, setErro] = useState('');
+
+  // O que ESTA pessoa já indicou. null = ainda não indicou (ou não deu pra
+  // saber). Sem isto, quem já votou reabre a caixa, vê formulário vazio e
+  // manda de novo achando que a primeira vez falhou.
+  const [minha, setMinha] = useState(null);
+  const [trocando, setTrocando] = useState(false);
+  const [acabouDeEnviar, setAcabouDeEnviar] = useState(false);
+
+  const buscarMinha = useCallback(async () => {
+    try {
+      const r = await fetch(`${ROTA}/minha`, { headers: createAuthHeaders() });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d?.minha) setMinha(d.minha);
+    } catch {
+      // Silencioso: sem esta informação a caixa mostra o formulário normal e
+      // o servidor continua garantindo o voto único.
+    }
+  }, []);
+
+  useEffect(() => { buscarMinha(); }, [buscarMinha]);
 
   useEffect(() => {
     if (!aberto) return;
@@ -42,14 +65,16 @@ export default function IndicarInstituicao() {
     if (limpo.length < 3) { setErro('Escreva o nome da instituição.'); return; }
     setEnviando(true); setErro('');
     try {
-      const r = await fetch(`${API}/api/admin/social/nominations/enviar`, {
+      const r = await fetch(`${ROTA}/enviar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
         body: JSON.stringify({ nome: limpo, motivo: motivo.trim() || null }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || d.erro || 'Não consegui registrar agora.');
-      setPronto({ votos: d.votos || 1 });
+      setMinha({ nome: limpo, motivo: motivo.trim() || null, votos: d.votos || 1 });
+      setAcabouDeEnviar(true);
+      setTrocando(false);
       setNome(''); setMotivo('');
     } catch (e2) {
       setErro(e2.message || 'Não consegui registrar agora.');
@@ -58,21 +83,31 @@ export default function IndicarInstituicao() {
     }
   };
 
+  const abrirTroca = () => {
+    setNome(minha?.nome || '');
+    setMotivo(minha?.motivo || '');
+    setTrocando(true);
+    setAcabouDeEnviar(false);
+    setErro('');
+  };
+
   const fechar = () => {
     setAberto(false);
-    // Zera só depois de fechar: reabrir mostra o formulário limpo, mas quem
-    // fechou sem querer no meio do "deu certo" volta e vê a confirmação.
-    setTimeout(() => { setPronto(null); setErro(''); }, 250);
+    setTimeout(() => { setTrocando(false); setAcabouDeEnviar(false); setErro(''); }, 250);
   };
+
+  const mostrarFormulario = !minha || trocando;
 
   return (
     <>
       <button
         onClick={() => setAberto(true)}
-        className="mt-2 inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm transition hover:bg-white/30"
+        className="mt-2 inline-flex min-h-[36px] max-w-full items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm transition hover:bg-white/30"
       >
-        <HeartHandshake className="h-3.5 w-3.5" />
-        Indique quem deve receber
+        <HeartHandshake className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">
+          {minha ? `Você indicou ${minha.nome}` : 'Indique quem deve receber'}
+        </span>
       </button>
 
       {aberto && (
@@ -85,16 +120,16 @@ export default function IndicarInstituicao() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+            className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
           >
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-extrabold leading-tight text-gray-900">
-                  Quem deveria receber?
+                  {mostrarFormulario ? 'Quem deveria receber?' : 'Sua indicação'}
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   No Dia I, todo o lucro da Inksa vai para uma causa da cidade.
-                  Diz qual você indica.
+                  {mostrarFormulario ? ' Diz qual você indica.' : ''}
                 </p>
               </div>
               <button
@@ -106,32 +141,46 @@ export default function IndicarInstituicao() {
               </button>
             </div>
 
-            {pronto ? (
+            {!mostrarFormulario ? (
               <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                 <p className="flex items-center gap-2 font-bold text-green-800">
-                  <Check className="h-5 w-5 shrink-0" /> Indicação anotada.
+                  <Check className="h-5 w-5 shrink-0" />
+                  {acabouDeEnviar ? 'Indicação anotada.' : 'Você já indicou.'}
                 </p>
-                <p className="mt-1 text-sm text-green-700">
-                  {pronto.votos > 1
-                    // Número do banco, não enfeite: mostra que a indicação
-                    // tem companhia e que a escolha é da cidade.
-                    ? `Você e mais ${pronto.votos - 1} ${pronto.votos - 1 === 1 ? 'pessoa indicaram' : 'pessoas indicaram'} essa.`
+                <p className="mt-1 text-base font-extrabold text-green-900">{minha.nome}</p>
+                {minha.motivo && (
+                  <p className="mt-1 text-sm italic text-green-700">“{minha.motivo}”</p>
+                )}
+                <p className="mt-2 text-sm text-green-700">
+                  {minha.votos > 1
+                    // Número do banco, não enfeite: mostra que a indicação tem
+                    // companhia e que a escolha é da cidade.
+                    ? `Você e mais ${minha.votos - 1} ${minha.votos - 1 === 1 ? 'pessoa indicaram' : 'pessoas indicaram'} essa.`
                     : 'Você foi a primeira pessoa a indicar essa.'}
                 </p>
-                <div className="mt-3 flex gap-3">
+                <div className="mt-3 flex flex-wrap items-center gap-3">
                   <button
-                    onClick={() => setPronto(null)}
-                    className="text-sm font-semibold text-green-800 underline underline-offset-2"
+                    onClick={abrirTroca}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-800 underline underline-offset-2"
                   >
-                    Indicar outra
+                    <Pencil className="h-3.5 w-3.5" /> Trocar minha indicação
                   </button>
-                  <button onClick={fechar} className="text-sm text-green-700">
-                    Fechar
-                  </button>
+                  <button onClick={fechar} className="text-sm text-green-700">Fechar</button>
                 </div>
+                <p className="mt-3 text-xs text-green-700/70">
+                  Cada pessoa tem uma indicação. Trocar substitui a sua — não
+                  cria outra.
+                </p>
               </div>
             ) : (
               <form onSubmit={enviar}>
+                {trocando && (
+                  <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Isto vai <strong>substituir</strong> a sua indicação atual
+                    {minha?.nome ? ` (${minha.nome})` : ''}.
+                  </p>
+                )}
+
                 <label className="block text-xs font-semibold uppercase tracking-wide text-gray-400">
                   Instituição
                 </label>
@@ -167,8 +216,18 @@ export default function IndicarInstituicao() {
                   className="mt-4 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-60"
                 >
                   {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {enviando ? 'Enviando' : 'Enviar indicação'}
+                  {enviando ? 'Enviando' : trocando ? 'Substituir indicação' : 'Enviar indicação'}
                 </button>
+
+                {trocando && (
+                  <button
+                    type="button"
+                    onClick={() => setTrocando(false)}
+                    className="mt-2 w-full text-center text-sm text-gray-500"
+                  >
+                    Cancelar
+                  </button>
+                )}
               </form>
             )}
           </div>
