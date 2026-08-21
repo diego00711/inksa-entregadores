@@ -2,6 +2,7 @@
 // Admin → Inksa Social. Mostra o valor arrecadado ao vivo durante o evento.
 import { useEffect, useRef, useState } from 'react';
 import { HeartHandshake } from 'lucide-react';
+import IndicarInstituicao from './IndicarInstituicao';
 
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
@@ -58,6 +59,10 @@ export default function SocialDayBanner() {
               Evento encerrado. Obrigado por fazer parte! 💛
             </p>
           )}
+          {/* A caixa de indicacao tem chave propria no admin: abre semanas
+              antes do evento, pra chegar no Dia I com o destino ja decidido.
+              Some sozinha depois que o evento acaba. */}
+          {info.nominations_open && info.phase !== 'ended' && <IndicarInstituicao />}
         </div>
         {info.phase !== 'scheduled' && (
           <div className="text-right shrink-0">
