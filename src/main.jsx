@@ -12,6 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { DeliveryProfileProvider } from './context/DeliveryProfileContext';
 import { ToastProvider } from './context/ToastContext';
 import './app.css';
+import { iniciarAutoAtualizacao } from './utils/autoAtualiza'
 
 
 
@@ -47,6 +48,12 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 window.addEventListener('appinstalled', () => {});
+
+
+// Pega a versao nova sem o usuario ter que fechar e abrir o app.
+// So recarrega ao voltar pro app depois de um tempo fora, e nunca nas
+// telas abaixo, onde recarregar apagaria o que a pessoa esta fazendo.
+iniciarAutoAtualizacao({ rotasSensiveis: ['pagamento-dinheiro', 'entregas', 'register', 'reset-password'] });
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

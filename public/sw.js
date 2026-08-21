@@ -4,7 +4,7 @@
 // Bump de versão força o SW a reinstalar e apagar os caches antigos no próximo
 // carregamento (o activate deleta tudo != CACHE_NAME). Suba este número a cada
 // release em que precise garantir que o app pegue a versão nova na hora.
-const CACHE_NAME = 'inksa-entregadores-v1.0.38';
+const CACHE_NAME = 'inksa-entregadores-v1.0.39';
 const API_URL = 'https://inksa-auth-flask-dev.onrender.com';
 
 // =========== Install ===========
@@ -40,6 +40,11 @@ self.addEventListener('fetch', (event) => {
 
   // Só lida com requisições http(s)
   if (!request.url.startsWith('http')) return;
+  // A checagem de versao do app (?__ver=) TEM que ir na rede. Se viesse do
+  // cache, o app compararia o index guardado com ele mesmo e nunca veria
+  // versao nova — que e exatamente o problema que ela existe pra resolver.
+  if (request.url.includes('__ver=')) return;
+
 
   // 🚫 Não interceptar requisições com efeitos colaterais
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
