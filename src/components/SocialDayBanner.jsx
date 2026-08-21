@@ -34,7 +34,31 @@ export default function SocialDayBanner() {
     };
   }, []);
 
-  if (!info?.visible) return null;
+  // A indicacao NAO depende do banner. O momento natural de abrir e quando o
+  // Dia I anterior ja passou e o banner se escondeu sozinho — se a caixa
+  // morasse so dentro dele, abrir as indicacoes nao mostraria nada.
+  if (!info?.visible) {
+    if (!info?.nominations_open) return null;
+    return (
+      <div className="mx-3 sm:mx-0 my-2 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <div className="flex items-start gap-3">
+          <HeartHandshake className="w-7 h-7 shrink-0 text-rose-500" />
+          <div className="min-w-0 flex-1">
+            <p className="font-extrabold leading-tight text-rose-900">
+              Dia I &mdash; voce escolhe quem recebe
+            </p>
+            <p className="mt-0.5 text-xs sm:text-sm leading-snug text-rose-800/80">
+              Num dia por periodo, todo o lucro da Inksa vira acao social aqui na
+              cidade. Estamos decidindo o destino do proximo &mdash; indique o seu.
+            </p>
+            <div className="[&_button]:!bg-rose-600 [&_button]:hover:!bg-rose-700">
+              <IndicarInstituicao />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const dateBr = info.date ? info.date.split('-').reverse().join('/') : '';
 
