@@ -245,7 +245,7 @@ export default function SuportePage() {
           realmente precisa ler, porque a Inksa nao retem imposto nenhum: o
           repasse cai inteiro e a obrigacao e de quem recebe. */}
       <a
-        href="https://www.inksadelivery.com.br/impostos.html"
+        href="https://www.inksadelivery.com.br/impostos"
         target="_blank" rel="noopener noreferrer"
         className="block rounded-xl border border-orange-200 bg-orange-50 p-4 hover:border-orange-300"
       >
