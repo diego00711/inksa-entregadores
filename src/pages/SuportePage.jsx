@@ -239,6 +239,24 @@ export default function SuportePage() {
         )}
       </div>
 
+      {/* Imposto: fica ACIMA do bloco legal e com destaque proprio.
+          No meio de "Termos de Uso" e "Politica de Privacidade" viraria mais
+          uma linha que ninguem clica — e e a unica dali que a pessoa
+          realmente precisa ler, porque a Inksa nao retem imposto nenhum: o
+          repasse cai inteiro e a obrigacao e de quem recebe. */}
+      <a
+        href="https://www.inksadelivery.com.br/impostos.html"
+        target="_blank" rel="noopener noreferrer"
+        className="block rounded-xl border border-orange-200 bg-orange-50 p-4 hover:border-orange-300"
+      >
+        <p className="font-semibold text-orange-900">Imposto e formalizacao</p>
+        <p className="mt-0.5 text-sm text-orange-800">
+          O repasse cai inteiro na sua conta &mdash; a Inksa nao desconta imposto.
+          Veja o que isso significa e o que muda entre pessoa fisica e MEI.
+        </p>
+        <p className="mt-2 text-sm font-semibold text-orange-700">Ler &rarr;</p>
+      </a>
+
       {/* Informações legais — links exigidos pelas lojas (Google/Apple) e LGPD */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <h2 className="font-semibold text-gray-800 mb-2">Informações legais</h2>
