@@ -253,14 +253,15 @@ export function MapDisplay({
       {routeLine && routeGeo && (
         <Polyline
           positions={routeLine}
-          // Peso escolhido por medida, não por olho. O contorno marrom que
-          // estava aqui dava 8,49:1 contra o mapa — é isso que lê como "muito
-          // forte". Este dá 4,64:1: 49% do peso anterior, metade certa.
+          // A COR aqui foi medida por contraste (4,64:1 contra o mapa claro).
+          // A ESPESSURA nunca tinha sido — ficou em 9px por herança, e o Diego
+          // viu no celular dele: a rota cobria a rua inteira e escondia o
+          // traçado que ela devia estar mostrando.
           //
-          // Cheguei a deixá-lo translúcido a 45%, mas aí cai pra 1,90:1 (12%
-          // do que era) e a borda some — repetindo o defeito do contorno
-          // branco, só que de outra cor. Suave não é apagado.
-          pathOptions={{ color: '#2563EB', weight: 9, opacity: 1, lineCap: 'round', lineJoin: 'round' }}
+          // 6px de contorno com 3,5 de linha é a proporção que app de navegação
+          // usa nesse zoom. Continua recortando a rota do fundo (que é o papel
+          // do contorno) sem virar mancha sobre o mapa.
+          pathOptions={{ color: '#2563EB', weight: 6, opacity: 1, lineCap: 'round', lineJoin: 'round' }}
         />
       )}
       {routeLine && (
@@ -271,7 +272,11 @@ export function MapDisplay({
             // e aqui ainda libera o laranja para o alfinete da loja — antes
             // rota e loja disputavam a mesma cor sobre fundo branco.
             color: '#4F8EF7',
-            weight: routeGeo ? 5 : 4,
+            // 3,5 sobre o contorno de 6 deixa 1,25px de borda de cada lado —
+            // suficiente pra recortar sem engrossar. O palpite em linha reta
+            // (sem routeGeo) fica ainda mais fino: ele não merece o mesmo peso
+            // visual de um traçado que existe de verdade.
+            weight: routeGeo ? 3.5 : 3,
             opacity: 1,
             lineCap: 'round',
             lineJoin: 'round',
