@@ -477,6 +477,36 @@ export function MyDeliveriesPage() {
                           ~{routeInfo.min} min
                         </span>
                       )}
+
+                      {/* ── O DADO CRÍTICO, SEMPRE VISÍVEL ───────────────────
+                          Recolher o painel só até a alça libertou o mapa, mas
+                          escondeu atrás de um toque justamente o que o
+                          entregador precisa ler NA HORA. Estes chips resolvem
+                          sem devolver meia tela ao painel: ocupam duas linhas
+                          sobre o mapa, na mesma linguagem da quilometragem.
+
+                          UM DE CADA VEZ, e depende da FASE — mostrar os dois
+                          seria ruído: indo ao restaurante, o que importa é o
+                          código que ele vai falar no balcão; indo ao cliente,
+                          o que importa é quanto cobrar. O resto continua no
+                          painel, a um toque. */}
+                      {!isDeliveryPhase && activeDelivery.pickup_code && (
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-purple-600/95 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
+                          <Package className="w-3.5 h-3.5 shrink-0" />
+                          Código
+                          <span className="tracking-widest">{activeDelivery.pickup_code}</span>
+                        </span>
+                      )}
+                      {isDeliveryPhase && activeDelivery.payment_method === 'cash' && (
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-orange-600/95 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
+                          💵 Cobrar R$ {Number(activeDelivery.total_amount || 0).toFixed(2).replace('.', ',')}
+                          {Number(activeDelivery.change_for || 0) > Number(activeDelivery.total_amount || 0) && (
+                            <span className="font-semibold opacity-90">
+                              · troco R$ {(Number(activeDelivery.change_for) - Number(activeDelivery.total_amount)).toFixed(2).replace('.', ',')}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={() => setShowMap(!showMap)}
