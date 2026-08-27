@@ -497,7 +497,12 @@ export function MyDeliveriesPage() {
                           <span className="tracking-widest">{activeDelivery.pickup_code}</span>
                         </span>
                       )}
-                      {isDeliveryPhase && activeDelivery.payment_method === 'cash' && (
+                      {/* Nas DUAS fases, não só na entrega: o entregador precisa
+                          saber que é pedido em dinheiro ANTES de sair, pra levar
+                          troco. Foi a segunda coisa que o Diego notou faltando
+                          ("e não apareceu o valor") — ele estava indo ao
+                          restaurante, onde o chip ainda não existia. */}
+                      {activeDelivery.payment_method === 'cash' && (
                         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-orange-600/95 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
                           💵 Cobrar R$ {Number(activeDelivery.total_amount || 0).toFixed(2).replace('.', ',')}
                           {Number(activeDelivery.change_for || 0) > Number(activeDelivery.total_amount || 0) && (
@@ -542,8 +547,24 @@ export function MyDeliveriesPage() {
                       Com top+bottom a altura vem do próprio bloco do mapa, que
                       é o que a gente quer dividir. Não depende de dvh, nem do
                       tamanho da fonte, nem de quanto conteúdo tem dentro. */}
-                  <div className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md ${
-                    painelAberto ? 'top-[12%]' : 'top-[calc(100%-64px)]'
+                  {/* ⚠️ `fixed`, NÃO `absolute` — e isso é o conserto de um bug real.
+                      Enquanto o painel era absoluto dentro do bloco do mapa, a
+                      posição dele dependia da ALTURA DO BLOCO, que é
+                      calc(100dvh - 8rem). No WebView do Android o 100dvh
+                      reporta a tela inteira, com as barras do sistema: o bloco
+                      fica mais alto que a área visível e o fim dele cai atrás
+                      da barra de navegação. Com o painel recolhido até a alça,
+                      a alça ia junto — o Diego abriu o app e não tinha painel
+                      nenhum, nem jeito de chegar na informação.
+
+                      Antes não aparecia porque o painel começava em 62% do
+                      bloco, longe do fim; o bug estava lá, só não incomodava.
+
+                      Ancorado na JANELA e logo acima da barra de navegação
+                      (56px + safe area), ele não depende mais de o dvh estar
+                      certo. z-20 pra ficar acima dos chips do mapa. */}
+                  <div className={`fixed inset-x-0 z-20 flex flex-col rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md bottom-[calc(56px+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-0 lg:bottom-0 ${
+                    painelAberto ? 'top-[18%] lg:top-[12%]' : 'h-16 lg:h-auto lg:top-[62%]'
                   }`}>
                     {/* A alca AGORA FUNCIONA. Antes era um risquinho decorativo:
                         parecia arrastavel e nao era, entao o conteudo so rolava
