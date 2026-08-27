@@ -159,7 +159,7 @@ export default function SuportePage() {
   const [selected, setSelected] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [supportInfo, setSupportInfo] = useState({ email: 'suporte@inksadelivery.com.br', whatsapp: '5549999679697', phone: '(49) 99967-9697' });
+  const [supportInfo, setSupportInfo] = useState({ email: 'suporte@inksadelivery.com.br', whatsapp: '5549998292320', phone: '(49) 99829-2320' });
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
