@@ -350,8 +350,12 @@ export function MyDeliveriesPage() {
 
   return (
     <div className="flex-1 flex flex-col">
+      {/* `relative z-10`: o mapa da entrega ativa sobe 2rem (sangria-total) e
+          passaria por cima deste spinner, que vem antes dele no DOM e portanto
+          perde a pintura. Margem negativa mexe no layout, não na ordem de
+          empilhamento — quem resolve isso é o z-index, não a margem. */}
       {(pulling || refreshing) && (
-        <div className="flex justify-center py-3">
+        <div className="relative z-10 flex justify-center py-3">
           <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
@@ -372,7 +376,17 @@ export function MyDeliveriesPage() {
             activeDelivery?.id
               // Sangra ate a borda no celular: margem em volta de um mapa que
               // deveria ser fundo denuncia que ele e um card, nao a tela.
-              ? '-mx-4 -mt-4 rounded-none border-x-0 border-t-0 md:mx-0 md:mt-0 md:rounded-lg md:border'
+              //
+              // `sangria-total` mora no App.css e NAO e um atalho de estilo: e
+              // o unico jeito que funciona aqui. O `-mx-4` que estava neste
+              // lugar era anulado por um `.-mx-4 { margin-left: 0 !important }`
+              // do proprio App.css, entao a moldura de 20px continuava. Se um
+              // dia isso voltar a aparecer, o culpado esta la, nao aqui.
+              // `lg:` e nao `md:` de proposito: o corte do App.css e 1023px e o
+              // grid vira duas colunas em `lg`. Com `md:` (768px) as tres
+              // coisas discordavam entre 768 e 1023 — o card voltava a ter
+              // borda arredondada numa tela onde ainda ocupa a largura toda.
+              ? 'sangria-total lg:mx-0 lg:mt-0 lg:w-auto lg:rounded-lg lg:border lg:py-6'
               : ''
           }`}>
             {!activeDelivery?.id ? (

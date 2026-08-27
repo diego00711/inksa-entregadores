@@ -1058,3 +1058,50 @@
 /* ================================
    FIM DA CORREÇÃO DE CORTE LATERAL
    ================================ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SANGRIA TOTAL — para o mapa da entrega ativa encostar nas quatro bordas
+   ══════════════════════════════════════════════════════════════════════════
+   POR QUE ISTO EXISTE (e por que NÃO dá pra resolver com `-mx-4`):
+
+   No celular, três camadas de padding empurram o mapa pra dentro, e cada uma
+   vem de um lugar diferente:
+     1. o <main> do layout    →  8px  (regra global `main { padding-left: .5rem }`)
+     2. o <main> da página    → 12px  (a classe `.p-4` tem MAIS especificidade
+                                       que o seletor de elemento `main`, então
+                                       ganha dela e aplica 0.75rem)
+     3. o próprio Card        → 24px em cima e embaixo (`py-6` do componente)
+
+   A página tentava escapar com `-mx-4`. Não funciona: logo acima, neste mesmo
+   arquivo, existe `.-mx-4 { margin-left: 0 !important }`, criada pra matar
+   corte lateral em OUTRAS telas. As duas regras brigavam em silêncio e a do
+   !important ganhava sempre — o `-mt-4` passava (não tem regra contra) e o
+   `-mx-4` era engolido. Resultado: moldura de 20px dos lados e 40px em cima.
+
+   A saída é não depender de margem negativa em rem, que só cancela UMA camada
+   e precisa saber quantas existem. `100vw` + `calc(50% - 50vw)` se ancora na
+   JANELA: o 50% mede o pai, o 50vw mede a tela, e a diferença é exatamente o
+   quanto de padding houver acumulado — 20px hoje, e continua certo se alguém
+   mexer em qualquer uma das três camadas amanhã.
+
+   O `-2rem` do topo é a única parte que conta camadas (16px + 16px dos dois
+   <main>), porque padding vertical não tem equivalente ancorado na janela.
+
+   Medido em 375x812: card vai de x=0 a x=375 e começa em y=64, que é
+   exatamente onde o cabeçalho laranja termina. Sem scroll horizontal.
+
+   Só no celular: no desktop o mapa é um card ao lado da lista e a moldura
+   é proposital. */
+@media (max-width: 1023px) {
+  .sangria-total {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    margin-top: -2rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-radius: 0 !important;
+    border-width: 0 !important;
+  }
+}
