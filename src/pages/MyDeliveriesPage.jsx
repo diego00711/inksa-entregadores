@@ -154,6 +154,20 @@ export function MyDeliveriesPage() {
 
   const { pulling, refreshing } = usePullToRefresh(fetchDeliveries);
 
+  // Esconde o botão flutuante de suporte enquanto existe entrega em andamento.
+  // Ele é `fixed` e ficava por cima do painel de informações — no teste real
+  // do Diego tapava o "Cobrar R$ 17,85 em dinheiro", que é o dado que o
+  // entregador precisa ler antes de tocar a campainha. A regra mora no
+  // App.css (body.entrega-ativa .fab-suporte). O suporte continua no menu.
+  //
+  // Limpeza no return: sem ela a classe ficaria grudada no body depois de a
+  // entrega acabar, e o suporte sumiria pro resto da sessão.
+  useEffect(() => {
+    const emEntrega = !!activeDelivery?.id;
+    document.body.classList.toggle('entrega-ativa', emEntrega);
+    return () => document.body.classList.remove('entrega-ativa');
+  }, [activeDelivery?.id]);
+
   useEffect(() => {
     fetchDeliveries();
     const id = setInterval(fetchDeliveries, 20000);
@@ -499,7 +513,7 @@ export function MyDeliveriesPage() {
                       é o que a gente quer dividir. Não depende de dvh, nem do
                       tamanho da fonte, nem de quanto conteúdo tem dentro. */}
                   <div className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl border-t border-white/60 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur-md ${
-                    painelAberto ? 'top-[12%]' : 'top-[62%]'
+                    painelAberto ? 'top-[12%]' : 'top-[calc(100%-64px)]'
                   }`}>
                     {/* A alca AGORA FUNCIONA. Antes era um risquinho decorativo:
                         parecia arrastavel e nao era, entao o conteudo so rolava

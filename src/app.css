@@ -1105,3 +1105,23 @@
     border-width: 0 !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ENTREGA ATIVA — a tela do mapa é tela cheia de verdade
+   ══════════════════════════════════════════════════════════════════════════
+   Com entrega em andamento o mapa vira o fundo da tela e o painel de
+   informações desliza por cima dele. O botão flutuante de suporte é `fixed`
+   e ficava por cima do painel — no teste real do Diego ele tapava o
+   "Cobrar R$ 17,85 em dinheiro", que é o dado que o entregador precisa ler
+   antes de tocar a campainha.
+
+   A classe entra no <body> pela própria página (MyDeliveriesPage), e sai
+   sozinha quando a entrega termina ou a pessoa navega pra outra tela. Fazer
+   por classe no body, e não por rota dentro do SupportButton, porque quem
+   sabe se existe entrega em andamento é a página — o botão vive no App e não
+   tem como saber.
+
+   O suporte continua acessível pelo menu lateral; some só o atalho flutuante. */
+body.entrega-ativa .fab-suporte {
+  display: none !important;
+}

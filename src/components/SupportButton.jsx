@@ -52,9 +52,17 @@ export default function SupportButton() {
 
   return (
     <>
+      {/* `fab-suporte`: a tela da entrega ativa esconde este botão por CSS
+          (ver o fim do App.css). Ele é fixo e fica em cima do painel de
+          informações — o Diego mandou foto do teste com ele tapando o
+          "Cobrar R$ 17,85 em dinheiro", que é justamente o dado que o
+          entregador precisa ler antes de tocar a campainha.
+          Esconder por classe, e não por rota, porque quem sabe se há entrega
+          em andamento é a página — este componente vive no App e não tem como
+          saber. */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 bottom-[calc(56px+env(safe-area-inset-bottom)+1rem)] lg:bottom-6"
+        className="fab-suporte fixed right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 bottom-[calc(56px+env(safe-area-inset-bottom)+1rem)] lg:bottom-6"
         title="Suporte / SAC"
       >
         <MessageCircle className="w-6 h-6" />
