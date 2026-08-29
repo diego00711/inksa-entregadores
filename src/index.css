@@ -1,0 +1,8 @@
+/* A barra e os elementos fixos subiam junto com a rolagem no iPhone: quando a
+   rolagem passa do fim do documento, o Safari deixa a página QUICAR e leva os
+   `fixed` junto. Desligar o repique também impede que o gesto de voltar ao
+   topo seja lido como "puxar pra atualizar". */
+html, body {
+  overscroll-behavior-y: none;
+}
+

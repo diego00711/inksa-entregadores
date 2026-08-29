@@ -953,7 +953,7 @@ export default function ModernDeliveryDashboard() {
       {/* ── Cash payment confirmation modal ───────────────────────────────── */}
       {pendingCashConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" data-sem-pull style={{ paddingBottom: '1.5rem' }}>
             {cashConfirmResult ? (
               <div className="text-center">
                 <div className="text-5xl mb-3">✅</div>
@@ -1071,7 +1071,7 @@ export default function ModernDeliveryDashboard() {
           avaliações pendentes na Central de Avaliações. */}
       {pendingReviewOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" data-sem-pull style={{ paddingBottom: '1.5rem' }}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <Star className="h-5 w-5 text-orange-500" /> Avalie esta entrega
