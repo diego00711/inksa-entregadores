@@ -492,7 +492,7 @@ export default function ModernDeliveryDashboard() {
   const confirmComplete = async () => {
     if (completing) return; // já está confirmando — ignora cliques repetidos
     const deliveryCode = String(pendingCode).replace(/\D/g, '');
-    if (deliveryCode.length < 3) { haptics.warn(); addToast('Código inválido.', 'warning'); return; }
+    if (deliveryCode.length !== 6) { haptics.warn(); addToast('O código tem 6 números.', 'warning'); return; }
     setCompleting(true);
     try {
       await completeDelivery(pendingCompleteId, deliveryCode);
@@ -956,7 +956,7 @@ export default function ModernDeliveryDashboard() {
               </button>
               <button
                 onClick={confirmComplete}
-                disabled={completing || pendingCode.trim().length < 3}
+                disabled={completing || pendingCode.trim().length !== 6}
                 className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {completing ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Confirmando...</>) : (<><CheckCircle className="h-4 w-4" /> Confirmar</>)}

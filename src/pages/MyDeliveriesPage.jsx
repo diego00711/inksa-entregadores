@@ -259,7 +259,7 @@ export function MyDeliveriesPage() {
   const confirmFinish = async () => {
     if (finishing) return; // já está confirmando — ignora cliques repetidos
     const deliveryCode = String(finishCode).replace(/\D/g, '');
-    if (deliveryCode.length < 3) return;
+    if (deliveryCode.length !== 6) return;
     setFinishing(true);
     try {
       const finishedId = pendingFinishId;
@@ -791,13 +791,15 @@ export function MyDeliveriesPage() {
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Entrega</h3>
-            <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
+            <p className="text-sm text-gray-500 mb-4">Peça o código de 6 números ao cliente para confirmar a entrega.</p>
             <input
               type="text"
               value={finishCode}
               onChange={e => setFinishCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="Ex: ABCD"
+              placeholder="Ex: 480315"
               maxLength={6}
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoFocus
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-base font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
               onKeyDown={e => { if (e.key === 'Enter') confirmFinish(); }}
@@ -812,7 +814,7 @@ export function MyDeliveriesPage() {
               </button>
               <button
                 onClick={confirmFinish}
-                disabled={finishing || finishCode.trim().length < 3}
+                disabled={finishing || finishCode.trim().length !== 6}
                 className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {finishing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Confirmando...</>) : 'Confirmar'}
