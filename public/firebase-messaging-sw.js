@@ -40,6 +40,11 @@ messaging.onBackgroundMessage((payload) => {
     tag: d.order_id || d.tag || 'inksa-entregador',
     // Oferta de entrega expira em ~30s: tem que ficar na tela até ele ver.
     requireInteraction: d.type === 'new_delivery',
+    // Vibração no urgente: no celular, o aviso pode chegar com o som
+    // do sistema baixo ou no silencioso — a vibração é o que sobra.
+    // Padrão longo-curto-longo pra não ser confundido com mensagem.
+    vibrate: d.type === 'new_delivery' ? [300, 120, 300, 120, 300] : undefined,
+    renotify: d.type === 'new_delivery',
     data: d,
   });
 });
