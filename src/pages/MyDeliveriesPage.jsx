@@ -476,6 +476,13 @@ export function MyDeliveriesPage() {
                       }`}>
                         <MapPin className="w-3.5 h-3.5 shrink-0" />
                         {isDeliveryPhase ? 'Indo ao cliente' : 'Indo ao restaurante'}
+                        {/* O NÚMERO DO PEDIDO ENTRA AQUI, e não num chip novo,
+                            porque já são quatro linhas sobre o mapa e cada uma
+                            come altura de rua. Vai junto da fase porque é a
+                            mesma frase que o entregador diz no balcão:
+                            "pedido mil e dois, código quatro-oito-zero...". */}
+                        <span className="opacity-60">·</span>
+                        <span className="tabular-nums">{numeroPedido(activeDelivery)}</span>
                       </span>
                       {routeInfo && (
                         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-gray-800 shadow-lg backdrop-blur">
