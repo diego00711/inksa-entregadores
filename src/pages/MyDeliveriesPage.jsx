@@ -19,6 +19,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { useOrderTracking } from '../hooks/useOrderTracking';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
+import { numeroPedido } from '../utils/pedidoNumero';
 
 const CACHE_KEY = 'delivery:minhas-entregas';
 
@@ -257,7 +258,7 @@ export function MyDeliveriesPage() {
 
   const confirmFinish = async () => {
     if (finishing) return; // já está confirmando — ignora cliques repetidos
-    const deliveryCode = String(finishCode).trim().toUpperCase();
+    const deliveryCode = String(finishCode).replace(/\D/g, '');
     if (deliveryCode.length < 3) return;
     setFinishing(true);
     try {
@@ -600,7 +601,7 @@ export function MyDeliveriesPage() {
                         mapa. Repetir no painel gastaria a linha mais nobre com
                         algo que já está na tela. */}
                     <h3 className="font-semibold text-gray-800 text-sm">
-                      Entrega ativa #{activeDelivery.id.substring(0, 8)}
+                      Entrega ativa {numeroPedido(activeDelivery)}
                     </h3>
 
                     {activeDelivery.pickup_code && !isDeliveryPhase && (
@@ -787,7 +788,7 @@ export function MyDeliveriesPage() {
             <input
               type="text"
               value={finishCode}
-              onChange={e => setFinishCode(e.target.value.toUpperCase())}
+              onChange={e => setFinishCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="Ex: ABCD"
               maxLength={6}
               autoFocus

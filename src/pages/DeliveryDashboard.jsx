@@ -24,6 +24,7 @@ import { supabase } from '../lib/supabase';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { haptics } from '../lib/haptics';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
+import { numeroPedido } from '../utils/pedidoNumero';
 
 const DASHBOARD_CACHE_KEY = 'delivery:dashboard';
 
@@ -172,7 +173,7 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
       <CardContent className="p-4 sm:p-6">
         <div className="flex justify-between items-start mb-4 gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base sm:text-lg font-bold text-gray-800">#{order?.id?.substring(0, 8) || 'N/A'}</h3>
+            <h3 className="text-base sm:text-lg font-bold text-gray-800">{numeroPedido(order)}</h3>
             <div className={`px-2 py-0.5 rounded-full text-xs font-bold text-white ${badge.cls}`}>{badge.t}</div>
           </div>
           <div className="text-right shrink-0">
@@ -567,7 +568,7 @@ export default function ModernDeliveryDashboard() {
 
   const confirmComplete = async () => {
     if (completing) return; // já está confirmando — ignora cliques repetidos
-    const deliveryCode = String(pendingCode).trim().toUpperCase();
+    const deliveryCode = String(pendingCode).replace(/\D/g, '');
     if (deliveryCode.length < 3) { haptics.warn(); addToast('Código inválido.', 'warning'); return; }
     setCompleting(true);
     try {
@@ -1030,13 +1031,15 @@ export default function ModernDeliveryDashboard() {
               <KeyRound className="h-5 w-5 text-orange-500" />
               Código de Entrega
             </h3>
-            <p className="text-sm text-gray-500 mb-4">Peça o código de 4 letras ao cliente para confirmar a entrega.</p>
+            <p className="text-sm text-gray-500 mb-4">Peça o código de 6 números ao cliente para confirmar a entrega.</p>
             <input
               type="text"
               value={pendingCode}
-              onChange={e => setPendingCode(e.target.value.toUpperCase())}
-              placeholder="Ex: ABCD"
+              onChange={e => setPendingCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="Ex: 480315"
               maxLength={6}
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoFocus
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-base sm:text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
               onKeyDown={e => { if (e.key === 'Enter') confirmComplete(); }}

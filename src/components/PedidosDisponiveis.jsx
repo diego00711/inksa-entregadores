@@ -7,6 +7,7 @@ import {
   getPickupCode,
 } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
+import { numeroPedido } from '../utils/pedidoNumero';
 
 const toBRL = (v) =>
   Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -35,7 +36,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const CardPedido = ({ pedido, onAceitar, onRecusar }) => {
-  const shortId = String(pedido.id || '').slice(0, 8);
+  const shortId = numeroPedido(pedido).replace('#', '');
   const isOffer = !!pedido.offer_expires_at;
 
   // Contagem regressiva da oferta (motor de atribuição).

@@ -6,6 +6,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getPickupCode } from '../services/orderService';
+import { numeroPedido } from '../utils/pedidoNumero';
 
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
 const formatCurrency = (v) => toNumber(v).toFixed(2);
@@ -44,7 +45,7 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
   const restaurantAddress = delivery.restaurant_address || 'Endereço não disponível';
   const deliveryAddress = delivery.delivery_address || 'Endereço de entrega não disponível';
   const clientName = delivery.client_name || delivery.customer?.name || 'Cliente';
-  const orderId = delivery.id ? String(delivery.id).substring(0, 8) : 'N/A';
+  const orderId = numeroPedido(delivery).replace('#', '');
 
   const pickupCode = delivery.pickup_code || inlineCode;
   const showCode = pickupCode && !isAvailable;
