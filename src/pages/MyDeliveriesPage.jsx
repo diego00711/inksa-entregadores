@@ -469,7 +469,13 @@ export function MyDeliveriesPage() {
                   {/* ── Faixa de cima: para onde você vai, e quanto falta ──────
                       pointer-events-none no container pra não roubar o arrasto
                       do mapa; só o botão do olho recebe toque. */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
+                  {/* O mapa sobe 2rem (sangria-total no App.css) pra encostar no
+                      cabeçalho e ganhar altura. Com os chips em `top-0` do
+                      MAPA, eles ficavam nesses 2rem escondidos — a primeira
+                      linha aparecia cortada por baixo da tarja laranja.
+                      O respiro extra no topo é exatamente a sangria de volta.
+                      Só no celular: no desktop não existe sangria. */}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 px-3 pb-3 pt-11 lg:pt-3">
                     <div className="flex flex-col gap-2 min-w-0">
                       <span className={`inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-bold shadow-lg backdrop-blur ${
                         isDeliveryPhase ? 'bg-green-600/95 text-white' : 'bg-orange-500/95 text-white'
