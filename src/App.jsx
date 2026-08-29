@@ -12,7 +12,7 @@ import OnboardingSlides from './components/onboarding/OnboardingSlides.jsx';
 import GuidedTour from './components/onboarding/GuidedTour.jsx';
 import WakingUpScreen from './components/WakingUpScreen.jsx';
 import SupportButton from './components/SupportButton.jsx';
-import { configurarAcoesDePush } from './services/notificationService.js';
+import { configurarAcoesDePush, criarCanalUrgente } from './services/notificationService.js';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt.jsx';
 
 // --- Lazy-loaded pages ---
@@ -54,6 +54,12 @@ function App() {
 
   // Toque na notificação leva pras Entregas (só no app instalado). No
   // navegador quem faz isso é o notificationclick do service worker.
+  // Canal de alta importância do Android. Roda uma vez, na abertura: sem ele
+  // o push de "novo pedido"/"nova entrega" cai no canal padrão e chega MUDO
+  // com o app em segundo plano — foi o que a Yo!Frango relatou, com o iFood
+  // aberto por cima. Criar canal é idempotente, então repetir não custa nada.
+  useEffect(() => { criarCanalUrgente(); }, []);
+
   useEffect(() => { configurarAcoesDePush(navigate); }, [navigate]);
 
   useEffect(() => {

@@ -22,6 +22,37 @@ function getAudioCtx() {
   return audioCtx;
 }
 
+// ── Saída de áudio: compressor + ganho de mestre ────────────────────────────
+// O volume era 0.25 por nota (25% da amplitude). Comparado ao iFood, que toca
+// no volume de notificação do sistema, isso soava baixo — a Yo!Frango não
+// ouviu o pedido chegar. Foi relatado em 29/08/2026.
+//
+// Não dá pra simplesmente pôr 1.0: as quatro notas do arpejo SE SOBREPÕEM
+// (começam em 0, 0.12, 0.24 e 0.38, e cada uma dura 0.26), então quatro notas
+// a 1.0 somam 4.0 e estouram em distorção — que soa mais alto e pior.
+//
+// A saída é um compressor no caminho: ele segura os picos quando as notas se
+// somam, e aí o ganho de mestre pode subir de verdade sem sujar o som.
+let masterGain = null;
+function getSaida(ctx) {
+  if (masterGain) return masterGain;
+  try {
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 12;
+    comp.ratio.value = 12;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.15;
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0.95;
+    masterGain.connect(comp);
+    comp.connect(ctx.destination);
+  } catch {
+    masterGain = ctx.destination; // sem compressor, liga direto
+  }
+  return masterGain;
+}
+
 function bindUnlockOnce() {
   if (unlockBound || typeof window === 'undefined') return;
   unlockBound = true;
@@ -66,7 +97,7 @@ function playVoiceBuffer() {
     if (_voicePlaying) return true; // já falando -> não sobrepõe
     const src = ctx.createBufferSource();
     src.buffer = _voiceBuffer;
-    src.connect(ctx.destination);
+    src.connect(getSaida(ctx));
     src.onended = () => { _voicePlaying = false; };
     _voicePlaying = true;
     src.start();
@@ -110,10 +141,10 @@ export function useNotificationSound() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(getSaida(ctx));
       osc.type = waveType;
       osc.frequency.value = f;
-      gain.gain.setValueAtTime(0.25, now + t);
+      gain.gain.setValueAtTime(0.7, now + t);
       gain.gain.exponentialRampToValueAtTime(0.001, now + t + duration);
       osc.start(now + t);
       osc.stop(now + t + duration + 0.02);

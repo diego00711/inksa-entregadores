@@ -290,3 +290,45 @@ export async function saveFcmToken(token, apiBaseUrl, authHeaders) {
     return { ok: false, motivo: 'Sem conexão com o servidor.' };
   }
 }
+
+/**
+ * Cria o canal URGENTE do Android — o que faz o aparelho TOCAR ALTO e mostrar
+ * o aviso por cima de outro app.
+ *
+ * POR QUE ISTO PRECISA EXISTIR NO APP, E NÃO SÓ NO SERVIDOR
+ * No Android 8+ quem manda no som, na vibração e no heads-up é o CANAL, e o
+ * canal é criado pelo APP. O servidor pode mandar `sound` e `channel_id` à
+ * vontade: se o canal não existir aqui, o Android joga tudo no canal padrão,
+ * que é silencioso. Era exatamente esse o caso — nenhum canal era criado em
+ * lugar nenhum, e por isso o pedido chegava mudo com o app em segundo plano.
+ *
+ * IMPORTANCE 5 = MAX: som + vibração + aparece por cima do que estiver aberto.
+ * É o que faz o aviso competir com o iFood na mesma tela.
+ *
+ * ⚠️ O id tem que bater com CANAL_URGENTE do notification_service.py.
+ *
+ * ⚠️ ANDROID NÃO DEIXA MUDAR CANAL DEPOIS DE CRIADO. Volume, som e importância
+ * ficam congelados na primeira criação — e passam a pertencer ao usuário, nas
+ * configurações do sistema. Para mudar qualquer um deles é preciso criar um
+ * canal com id NOVO (ex.: inksa_urgente_v2). Trocar só o texto daqui não faz
+ * absolutamente nada em quem já abriu o app uma vez.
+ */
+export async function criarCanalUrgente() {
+  if (!Capacitor.isNativePlatform()) return; // no navegador não existe canal
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    await PushNotifications.createChannel({
+      id: 'inksa_urgente',
+      name: 'Pedidos e entregas',
+      description: 'Avisos que exigem ação imediata. Toca alto mesmo com outro app aberto.',
+      importance: 5,   // MAX — heads-up + som
+      visibility: 1,   // aparece na tela de bloqueio
+      sound: 'default',
+      vibration: true,
+      lights: true,
+    });
+  } catch {
+    // Plugin ausente ou versão antiga do Android: segue sem canal. O push
+    // ainda chega, só que no canal padrão (silencioso).
+  }
+}
