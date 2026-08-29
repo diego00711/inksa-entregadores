@@ -585,17 +585,43 @@ export function MyDeliveriesPage() {
                         parecia arrastavel e nao era, entao o conteudo so rolava
                         e rolar num painel baixo parece corte. Prometer um gesto
                         e nao cumprir e pior que nao ter gesto nenhum. */}
-                    <button
-                      type="button"
-                      onClick={() => setPainelAberto((v) => !v)}
-                      aria-expanded={painelAberto}
-                      className="flex w-full flex-col items-center gap-1 py-2 active:bg-gray-50"
-                    >
-                      <span className="h-1 w-10 rounded-full bg-gray-400" />
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                        {painelAberto ? 'tocar para ver o mapa' : 'tocar para ver tudo'}
-                      </span>
-                    </button>
+                    {/* CONFIRMAR ENTREGA SEM ABRIR O PAINEL.
+                        Na porta do cliente, com o pedido na mão e muitas vezes
+                        de capacete, dois toques a menos valem mais do que em
+                        qualquer outra tela. Antes: puxar o painel, achar o
+                        botão no meio de endereço/telefone/chat, tocar. Agora o
+                        atalho fica na própria alça.
+
+                        Só na FASE DE ENTREGA. Indo ao restaurante ele não tem
+                        o que confirmar, e um botão de fechar entrega ali seria
+                        um toque errado esperando acontecer.
+
+                        O botão do painel CONTINUA existindo — este é atalho,
+                        não substituto. Quem abriu o painel por outro motivo
+                        não deve ter que fechá-lo pra concluir. */}
+                    <div className="flex w-full items-center gap-2 px-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setPainelAberto((v) => !v)}
+                        aria-expanded={painelAberto}
+                        className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-lg py-1 active:bg-gray-50"
+                      >
+                        <span className="h-1 w-10 rounded-full bg-gray-400" />
+                        <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                          {painelAberto ? 'tocar para ver o mapa' : 'tocar para ver tudo'}
+                        </span>
+                      </button>
+                      {isDeliveryPhase && (
+                        <button
+                          type="button"
+                          onClick={() => finishFromHere(activeDelivery.id)}
+                          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-green-600 px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Confirmar entrega
+                        </button>
+                      )}
+                    </div>
                     {/* O corte reto no fim do painel parecia informação perdida,
                         não conteúdo rolável — o Diego leu como bug. A faixa que
                         desbota embaixo é o que diz "tem mais, continua". Ela
