@@ -739,6 +739,45 @@ export default function ModernDeliveryDashboard() {
           </div>
         )}
 
+        {/* ── Convite pra pôr foto ─────────────────────────────────────────
+            NÃO TRAVA NADA. É o contrário dos dois avisos acima: aqueles são
+            impedimentos (sem eles o entregador não recebe pedido); este é só
+            um convite, e some sozinho no instante em que a foto existe.
+
+            Por isso não tem botão de fechar. Aviso que se fecha e some pra
+            sempre não seria informativo, seria descartável — e a única forma
+            de sumir com ele é fazer a coisa, que leva vinte segundos e é boa
+            pra quem faz.
+
+            O TEXTO FALA DO GANHO DELE, não do nosso. O cliente reconhecer
+            quem está chegando poupa a ligação de "sou eu na porta" e a
+            desconfiança de abrir pra estranho. Pedir foto "pra plataforma
+            ficar mais profissional" seria pedir favor; assim é oferecer
+            vantagem — que é o que de fato é.
+
+            Só aparece pra quem já passou do cadastro obrigatório: empilhar
+            este convite embaixo de "complete seu cadastro" seria transformar
+            duas coisas de pesos diferentes numa lista de tarefas só. */}
+        {!profileLoading && cadastroPendente.length === 0 && !profile?.avatar_url && (
+          <div className="mb-6 p-4 rounded-2xl border border-blue-200 bg-blue-50 flex items-start gap-3">
+            <div className="text-2xl leading-none">📸</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-blue-900">Coloque uma foto no seu perfil</p>
+              <p className="text-sm text-blue-800/90 mt-0.5">
+                O cliente vê quem está levando o pedido dele. Com foto, ele te reconhece
+                na porta — menos ligação de "sou eu que cheguei" e menos gente
+                desconfiada de abrir. Leva vinte segundos.
+              </p>
+              <button
+                onClick={() => navigate('/delivery/meu-perfil')}
+                className="mt-2 text-sm font-semibold text-blue-900 underline underline-offset-2"
+              >
+                Adicionar foto →
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Cadastro incompleto: bloqueia ficar online (igual restaurante) ── */}
         {!profileLoading && cadastroPendente.length > 0 && (
           <div className="mb-6 p-4 rounded-2xl border border-amber-200 bg-amber-50 flex items-start gap-3">
