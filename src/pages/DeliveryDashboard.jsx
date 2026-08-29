@@ -17,6 +17,7 @@ import { useOrderTracking } from '../hooks/useOrderTracking';
 import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import PainelDoDia from '../components/PainelDoDia';
 import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import SocialDayBanner from '../components/SocialDayBanner';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
@@ -39,32 +40,6 @@ const useDebouncedCallback = (fn, delay = 600) => {
   }, [fn, delay]);
 };
 
-// ─── AnimatedNumber ───────────────────────────────────────────────────────────
-const AnimatedNumber = memo(({ value, prefix = '', suffix = '', decimals = 0 }) => {
-  const [displayed, setDisplayed] = useState(0);
-  const prevRef = useRef(0);
-
-  useEffect(() => {
-    const start = prevRef.current;
-    const end = value;
-    const diff = end - start;
-    if (!diff) return;
-    const duration = 900;
-    const startTime = performance.now();
-    const tick = (now) => {
-      const elapsed = Math.min((now - startTime) / duration, 1);
-      const ease = 1 - Math.pow(1 - elapsed, 3);
-      setDisplayed(start + diff * ease);
-      if (elapsed < 1) requestAnimationFrame(tick);
-      else prevRef.current = end;
-    };
-    requestAnimationFrame(tick);
-  }, [value]);
-
-  const formatted = decimals > 0 ? displayed.toFixed(decimals) : Math.round(displayed);
-  return <span>{prefix}{formatted}{suffix}</span>;
-});
-
 // ─── PulsingBadge ─────────────────────────────────────────────────────────────
 const PulsingBadge = memo(({ count }) => {
   if (!count) return null;
@@ -74,58 +49,6 @@ const PulsingBadge = memo(({ count }) => {
       <span className="relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white text-xs font-black shadow-lg">
         {count > 9 ? '9+' : count}
       </span>
-    </div>
-  );
-});
-
-// ─── ModernStatCard ───────────────────────────────────────────────────────────
-const ModernStatCard = memo(({ title, value, icon: Icon, color, trend, subtitle, onClick }) => (
-  <Card
-    className={`relative overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-br ${color} border-0`}
-    onClick={onClick}
-  >
-    <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-      <Icon className="w-full h-full" />
-    </div>
-    <CardContent className="p-4 sm:p-6 relative z-10">
-      <div className="flex items-center justify-between mb-3">
-        <div className="p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-        </div>
-        {typeof trend === 'number' && (
-          <div className="flex items-center text-white/80 text-xs sm:text-sm">
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />+{trend}%
-          </div>
-        )}
-      </div>
-      <div className="text-2xl sm:text-3xl font-bold text-white mb-1 break-words" style={{ textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
-        {value}
-      </div>
-      <div className="text-white/80 text-sm font-medium">{title}</div>
-      {subtitle && <div className="text-white/60 text-xs mt-1">{subtitle}</div>}
-    </CardContent>
-  </Card>
-));
-
-// ─── PerformanceRing ──────────────────────────────────────────────────────────
-const PerformanceRing = memo(({ percentage, label, color }) => {
-  const p = Math.max(0, Math.min(100, percentage || 0));
-  const circumference = 2 * Math.PI * 45;
-  const strokeDasharray = `${(p * circumference) / 100} ${circumference}`;
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-16 h-16 sm:w-24 sm:h-24">
-        <svg className="w-16 h-16 sm:w-24 sm:h-24 transform -rotate-90" viewBox="0 0 100 100" aria-label={label}>
-          <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-gray-200" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke={color} strokeWidth="8"
-            strokeDasharray={strokeDasharray} strokeLinecap="round"
-            className="transition-all duration-1000 ease-out" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm sm:text-xl font-bold text-gray-800">{Math.round(p)}%</span>
-        </div>
-      </div>
-      <span className="text-xs sm:text-sm text-gray-600 mt-2 text-center">{label}</span>
     </div>
   );
 });
@@ -665,9 +588,10 @@ export default function ModernDeliveryDashboard() {
   const totalDeliveries = dashboardStats?.totalDeliveries || 0;
   const onlineMinutes = dashboardStats?.onlineMinutes || 0;
   const dailyGoal = toNumber(dashboardStats?.dailyGoal || 100);
-  const goalProgress = Math.min((todayEarnings / (dailyGoal || 1)) * 100, 100);
-  const ratingProgress = Math.min((avgRating / 5) * 100, 100);
-  const efficiencyProgress = Math.min((todayDeliveries / 10) * 100, 100);
+  // Dados que o backend JÁ calculava e nenhuma tela mostrava.
+  const weeklyEarnings = dashboardStats?.weeklyEarnings || [];
+  const distanceToday = toNumber(dashboardStats?.distanceToday);
+  const nextPayment = dashboardStats?.nextPayment || null;
 
   // Seção de pedidos ativos extraída pra ser reusada em dois lugares: no topo
   // no mobile (o entregador precisa do pedido + Rota sem rolar) e na coluna da
@@ -866,84 +790,23 @@ export default function ModernDeliveryDashboard() {
           </div>
         )}
 
-        {/* ── Stats Grid ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-6 sm:mb-8">
-          <ModernStatCard
-            title="Ganhos Hoje"
-            value={<AnimatedNumber value={todayEarnings} prefix="R$ " decimals={2} />}
-            icon={DollarSign}
-            color="from-green-500 to-emerald-600"
-            subtitle={`Meta: R$ ${dailyGoal.toFixed(2)}`}
-            onClick={() => navigate('/delivery/ganhos')}
-          />
-          <ModernStatCard
-            title="Entregas Hoje"
-            value={<AnimatedNumber value={todayDeliveries} />}
-            icon={Truck}
-            color="from-blue-500 to-indigo-600"
-            subtitle="Continue assim!"
-            onClick={() => navigate('/delivery/entregas')}
-          />
-          <ModernStatCard
-            title="Avaliação Média"
-            value={<AnimatedNumber value={avgRating} decimals={1} suffix="★" />}
-            icon={Star}
-            color="from-yellow-500 to-orange-500"
-            subtitle="Muito bom!"
-            onClick={() => navigate('/delivery/avaliacoes')}
-          />
-          <ModernStatCard
-            title="Total Entregas"
-            value={<AnimatedNumber value={totalDeliveries} />}
-            icon={Award}
-            color="from-purple-500 to-pink-500"
-            subtitle="desde o início"
-            onClick={() => navigate('/delivery/entregas')}
-          />
-        </div>
+        {/* ── Painel do dia ───────────────────────────────────────────────
+            Trocou os 4 cartões de gradiente + os anéis de performance. O
+            porquê de cada escolha está em components/PainelDoDia.jsx. */}
+        <PainelDoDia
+          ganhosHoje={todayEarnings}
+          meta={dailyGoal}
+          entregasHoje={todayDeliveries}
+          minutosOnline={onlineMinutes}
+          distanciaHoje={distanceToday}
+          avaliacao={avgRating}
+          totalEntregas={totalDeliveries}
+          semana={weeklyEarnings}
+          proximoPagamento={nextPayment}
+        />
 
-        {/* ── Performance + Active Orders ─────────────────────────────────── */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-          {/* Performance rings */}
-          <div className="lg:col-span-2">
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500" /> Performance de Hoje
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-2 sm:gap-8 mb-6">
-                  <PerformanceRing percentage={goalProgress} label="Meta Diária" color="#10b981" />
-                  <PerformanceRing percentage={ratingProgress} label="Satisfação" color="#f59e0b" />
-                  <PerformanceRing percentage={efficiencyProgress} label="Eficiência" color="#3b82f6" />
-                </div>
-                <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 sm:p-4 rounded-xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <p className="text-xs sm:text-sm text-gray-600">Tempo Online Hoje</p>
-                      <p className="text-xl sm:text-2xl font-bold text-orange-600">
-                        {Math.floor(onlineMinutes / 60)}h {onlineMinutes % 60}min
-                      </p>
-                    </div>
-                    <div className="sm:text-right">
-                      <p className="text-xs sm:text-sm text-gray-600">Status</p>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
-                        isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                        {isAvailable ? 'Online' : 'Offline'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Active orders — no desktop fica aqui na direita. No mobile já
-              aparece no topo (bloco lg:hidden acima); então quando HÁ pedido
-              ativo, escondemos esta cópia no mobile pra não duplicar. Sem
-              pedido, deixamos visível pro empty state / botão "Ficar Online". */}
+          <div className="lg:col-span-2 hidden lg:block" />
           <div className={activeOrders.length > 0 ? 'hidden lg:block' : ''}>
             {activeOrdersSection}
           </div>
