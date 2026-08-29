@@ -16,6 +16,7 @@ import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { DELIVERY_API_URL } from '../services/api';
 import { useChatAlarmCtx } from '../hooks/useChatAlarm.js';
 import { useToast } from '../context/ToastContext.jsx';
+import { useOrderTracking } from '../hooks/useOrderTracking';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
 
@@ -151,6 +152,12 @@ export function MyDeliveriesPage() {
       hasLoadedOnceRef.current = true;
     }
   }, [addToast]);
+
+  // Rastreamento por pedido. ESTA é a tela onde o entregador passa a corrida
+  // inteira — antes o efeito só existia no DeliveryDashboard, então enquanto
+  // ele acompanhava a entrega aqui nenhuma posição era enviada e o mapa do
+  // cliente ficava sem entregador. Ver hooks/useOrderTracking.js.
+  useOrderTracking(myDeliveries);
 
   const { pulling, refreshing } = usePullToRefresh(fetchDeliveries);
 

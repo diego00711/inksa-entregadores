@@ -13,6 +13,7 @@ import {
 
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useOrderTracking } from '../hooks/useOrderTracking';
 import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
@@ -355,88 +356,10 @@ export default function ModernDeliveryDashboard() {
   // ── GPS tracking when online and delivering ────────────────────────────────
   useGPSTracking({ enabled: isAvailable && activeOrders.length > 0 });
 
-  // ── Per-order location tracking (sends to /api/deliveries/:id/location) ───
-  const trackingIntervalRef = useRef(null);
-  const orderWatchIdRef = useRef(null);
-  const trackedOrderIdRef = useRef(null);
-
-  // Throttle: o watchPosition dispara a cada tremida do GPS (indoor, com
-  // enableHighAccuracy, sao varias/segundo). Sem filtro, isso sozinho estourava
-  // o rate limit e derrubava o app com 429. So envia se moveu ~11m OU passou 8s
-  // desde o ultimo envio — o interval de 10s garante o batimento minimo parado.
-  const lastLocSentRef = useRef({ lat: null, lng: null, t: 0 });
-  const sendOrderLocation = useCallback((latitude, longitude, orderId) => {
-    const now = Date.now();
-    const last = lastLocSentRef.current;
-    if (last.lat != null) {
-      const movedFar =
-        Math.abs(latitude - last.lat) >= 0.0001 || Math.abs(longitude - last.lng) >= 0.0001;
-      if (now - last.t < 8000 && !movedFar) return;
-    }
-    lastLocSentRef.current = { lat: latitude, lng: longitude, t: now };
-    fetch(`${DELIVERY_API_URL}/api/deliveries/${orderId}/location`, {
-      method: 'PATCH',
-      headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ latitude, longitude }),
-    }).catch(() => {}); // falha silenciosa
-  }, []);
-
-  useEffect(() => {
-    const activeOrder = activeOrders.find(
-      (o) => ['picked_up', 'on_the_way', 'delivering'].includes(o?.status)
-    );
-    const isTracking = !!activeOrder;
-    const orderId = activeOrder?.id;
-
-    // Stop tracking if order changed or no longer active
-    if (trackedOrderIdRef.current && trackedOrderIdRef.current !== orderId) {
-      if (orderWatchIdRef.current != null) {
-        navigator.geolocation?.clearWatch(orderWatchIdRef.current);
-        orderWatchIdRef.current = null;
-      }
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-        trackingIntervalRef.current = null;
-      }
-      trackedOrderIdRef.current = null;
-    }
-
-    if (isTracking && orderId && orderWatchIdRef.current == null) {
-      trackedOrderIdRef.current = orderId;
-
-      // watchPosition: sends on movement
-      orderWatchIdRef.current = navigator.geolocation?.watchPosition(
-        (pos) => sendOrderLocation(pos.coords.latitude, pos.coords.longitude, orderId),
-        (err) => console.warn('[OrderTracking] Geo error:', err),
-        { enableHighAccuracy: true, maximumAge: 5000 }
-      ) ?? null;
-
-      // Interval fallback: guarantees a send every 10s even without movement
-      trackingIntervalRef.current = setInterval(() => {
-        navigator.geolocation?.getCurrentPosition(
-          (pos) => sendOrderLocation(pos.coords.latitude, pos.coords.longitude, orderId),
-          () => {}
-        );
-      }, 10000);
-    }
-
-    if (!isTracking) {
-      if (orderWatchIdRef.current != null) {
-        navigator.geolocation?.clearWatch(orderWatchIdRef.current);
-        orderWatchIdRef.current = null;
-      }
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-        trackingIntervalRef.current = null;
-      }
-      trackedOrderIdRef.current = null;
-    }
-
-    return () => {
-      if (orderWatchIdRef.current != null) navigator.geolocation?.clearWatch(orderWatchIdRef.current);
-      if (trackingIntervalRef.current) clearInterval(trackingIntervalRef.current);
-    };
-  }, [activeOrders, sendOrderLocation]);
+  // Rastreamento por pedido — agora em hooks/useOrderTracking.js, dividido com
+  // o MyDeliveriesPage. Estava só aqui, e como a entrega é acompanhada na OUTRA
+  // tela, na prática nunca rodava durante a corrida.
+  useOrderTracking(activeOrders);
 
   // ── Fetch dashboard ────────────────────────────────────────────────────────
   // Refs no lugar de estado nas dependências: com `dashboardStats` nas deps,
