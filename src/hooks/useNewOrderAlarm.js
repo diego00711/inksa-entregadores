@@ -24,10 +24,20 @@ export function useNewOrderAlarm(enabled) {
       }
     };
     check();
-    const id = setInterval(() => {
-      if (document.visibilityState === 'visible') check();
-    }, 8000);
-    return () => { alive = false; clearInterval(id); };
+    // ⚠️ SEM A TRAVA DE ABA VISÍVEL — mesmo motivo do app do parceiro.
+    // Com a aba escondida (que é justamente quando o alarme importa, porque a
+    // pessoa está olhando outra coisa) o app nem perguntava se havia entrega
+    // disponível. Não é que o som falhava: ele nunca chegava a existir.
+    // Assim que o alarme toca, a aba vira "audível" e o navegador para de
+    // atrasar o temporizador.
+    const id = setInterval(check, 8000);
+    const aoVoltar = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', aoVoltar);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', aoVoltar);
+    };
   }, [enabled]);
 
   // Repete o som a cada 5s enquanto houver pedido (até alguém aceitar / ficar
