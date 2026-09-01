@@ -147,6 +147,25 @@ export function DeliveryDetailModal({
             </div>
           ) : (
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* ITEM PARA MAIORES DE 18 — primeiro bloco do modal, acima até do
+                  código de retirada. Vender álcool a menor é crime (ECA, art.
+                  243) e quem está na porta é o entregador: se esta instrução
+                  ficar no meio da tela, ele rola por cima dela.
+                  A marca vem congelada do pedido (orders.age_restricted), lida
+                  do catálogo no fechamento — não do que o app do cliente mandou. */}
+              {order.age_restricted && (
+                <div className="p-4 rounded-lg border-2 border-red-400 bg-red-50">
+                  <p className="text-sm font-bold text-red-800 uppercase tracking-wide">
+                    Confira documento com foto
+                  </p>
+                  <p className="text-sm text-red-900 mt-1">
+                    Este pedido tem item <strong>proibido para menores de 18 anos</strong>.
+                    Se quem receber for menor de idade, ou recusar apresentar documento,
+                    <strong> não entregue</strong> — registre uma ocorrência.
+                  </p>
+                </div>
+              )}
+
               {/* bloco com o código quando disponível */}
               {pickupCode && (
                 <div className="p-4 rounded-lg border-2 border-purple-300 bg-purple-50">
