@@ -11,7 +11,6 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import OnboardingSlides from './components/onboarding/OnboardingSlides.jsx';
 import GuidedTour from './components/onboarding/GuidedTour.jsx';
 import WakingUpScreen from './components/WakingUpScreen.jsx';
-import SupportButton from './components/SupportButton.jsx';
 import { configurarAcoesDePush, criarCanalUrgente } from './services/notificationService.js';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt.jsx';
 
@@ -86,7 +85,16 @@ function App() {
       {serverReady && (
         <>
           <GlobalError />
-          <SupportButton />
+          {/* O botão flutuante de suporte foi removido: era um círculo
+              fixo no canto inferior direito, em TODA tela, cobrindo
+              conteúdo e roubando toques destinados ao que está embaixo.
+              O menu já tem "Suporte", e aquela página traz tanto os
+              chamados quanto o contato direto (WhatsApp, e-mail,
+              telefone) — nada se perdeu. Aqui todo mundo está logado,
+              então não existe o caso do visitante sem outro caminho,
+              que é por isso que o app do CLIENTE manteve um ícone no
+              cabeçalho em vez de simplesmente remover.
+              components/SupportButton.jsx segue no repositório. */}
           {isAuthenticated && <PWAInstallPrompt />}
           <Suspense fallback={<PageLoader />}>
             <Routes>
