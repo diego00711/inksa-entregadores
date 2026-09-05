@@ -40,6 +40,9 @@ const NAVIGATION = [
   { name: 'Clube Inksa', href: '/delivery/clube', icon: Trophy, primary: false },
   { name: 'Pagamento em Dinheiro', href: '/delivery/pagamento-dinheiro', icon: Banknote, primary: false },
   { name: 'Suporte', href: '/delivery/suporte', icon: LifeBuoy, primary: false },
+  // Porta separada da do suporte de proposito: quem tem uma ideia nao se
+  // ve "abrindo um chamado". Mesmo destino, convite diferente.
+  { name: 'Sugestões', href: '/delivery/suporte?sugestao=1', icon: Lightbulb, primary: false },
   { name: 'Meu Perfil', href: '/delivery/meu-perfil', icon: User, primary: true },
 ];
 
