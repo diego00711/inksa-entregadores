@@ -18,6 +18,11 @@ import {
   Loader2,
   LifeBuoy,
   Banknote,
+  // ⚠️ Lightbulb entrou na lista de navegacao em 05/09/2026 SEM entrar aqui. O
+  // build passou, o deploy passou, e o app morria com "Lightbulb is not
+  // defined" — tela branca em TODA tela logada, porque este layout envolve
+  // todas. Icone novo na navegacao entra nesta lista NO MESMO COMMIT.
+  Lightbulb,
 } from 'lucide-react';
 import { useProfile } from '../../context/DeliveryProfileContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
