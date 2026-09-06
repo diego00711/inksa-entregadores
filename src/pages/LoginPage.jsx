@@ -63,7 +63,7 @@ export function LoginPage() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                type="email"
+                type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

@@ -85,7 +85,7 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={formData.email} onChange={handleChange} required />
+              <Input id="email" type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={formData.email} onChange={handleChange} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>

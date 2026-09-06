@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
             <input
               id="email"
               name="email"
-              type="email"
+              type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
               autoComplete="email"
               required
               value={email}
