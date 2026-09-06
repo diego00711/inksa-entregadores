@@ -111,6 +111,24 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
 function FitBounds({ points, resetKey }) {
   const map = useMap();
   const jaEnquadrou = React.useRef(null);
+
+  // O Leaflet mede o container UMA vez, no mount. Se naquele instante ele ainda
+  // estava crescendo (a tela do entregador troca de layout ao aceitar a corrida),
+  // guarda a medida errada e desenha cinza até algo forçar nova medição — parece
+  // mapa lento e não é. Remede logo, com o layout assentado, e a cada resize
+  // (girar o celular conta).
+  React.useEffect(() => {
+    const remedir = () => map.invalidateSize();
+    const t1 = setTimeout(remedir, 0);
+    const t2 = setTimeout(remedir, 300);
+    const t3 = setTimeout(remedir, 1200);
+    window.addEventListener('resize', remedir);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      window.removeEventListener('resize', remedir);
+    };
+  }, [map]);
+
   React.useEffect(() => {
     const pts = (points || []).filter(Boolean);
     if (pts.length === 0) return;
@@ -206,10 +224,17 @@ export function MapDisplay({
   const routeLine = routeGeo || straightLine;
   const fitPoints = routeGeo || [driverCoords, destination];
 
+  // O enquadramento automático acontece UMA vez por destino, de propósito (ver
+  // FitBounds): assim o entregador consegue arrastar o mapa sem ele voltar
+  // sozinho. Faltava a outra metade — como voltar. Este contador entra na chave
+  // do FitBounds, então incrementá-lo reenquadra na hora.
+  const [reenquadrar, setReenquadrar] = useState(0);
+
   return (
     // isolate: cria um stacking context próprio pro mapa, senão os controles do
     // Leaflet (z-index ~1000) "furam" e ficam por cima dos modais da página.
-    <div className="isolate w-full h-full">
+    // relative: âncora do botão de recentralizar.
+    <div className="isolate relative w-full h-full">
     <MapContainer
       center={center}
       zoom={14}
@@ -287,8 +312,38 @@ export function MapDisplay({
 
       {/* resetKey = o destino. Muda quando a fase troca (restaurante -> cliente)
           e é aí, só aí, que faz sentido reenquadrar por conta própria. */}
-      <FitBounds points={fitPoints} resetKey={`${phase}:${tLat},${tLng}`} />
+      <FitBounds points={fitPoints} resetKey={`${phase}:${tLat},${tLng}:${reenquadrar}`} />
     </MapContainer>
+
+    {/* Recentralizar. Canto superior direito porque o Leaflet já ocupa o
+        superior esquerdo (zoom) e o inferior direito (crédito obrigatório).
+        Alvo de 44px: é pra ser acertado com o polegar, de moto parada. */}
+    <button
+      type="button"
+      onClick={() => setReenquadrar((n) => n + 1)}
+      aria-label="Recentralizar o mapa"
+      title="Recentralizar"
+      style={{ zIndex: 1000 }}
+      className="absolute top-3 right-3 h-11 w-11 rounded-full bg-white
+                 border border-gray-300 shadow-md text-gray-700
+                 flex items-center justify-center active:bg-gray-100"
+    >
+      {/* shrink-0 é obrigatório aqui: o App.css impõe padding:12px 16px
+          !important em TODA button no celular, o que sobra ~12px de largura
+          interna. Sem isto o flex espremeria o ícone de 22px nesses 12px e ele
+          sairia achatado. Ver a nota "App.css !important" — é a terceira vez
+          que essa regra morde. */}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+           className="shrink-0" aria-hidden="true">
+        <circle cx="12" cy="12" r="7" />
+        <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
+        <line x1="12" y1="1.5" x2="12" y2="4.5" />
+        <line x1="12" y1="19.5" x2="12" y2="22.5" />
+        <line x1="1.5" y1="12" x2="4.5" y2="12" />
+        <line x1="19.5" y1="12" x2="22.5" y2="12" />
+      </svg>
+    </button>
     </div>
   );
 }

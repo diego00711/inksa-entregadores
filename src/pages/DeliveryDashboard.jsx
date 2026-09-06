@@ -500,17 +500,35 @@ export default function ModernDeliveryDashboard() {
       haptics.notify();
       addToast('Pedido entregue com sucesso! 🎉', 'success');
 
+      // ⚠️ O MODAL FECHA AQUI, E NÃO NO FIM. Neste ponto a entrega JÁ ESTÁ
+      // concluída no servidor — o cliente já vê "entregue" na tela dele.
+      // Tudo que vem depois é refinamento nosso (descobrir qual pedido oferecer
+      // pra avaliar). Antes isso ficava ANTES do fecha-modal, então o entregador
+      // segurava o celular na porta do cliente olhando um spinner enquanto uma
+      // SEGUNDA chamada de rede ia e voltava. No teste de 06/09/2026 deu 15 a 20
+      // segundos — provavelmente o backend saindo de hibernação.
+      //
+      // Trabalho já feito não pode ficar refém de trabalho enfeite.
+      const idConcluido = pendingCompleteId;
+      const local = pendingCompleteOrder
+        || activeOrders.find(o => o.id === idConcluido)
+        || null;
+
+      setPendingCompleteId(null);
+      setPendingCompleteOrder(null);
+      setPendingCode('');
+      setCompleting(false);
+      fetchDashboardData(true);
+
       // Resolve o pedido a avaliar pela MESMA fonte da Central de Avaliações
       // (/pending-delivery-review). Antes dependíamos só do objeto em memória —
       // se ele se perdesse no refetch, o modal não abria e o entregador tinha
       // que ir na Central. Agora, se aparece na Central, aparece aqui.
-      const local = pendingCompleteOrder
-        || activeOrders.find(o => o.id === pendingCompleteId)
-        || null;
+      // Continua sendo esperado, mas com o modal do código já fora da tela.
       let completed = local;
       try {
         const pendentes = await getOrdersToReview();
-        const achado = pendentes.find(o => String(o.id) === String(pendingCompleteId));
+        const achado = pendentes.find(o => String(o.id) === String(idConcluido));
         if (achado) completed = { ...achado, payment_method: local?.payment_method, change_for: local?.change_for, total_amount: achado.total_amount ?? local?.total_amount };
       } catch {
         /* rede fora: segue com o objeto local */
@@ -524,11 +542,6 @@ export default function ModernDeliveryDashboard() {
         // Cartão/PIX: já oferece avaliar antes do pedido sumir da lista.
         openClientReview(completed);
       }
-
-      setPendingCompleteId(null);
-      setPendingCompleteOrder(null);
-      setPendingCode('');
-      fetchDashboardData(true);
     } catch (err) {
       addToast(err?.message || 'Erro ao completar entrega.', 'error');
     } finally {
