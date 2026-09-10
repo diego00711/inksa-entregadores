@@ -26,6 +26,7 @@ import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { haptics } from '../lib/haptics';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
 import { numeroPedido } from '../utils/pedidoNumero';
+import { brl } from '../utils/dinheiro';
 
 const DASHBOARD_CACHE_KEY = 'delivery:dashboard';
 
@@ -101,12 +102,12 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
           </div>
           <div className="text-right shrink-0">
             <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              R$ {(showNet ? net : fee).toFixed(2)}
+              {brl(showNet ? net : fee)}
             </div>
             <p className="text-xs text-gray-500">{showNet ? 'Você recebe' : 'Taxa de entrega'}</p>
             {showNet && feePct > 0 && (
               <p className="text-[11px] text-gray-400 leading-tight">
-                Frete R$ {fee.toFixed(2)} · taxa {feePct}%
+                Frete {brl(fee)} · taxa {feePct}%
               </p>
             )}
           </div>
@@ -163,12 +164,12 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
             <div className="p-3 rounded-xl border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-yellow-50">
               <p className="text-sm font-black text-orange-700 flex items-center gap-2">
                 💵 COBRAR{' '}
-                <span className="text-base">R$ {toNumber(order.total_amount).toFixed(2)}</span>
+                <span className="text-base">{brl(toNumber(order.total_amount))}</span>
                 {' '}EM DINHEIRO
               </p>
               {toNumber(order.change_for) > 0 && (
                 <p className="text-xs text-orange-600 mt-1">
-                  Levar troco de R$ {(toNumber(order.change_for) - toNumber(order.total_amount)).toFixed(2)}
+                  Levar troco de {brl(toNumber(order.change_for) - toNumber(order.total_amount))}
                 </p>
               )}
             </div>
@@ -817,11 +818,11 @@ export default function ModernDeliveryDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-white/80 mb-0.5">Recebido hoje</p>
-                <p className="text-2xl font-black">R$ {toNumber(dashboardStats?.totalCashReceived).toFixed(2)}</p>
+                <p className="text-2xl font-black">{brl(toNumber(dashboardStats?.totalCashReceived))}</p>
               </div>
               <div>
                 <p className="text-xs text-white/80 mb-0.5">Débito com plataforma</p>
-                <p className="text-2xl font-black">R$ {toNumber(dashboardStats?.cashDebt).toFixed(2)}</p>
+                <p className="text-2xl font-black">{brl(toNumber(dashboardStats?.cashDebt))}</p>
               </div>
             </div>
             <button
@@ -876,19 +877,19 @@ export default function ModernDeliveryDashboard() {
                 <div className="space-y-2 text-left bg-gray-50 rounded-xl p-4 mb-4">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Você recebeu</span>
-                    <span className="font-bold text-green-600">R$ {toNumber(cashConfirmResult.voce_recebeu).toFixed(2)}</span>
+                    <span className="font-bold text-green-600">{brl(toNumber(cashConfirmResult.voce_recebeu))}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Sua taxa de entrega</span>
-                    <span className="font-bold text-blue-600">R$ {toNumber(cashConfirmResult.sua_taxa).toFixed(2)}</span>
+                    <span className="font-bold text-blue-600">{brl(toNumber(cashConfirmResult.sua_taxa))}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-sm text-gray-600">Débito com plataforma</span>
-                    <span className="font-bold text-orange-600">R$ {toNumber(cashConfirmResult.deve_a_plataforma).toFixed(2)}</span>
+                    <span className="font-bold text-orange-600">{brl(toNumber(cashConfirmResult.deve_a_plataforma))}</span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mb-4">
-                  R$ {toNumber(cashConfirmResult.deve_a_plataforma).toFixed(2)} será descontado do seu próximo repasse online.
+                  {brl(toNumber(cashConfirmResult.deve_a_plataforma))} será descontado do seu próximo repasse online.
                 </p>
                 <button
                   onClick={closeCashConfirm}
@@ -906,12 +907,12 @@ export default function ModernDeliveryDashboard() {
                 </div>
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-5 text-center">
                   <p className="text-3xl font-black text-orange-700">
-                    R$ {toNumber(pendingCashConfirm.total_amount).toFixed(2)}
+                    {brl(toNumber(pendingCashConfirm.total_amount))}
                   </p>
                   <p className="text-sm text-orange-600 mt-1">Você já recebeu este valor do cliente?</p>
                   {toNumber(pendingCashConfirm.change_for) > 0 && (
                     <p className="text-xs text-orange-500 mt-1">
-                      Troco levado: R$ {(toNumber(pendingCashConfirm.change_for) - toNumber(pendingCashConfirm.total_amount)).toFixed(2)}
+                      Troco levado: {brl(toNumber(pendingCashConfirm.change_for) - toNumber(pendingCashConfirm.total_amount))}
                     </p>
                   )}
                 </div>

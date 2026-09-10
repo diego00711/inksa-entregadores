@@ -22,6 +22,7 @@ import { useOrderTracking } from '../hooks/useOrderTracking';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
 import { numeroPedido } from '../utils/pedidoNumero';
+import { brl } from '../utils/dinheiro';
 
 const CACHE_KEY = 'delivery:minhas-entregas';
 
@@ -531,10 +532,10 @@ export function MyDeliveriesPage() {
                           restaurante, onde o chip ainda não existia. */}
                       {activeDelivery.payment_method === 'cash' && (
                         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-orange-600/95 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
-                          💵 Cobrar R$ {Number(activeDelivery.total_amount || 0).toFixed(2).replace('.', ',')}
+                          💵 Cobrar {brl(Number(activeDelivery.total_amount || 0))}
                           {Number(activeDelivery.change_for || 0) > Number(activeDelivery.total_amount || 0) && (
                             <span className="font-semibold opacity-90">
-                              · troco R$ {(Number(activeDelivery.change_for) - Number(activeDelivery.total_amount)).toFixed(2).replace('.', ',')}
+                              · troco {brl((Number(activeDelivery.change_for) - Number(activeDelivery.total_amount)))}
                             </span>
                           )}
                         </span>
@@ -658,10 +659,10 @@ export function MyDeliveriesPage() {
 
                     {activeDelivery.payment_method === 'cash' && (
                       <div className="bg-orange-50 border border-orange-200 rounded p-2 text-sm font-bold text-orange-700">
-                        💵 Cobrar R$ {Number(activeDelivery.total_amount || 0).toFixed(2)} em dinheiro
+                        💵 Cobrar {brl(Number(activeDelivery.total_amount || 0))} em dinheiro
                         {Number(activeDelivery.change_for || 0) > Number(activeDelivery.total_amount || 0) && (
                           <div className="mt-0.5 text-xs font-semibold text-orange-600">
-                            Levar troco de R$ {(Number(activeDelivery.change_for) - Number(activeDelivery.total_amount)).toFixed(2)} (cliente vai pagar com R$ {Number(activeDelivery.change_for).toFixed(2)})
+                            Levar troco de {brl(Number(activeDelivery.change_for) - Number(activeDelivery.total_amount))} (cliente vai pagar com {brl(Number(activeDelivery.change_for))})
                           </div>
                         )}
                       </div>
@@ -886,19 +887,19 @@ export function MyDeliveriesPage() {
             <div className="space-y-2 bg-gray-50 rounded-xl p-4 mb-4">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Você recebeu</span>
-                <span className="font-bold text-green-600">R$ {Number(cashInfo.voce_recebeu || 0).toFixed(2)}</span>
+                <span className="font-bold text-green-600">{brl(Number(cashInfo.voce_recebeu || 0))}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Sua taxa de entrega</span>
-                <span className="font-bold text-blue-600">R$ {Number(cashInfo.sua_taxa || 0).toFixed(2)}</span>
+                <span className="font-bold text-blue-600">{brl(Number(cashInfo.sua_taxa || 0))}</span>
               </div>
               <div className="flex justify-between border-t pt-2">
                 <span className="text-sm text-gray-600">Você deve à plataforma</span>
-                <span className="font-bold text-orange-600">R$ {Number(cashInfo.deve_a_plataforma || 0).toFixed(2)}</span>
+                <span className="font-bold text-orange-600">{brl(Number(cashInfo.deve_a_plataforma || 0))}</span>
               </div>
             </div>
             <p className="text-xs text-gray-500 mb-4 text-center">
-              R$ {Number(cashInfo.deve_a_plataforma || 0).toFixed(2)} será descontado do seu próximo repasse online.
+              {brl(Number(cashInfo.deve_a_plataforma || 0))} será descontado do seu próximo repasse online.
             </p>
             <button
               onClick={closeCashInfo}

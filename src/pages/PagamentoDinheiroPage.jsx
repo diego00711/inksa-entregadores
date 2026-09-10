@@ -13,9 +13,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import DeliveryService from '../services/deliveryService';
+import { brl } from '../utils/dinheiro';
 
-const brl = (v) =>
-  (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 // Passo a passo do fluxo do dinheiro — a mesma lógica do backend
 // (delivery_orders confirma o recebimento e soma cash_debt; o repasse

@@ -7,9 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getPickupCode } from '../services/orderService';
 import { numeroPedido } from '../utils/pedidoNumero';
+import { brl } from '../utils/dinheiro';
 
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
-const formatCurrency = (v) => toNumber(v).toFixed(2);
 
 const formatDate = (s) => {
   if (!s) return 'Data não disponível';
@@ -39,8 +39,8 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
   // não o frete cheio — senão parece que ganha mais do que ganha. Só cai pro
   // frete bruto se, por algum motivo, o líquido não tiver sido calculado.
   const _net = Number(delivery.valor_repassado_entregador);
-  const deliveryFee = formatCurrency(_net > 0 ? _net : delivery.delivery_fee);
-  const totalAmount = formatCurrency(delivery.total_amount);
+  const deliveryFee = brl(_net > 0 ? _net : delivery.delivery_fee);
+  const totalAmount = brl(delivery.total_amount);
   const restaurantName = delivery.restaurant_name || 'Restaurante não informado';
   const restaurantAddress = delivery.restaurant_address || 'Endereço não disponível';
   const deliveryAddress = delivery.delivery_address || 'Endereço de entrega não disponível';
@@ -144,14 +144,14 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
               <p className="text-xs text-gray-500 mb-0.5">Você recebe</p>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3 text-green-600" />
-                <span className="font-bold text-sm text-green-600">R$ {deliveryFee}</span>
+                <span className="font-bold text-sm text-green-600">{deliveryFee}</span>
               </div>
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-0.5">Total</p>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3 text-gray-600" />
-                <span className="font-semibold text-sm text-gray-700">R$ {totalAmount}</span>
+                <span className="font-semibold text-sm text-gray-700">{totalAmount}</span>
               </div>
             </div>
             {/* PORTE do pedido — quantas unidades vai carregar. Sem isso ele

@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { acceptDelivery, getPickupCode } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
 import { ChatModal } from './ChatModal';
+import { brl } from '../utils/dinheiro';
 
 // helpers
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
-const formatCurrency = (v) => toNumber(v).toFixed(2);
 
 // Normaliza a lista de itens vinda em formatos variados (igual o restaurante):
 // array puro, string JSON, ou objeto aninhado { items: [...] }. Sem isto, o
@@ -227,7 +227,7 @@ export function DeliveryDetailModal({
                           <p className="text-sm text-gray-600">Qtd: {itemQty(it)}</p>
                         </div>
                         <p className="font-semibold text-gray-800 shrink-0">
-                          R$ {formatCurrency(itemUnit(it) * itemQty(it))}
+                          {brl(itemUnit(it) * itemQty(it))}
                         </p>
                       </div>
                     ))}
@@ -244,15 +244,15 @@ export function DeliveryDetailModal({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-semibold">R$ {formatCurrency(subtotal)}</span>
+                    <span className="font-semibold">{brl(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Taxa de Entrega:</span>
-                    <span className="font-semibold text-green-600">R$ {formatCurrency(deliveryFee)}</span>
+                    <span className="font-semibold text-green-600">{brl(deliveryFee)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>Total do Pedido:</span>
-                    <span className="text-orange-600">R$ {formatCurrency(total)}</span>
+                    <span className="text-orange-600">{brl(total)}</span>
                   </div>
                 </div>
 
@@ -260,7 +260,7 @@ export function DeliveryDetailModal({
                     da plataforma) — destacado pra não confundir com o frete cheio. */}
                 <div className="mt-3 flex justify-between items-center rounded-lg bg-green-50 border border-green-200 px-3 py-2">
                   <span className="text-sm font-semibold text-green-800">💰 Você recebe por esta entrega</span>
-                  <span className="text-lg font-extrabold text-green-700">R$ {formatCurrency(earn)}</span>
+                  <span className="text-lg font-extrabold text-green-700">{brl(earn)}</span>
                 </div>
               </div>
 

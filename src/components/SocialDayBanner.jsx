@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { HeartHandshake } from 'lucide-react';
 import IndicarInstituicao from './IndicarInstituicao';
+import { brl } from '../utils/dinheiro';
 
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
-const money = (v) =>
-  (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function SocialDayBanner() {
   const [info, setInfo] = useState(null);
@@ -93,7 +92,7 @@ export default function SocialDayBanner() {
             <p className="text-[10px] uppercase tracking-wide text-white/80">
               {info.phase === 'live' ? 'Já arrecadado' : 'Total arrecadado'}
             </p>
-            <p className="text-lg sm:text-2xl font-extrabold leading-tight">{money(info.raised)}</p>
+            <p className="text-lg sm:text-2xl font-extrabold leading-tight">{brl(info.raised)}</p>
           </div>
         )}
       </div>

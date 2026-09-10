@@ -8,9 +8,7 @@ import {
 } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
 import { numeroPedido } from '../utils/pedidoNumero';
-
-const toBRL = (v) =>
-  Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+import { brl } from '../utils/dinheiro';
 
 const StatusBadge = ({ status }) => {
   // status vem do backend em inglês aqui: 'ready' | 'accepted_by_delivery'
@@ -74,20 +72,20 @@ const CardPedido = ({ pedido, onAceitar, onRecusar }) => {
         </p>
         {Number(pedido.valor_repassado_entregador) > 0 ? (
           <p>
-            <strong>Você recebe:</strong> {toBRL(pedido.valor_repassado_entregador)}
+            <strong>Você recebe:</strong> {brl(pedido.valor_repassado_entregador)}
             {Number(pedido.delivery_fee) > Number(pedido.valor_repassado_entregador) && (
               <span className="text-xs text-gray-500">
-                {' '}(frete {toBRL(pedido.delivery_fee)} − taxa)
+                {' '}(frete {brl(pedido.delivery_fee)} − taxa)
               </span>
             )}
           </p>
         ) : (
           <p>
-            <strong>Taxa de Entrega:</strong> {toBRL(pedido.delivery_fee)}
+            <strong>Taxa de Entrega:</strong> {brl(pedido.delivery_fee)}
           </p>
         )}
         <p>
-          <strong>Valor Total:</strong> {toBRL(pedido.total_amount)}
+          <strong>Valor Total:</strong> {brl(pedido.total_amount)}
         </p>
         {pedido.created_at && (
           <p className="text-xs text-gray-500">

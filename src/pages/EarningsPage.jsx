@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 
 import DeliveryService from '../services/deliveryService';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
+import { brl } from '../utils/dinheiro';
 // ⚠️ O recharts NÃO é importado aqui — é o maior pedaço do app (108 KB
 // comprimidos) e ninguém precisa dele pra ver quanto ganhou. Ele vem no
 // GraficosGanhos, sob demanda. O esqueleto é import NORMAL de propósito: ele é
@@ -202,7 +203,7 @@ export function EarningsPage() {
                         <DollarSign className="h-5 w-5 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-green-700">R$ {earningsData.totalEarningsPeriod.toFixed(2)}</div>
+                        <div className="text-3xl font-bold text-green-700">{brl(earningsData.totalEarningsPeriod)}</div>
                         <p className="text-xs text-gray-500">
                             Período: {earningsData.periodStartDate ? format(new Date(earningsData.periodStartDate), 'dd/MM/yyyy') : format(startDate, 'dd/MM/yyyy')} - {earningsData.periodEndDate ? format(new Date(earningsData.periodEndDate), 'dd/MM/yyyy') : format(endDate, 'dd/MM/yyyy')}
                         </p>
@@ -224,7 +225,7 @@ export function EarningsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-purple-700">
-                            R$ {(earningsData.totalDeliveriesPeriod > 0 ? (earningsData.totalEarningsPeriod / earningsData.totalDeliveriesPeriod) : 0).toFixed(2)}
+                            {brl(earningsData.totalDeliveriesPeriod > 0 ? (earningsData.totalEarningsPeriod / earningsData.totalDeliveriesPeriod) : 0)}
                         </div>
                     </CardContent>
                 </Card>
@@ -265,13 +266,13 @@ export function EarningsPage() {
                                     <div>
                                         <p className="text-[11px] text-gray-500 uppercase tracking-wide">Sua corrida</p>
                                         <p className="text-lg font-bold text-green-700">
-                                            R$ {parseFloat(delivery.delivery_fee || 0).toFixed(2)}
+                                            {brl(parseFloat(delivery.delivery_fee || 0))}
                                         </p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total do pedido</p>
                                         <p className="text-sm font-semibold text-gray-700">
-                                            R$ {parseFloat(delivery.total_amount || 0).toFixed(2)}
+                                            {brl(parseFloat(delivery.total_amount || 0))}
                                         </p>
                                     </div>
                                 </div>

@@ -23,6 +23,7 @@ import {
 import { format } from 'date-fns';
 import { Card, CardTitle } from '@/components/ui/card';
 import { ALTURA_GRAFICO as ALTURA } from './EsqueletoGraficos';
+import { brl, brlSemCentavos } from '../utils/dinheiro';
 
 // ⚠️ NÃO USE `new Date('2026-09-05')` AQUI. Data pura em ISO é interpretada
 // como MEIA-NOITE EM UTC; no nosso fuso (UTC-3) isso volta pro dia anterior, e
@@ -49,8 +50,11 @@ export default function GraficosGanhos({ dados }) {
           <LineChart data={lista}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis dataKey="earning_date" tickFormatter={dia} />
-            <YAxis tickFormatter={(tick) => `R$${Number(tick).toFixed(2)}`} />
-            <Tooltip formatter={(value) => [`R$${Number(value).toFixed(2)}`, 'Ganhos']} />
+            {/* Eixo SEM centavos, tooltip COM: cinco rótulos "R$ 1.234,56"
+                empilhados na lateral de um celular só roubam largura do
+                gráfico. O valor exato quem quer, toca na barra. */}
+            <YAxis tickFormatter={(tick) => brlSemCentavos(tick)} />
+            <Tooltip formatter={(value) => [brl(value), 'Ganhos']} />
             <Legend />
             <Line type="monotone" dataKey="total_earned_daily" stroke="#16a34a"
                   strokeWidth={2.5} activeDot={{ r: 8 }} name="Ganhos" />

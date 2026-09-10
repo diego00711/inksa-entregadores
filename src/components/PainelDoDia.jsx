@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp, Clock, Route, Star, Wallet, Truck } from 'lucide-react';
+import { numeroBR } from '../utils/dinheiro';
 
 /**
  * Painel do dia do entregador.
@@ -32,8 +33,6 @@ import { TrendingUp, Clock, Route, Star, Wallet, Truck } from 'lucide-react';
  * Mostrar isso seria desenhar dado que não existe, e o entregador confia no
  * número. Quando forem calculados de verdade, cabem aqui sem redesenho.
  */
-
-const brl = (v) => Number(v || 0).toFixed(2).replace('.', ',');
 
 // Altura útil do gráfico da semana, em pixels. É a régua contra a qual cada
 // barra é calculada — ver o comentário dentro de <Semana>.
@@ -88,7 +87,7 @@ function Semana({ dados }) {
     <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-gray-800">Sua semana</h2>
-        <p className="text-sm font-bold tabular-nums text-gray-900">R$ {brl(total)}</p>
+        <p className="text-sm font-bold tabular-nums text-gray-900">R$ {numeroBR(total)}</p>
       </div>
       {/* ⚠️ ALTURA DA BARRA EM PIXEL, NÃO EM PORCENTAGEM.
           A primeira versão usava `height: X%` numa barra dentro de um wrapper
@@ -115,7 +114,7 @@ function Semana({ dados }) {
                   ehHoje ? 'bg-orange-500' : v > 0 ? 'bg-orange-200' : 'bg-gray-200'
                 }`}
                 style={{ height: `${altura}px` }}
-                title={`${d?.day}: R$ ${brl(v)}`}
+                title={`${d?.day}: R$ ${numeroBR(v)}`}
               />
             </div>
           );
@@ -173,7 +172,7 @@ export default function PainelDoDia({
           <p className="mt-1 flex items-baseline gap-1.5 text-white">
             <span className="text-2xl font-bold text-white/50">R$</span>
             <span className="text-[44px] font-black leading-none tabular-nums">
-              {brl(ganhosHoje)}
+              {numeroBR(ganhosHoje)}
             </span>
           </p>
 
@@ -181,10 +180,10 @@ export default function PainelDoDia({
             <div className="mt-4">
               <div className="mb-2 flex items-baseline justify-between gap-2 text-xs">
                 <span className="font-semibold text-white/55">
-                  Meta R$ {brl(meta)}
+                  Meta R$ {numeroBR(meta)}
                 </span>
                 <span className={`font-bold tabular-nums ${bateu ? 'text-emerald-400' : 'text-white/80'}`}>
-                  {bateu ? 'Meta batida ✓' : `faltam R$ ${brl(falta)}`}
+                  {bateu ? 'Meta batida ✓' : `faltam R$ ${numeroBR(falta)}`}
                 </span>
               </div>
               <BarraDaMeta pct={pct} bateu={bateu} />
@@ -243,7 +242,7 @@ export default function PainelDoDia({
           {proximoPagamento && Number(proximoPagamento.amount) > 0 ? (
             <>
               <p className="text-2xl font-bold tabular-nums text-emerald-600">
-                R$ {brl(proximoPagamento.amount)}
+                R$ {numeroBR(proximoPagamento.amount)}
               </p>
               <p className="mt-0.5 text-[11px] text-gray-400">em {proximoPagamento.date}</p>
             </>
