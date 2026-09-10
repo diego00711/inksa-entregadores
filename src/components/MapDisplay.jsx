@@ -91,7 +91,7 @@ const alfinete = (cor, emoji) => L.divIcon({
   iconSize: [34, 42],
   iconAnchor: [17, 42],
 });
-const lojaIcon = alfinete('#FF6F00', '🏪');
+const lojaIcon = alfinete('#F97316', '🏪');
 const clienteIcon = alfinete('#16A34A', '🏠');
 
 // Distância em metros entre dois pontos (haversine). Serve pra saber se o

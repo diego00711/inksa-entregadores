@@ -384,7 +384,7 @@ export function MyDeliveriesPage() {
           empilhamento — quem resolve isso é o z-index, não a margem. */}
       {(pulling || refreshing) && (
         <div className="relative z-10 flex justify-center py-3">
-          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       {/* A saudação ("Boa noite, fulano — confira as entregas disponíveis")
@@ -498,7 +498,7 @@ export function MyDeliveriesPage() {
                       </span>
                       {routeInfo && (
                         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-gray-800 shadow-lg backdrop-blur">
-                          <Route className="w-3.5 h-3.5 shrink-0 text-[#FF6F00]" />
+                          <Route className="w-3.5 h-3.5 shrink-0 text-orange-500" />
                           {routeInfo.km.toFixed(1).replace('.', ',')} km
                           <span className="text-gray-400">·</span>
                           ~{routeInfo.min} min
@@ -696,7 +696,7 @@ export function MyDeliveriesPage() {
                     {['accepted_by_delivery', 'ready', 'picked_up', 'on_the_way', 'delivering'].includes(activeDelivery.status) && (
                       <button
                         onClick={() => chat.setOpen(true)}
-                        className="relative w-full text-sm font-bold text-[#FF6F00] border-2 border-[#FF6F00] bg-white hover:bg-orange-50 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
+                        className="relative w-full text-sm font-bold text-orange-500 border-2 border-orange-500 bg-white hover:bg-orange-50 rounded-lg py-2 flex items-center justify-center gap-1.5 min-h-[44px]"
                       >
                         <MessageCircle className="w-4 h-4" /> Chat com cliente
                         {chat.unread > 0 && (
@@ -748,7 +748,17 @@ export function MyDeliveriesPage() {
                 <CardTitle className="text-lg font-bold">
                   {activeFilter === 'available' ? 'Pedidos Disponíveis' : 'Histórico de Entregas'}
                 </CardTitle>
-                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg overflow-x-auto w-full sm:w-auto scrollbar-none">
+                {/* ⚠️ QUEBRA EM DUAS LINHAS NO CELULAR, não rolagem lateral.
+                    As quatro abas precisam de 418px e o cartão tem 312px numa
+                    tela de 360px — sobrava "Em Andamento" cortada e "Concluídas"
+                    invisível, sem nada indicando que dava pra arrastar. O
+                    `overflow-x-auto` continua como rede pra tela ainda menor.
+
+                    Antes isto quebrava sozinho, por causa de um
+                    `.flex { flex-wrap: wrap !important }` global no app.css que
+                    saiu em 09/09. A intenção era esta o tempo todo — agora está
+                    escrita aqui, onde quem lê o componente enxerga. */}
+                <div className="flex flex-wrap sm:flex-nowrap gap-1 bg-gray-100 p-1 rounded-lg overflow-x-auto w-full sm:w-auto scrollbar-none">
                   <Button
                     size="sm"
                     variant={activeFilter === 'available' ? 'default' : 'ghost'}

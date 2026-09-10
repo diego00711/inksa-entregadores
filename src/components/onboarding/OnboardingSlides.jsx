@@ -75,7 +75,7 @@ export default function OnboardingSlides({ onComplete }) {
         <span className="text-8xl mb-8 select-none" role="img" aria-label={slide.title}>
           {slide.emoji}
         </span>
-        <h2 className="text-2xl font-bold text-[#FF6F00] text-center mb-4">
+        <h2 className="text-2xl font-bold text-orange-500 text-center mb-4">
           {slide.title}
         </h2>
         <p className="text-gray-600 text-center px-8 text-base leading-relaxed">
@@ -89,7 +89,7 @@ export default function OnboardingSlides({ onComplete }) {
           <span
             key={i}
             className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${
-              i === current ? 'bg-[#FF6F00]' : 'bg-gray-300'
+              i === current ? 'bg-orange-500' : 'bg-gray-300'
             }`}
           />
         ))}
@@ -98,7 +98,7 @@ export default function OnboardingSlides({ onComplete }) {
       {/* Action button */}
       <button
         onClick={next}
-        className="bg-[#FF6F00] text-white rounded-full min-h-[44px] w-full max-w-xs font-semibold text-base transition-opacity hover:opacity-90 active:opacity-80"
+        className="bg-orange-500 text-white rounded-full min-h-[44px] w-full max-w-xs font-semibold text-base transition-opacity hover:opacity-90 active:opacity-80"
       >
         {isLast ? 'Começar' : 'Próximo'}
       </button>

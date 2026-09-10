@@ -392,7 +392,12 @@ export default function DeliveryPortalLayout() {
               <Menu className="w-7 h-7" />
             </button>
             <div className="flex items-center gap-2">
-              <img src="/inksa-marca.png" alt="Inksa" className="h-7 w-auto" />
+              {/* ⚠️ VERSÃO BRANCA AQUI, não a laranja. Este cabeçalho é
+                  `from-orange-500 to-orange-600` — marca laranja sobre barra
+                  laranja não se lê, e era o que estava no ar (o Diego marcou no
+                  print em 10/09/2026). Mesma silhueta, tinta branca.
+                  Em fundo claro, a laranja continua sendo a certa. */}
+              <img src="/inksa-marca-branca.png" alt="Inksa" className="h-7 w-auto" />
               <span className="font-bold text-sm">Inksa Entregadores</span>
             </div>
             {/* Pill de status rápido */}

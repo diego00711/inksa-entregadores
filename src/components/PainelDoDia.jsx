@@ -46,7 +46,7 @@ function BarraDaMeta({ pct, bateu }) {
     <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
       <div
         className={`h-full rounded-full transition-[width] duration-700 ease-out ${
-          bateu ? 'bg-emerald-400' : 'bg-[#FF6F00]'
+          bateu ? 'bg-emerald-400' : 'bg-orange-500'
         }`}
         style={{ width: `${Math.max(pct, 2)}%` }}
       />
@@ -112,7 +112,7 @@ function Semana({ dados }) {
             <div key={`${d?.day}-${i}`} className="flex h-full min-w-0 flex-1 flex-col justify-end">
               <div
                 className={`w-full rounded-t transition-[height] duration-500 ${
-                  ehHoje ? 'bg-[#FF6F00]' : v > 0 ? 'bg-orange-200' : 'bg-gray-200'
+                  ehHoje ? 'bg-orange-500' : v > 0 ? 'bg-orange-200' : 'bg-gray-200'
                 }`}
                 style={{ height: `${altura}px` }}
                 title={`${d?.day}: R$ ${brl(v)}`}
@@ -126,7 +126,7 @@ function Semana({ dados }) {
           <span
             key={`rot-${d?.day}-${i}`}
             className={`min-w-0 flex-1 text-center text-[10px] font-bold ${
-              i === indiceHoje ? 'text-[#FF6F00]' : 'text-gray-400'
+              i === indiceHoje ? 'text-orange-500' : 'text-gray-400'
             }`}
           >
             {String(d?.day || '').slice(0, 3)}
@@ -163,7 +163,7 @@ export default function PainelDoDia({
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-25 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #FF6F00 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, #F97316 0%, transparent 70%)' }}
         />
 
         <div className="relative">

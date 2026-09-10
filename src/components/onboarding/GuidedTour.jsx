@@ -64,7 +64,7 @@ export default function GuidedTour({ onComplete }) {
           </button>
           <button
             onClick={next}
-            className="bg-[#FF6F00] text-white rounded-full px-6 py-2 text-sm font-semibold min-h-[40px] transition-opacity hover:opacity-90 active:opacity-80"
+            className="bg-orange-500 text-white rounded-full px-6 py-2 text-sm font-semibold min-h-[40px] transition-opacity hover:opacity-90 active:opacity-80"
           >
             {isLast ? 'Concluir' : 'Próximo'}
           </button>

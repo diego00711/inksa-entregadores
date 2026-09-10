@@ -64,7 +64,7 @@ export default function GlobalError() {
       <button
         onClick={retryNow}
         disabled={checking}
-        className="bg-[#FF6F00] text-white font-bold px-8 py-3 rounded-full text-lg hover:bg-orange-600 transition-colors shadow-lg disabled:opacity-60"
+        className="bg-orange-500 text-white font-bold px-8 py-3 rounded-full text-lg hover:bg-orange-600 transition-colors shadow-lg disabled:opacity-60"
       >
         {checking ? 'Verificando…' : 'Tentar novamente'}
       </button>
