@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { DELIVERY_API_URL, createAuthHeaders } from '../../services/api.js';
 import apiFetch from '../../services/apiClient.js';
+// ⚠️ Import na MESMA edição em que o uso entrou. Duas telas brancas deste
+// projeto (o ícone Lightbulb e a PrecificacaoPage) nasceram de um símbolo
+// usado sem importar: o build passa, o deploy passa, e o app morre em
+// produção com "não está definido".
+import { tempoInicial, buscarTempo } from '../../utils/tempoInatividade.js';
 import {
   Home,
   Package,
@@ -33,8 +38,9 @@ import { useChatAlarm, ChatAlarmContext } from '../../hooks/useChatAlarm.js';
 import { useIdleLogout } from '../../hooks/useIdleLogout.js';
 import { ChatModal } from '../ChatModal.jsx';
 
-// Desloga sozinho após 1h sem nenhuma interação (segurança de sessão esquecida).
-const IDLE_LOGOUT_MS = 60 * 60 * 1000;
+// O padrão de 1h mudou de casa: agora é PADRAO_MS em utils/tempoInatividade.js,
+// junto da busca que o consome. Duas cópias do mesmo número em arquivos
+// diferentes é como um deles envelhece sozinho.
 
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
@@ -78,18 +84,17 @@ export default function DeliveryPortalLayout() {
 
   // Logoff automático por inatividade — tempo CONFIGURÁVEL no admin
   // (platform_settings.idle_logout_minutes; 0 = desligado). authService.logout()
-  // marca is_available=false antes de sair. Enquanto não busca, usa 1h.
-  const [idleMs, setIdleMs] = useState(IDLE_LOGOUT_MS);
+  // marca is_available=false antes de sair.
+  //
+  // A busca (com repetição e memória do último valor) mora em
+  // utils/tempoInatividade.js — ver lá por que ela deixou de ser um
+  // `.catch(() => {})` solto aqui.
+  const [idleMs, setIdleMs] = useState(tempoInicial);
   useEffect(() => {
     let alive = true;
-    fetch(`${DELIVERY_API_URL}/api/public/app-config`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!alive) return;
-        const min = Number(d?.idle_logout_minutes);
-        if (Number.isFinite(min)) setIdleMs(min > 0 ? min * 60000 : 0);
-      })
-      .catch(() => {});
+    buscarTempo(DELIVERY_API_URL).then((ms) => {
+      if (alive && ms !== null) setIdleMs(ms);
+    });
     return () => { alive = false; };
   }, []);
   useIdleLogout({
