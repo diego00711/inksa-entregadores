@@ -37,7 +37,13 @@ window.addEventListener('vite:preloadError', () => {
   const last = Number(sessionStorage.getItem('preloadErrReloadAt')) || 0;
   if (Date.now() - last < 10000) return;
   sessionStorage.setItem('preloadErrReloadAt', String(Date.now()));
-  window.location.reload();
+  // JOGA O CACHE FORA ANTES DE RECARREGAR. Sem isto o reload lê o MESMO cache
+  // envenenado do service worker (HTML gravado sob nome de .js) e a tela branca
+  // volta idêntica — recarregar sozinho não resolve nada. Ver public/sw.js.
+  const limpar = ('caches' in window)
+    ? caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))).catch(() => {})
+    : Promise.resolve();
+  limpar.finally(() => window.location.reload());
 });
 
 // BEFORE INSTALL PROMPT - Detecta quando pode instalar como app

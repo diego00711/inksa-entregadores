@@ -4,7 +4,7 @@
 // Bump de versão força o SW a reinstalar e apagar os caches antigos no próximo
 // carregamento (o activate deleta tudo != CACHE_NAME). Suba este número a cada
 // release em que precise garantir que o app pegue a versão nova na hora.
-const CACHE_NAME = 'inksa-entregadores-v1.0.39';
+const CACHE_NAME = 'inksa-entregadores-v1.0.40';
 const API_URL = 'https://inksa-auth-flask-dev.onrender.com';
 
 // =========== Install ===========
@@ -74,6 +74,20 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(staleWhileRevalidate(request));
 });
 
+// O host devolve o index.html — HTTP 200, content-type text/html — para
+// QUALQUER caminho que não existe, inclusive /assets/*. Como `net.ok` é true
+// nesse caso, este worker guardava a PÁGINA HTML no cache sob o nome de um
+// arquivo .js, e depois servia HTML no lugar de JavaScript: tela branca.
+//
+// A janela de risco é o deploy — o index novo entra no ar apontando pra chunks
+// que ainda estão subindo. Aqui isso é o entregador que não consegue mais abrir
+// o app no meio da rua, e não abre chamado: some.
+//
+// ⚠️ SÓ VALE PRA ASSET. Em navegação (destination === 'document') text/html é
+// a resposta CERTA — travar lá quebraria o app offline inteiro.
+const ehFallbackDeSPA = (res) =>
+  !!res && (res.headers.get('content-type') || '').includes('text/html');
+
 // =========== Estratégias ===========
 async function networkFirst(request) {
   try {
@@ -112,12 +126,18 @@ async function networkFirstWithFallback(request) {
 }
 
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  let cached = await caches.match(request);
+  // Entrada envenenada por uma versão anterior deste worker: descarta e trata
+  // como se não existisse, senão a tela quebrada sobrevive ao upgrade.
+  if (ehFallbackDeSPA(cached)) {
+    caches.open(CACHE_NAME).then((c) => c.delete(request)).catch(() => {});
+    cached = null;
+  }
   if (cached) return cached;
 
   try {
     const net = await fetch(request);
-    if (net && net.ok) {
+    if (net && net.ok && !ehFallbackDeSPA(net)) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, net.clone());
     }
@@ -128,10 +148,15 @@ async function cacheFirst(request) {
 }
 
 async function staleWhileRevalidate(request) {
-  const cached = await caches.match(request);
+  let cached = await caches.match(request);
+  if (ehFallbackDeSPA(cached)) {
+    caches.open(CACHE_NAME).then((c) => c.delete(request)).catch(() => {});
+    cached = null;
+  }
   const fetchPromise = fetch(request)
     .then((net) => {
-      if (net && net.ok) {
+      // HTML aqui é o 404 disfarçado do host, não o arquivo pedido.
+      if (net && net.ok && !ehFallbackDeSPA(net)) {
         caches.open(CACHE_NAME).then((c) => c.put(request, net.clone()));
       }
       return net;
