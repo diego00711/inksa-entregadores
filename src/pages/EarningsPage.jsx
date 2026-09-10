@@ -1,10 +1,16 @@
 // Ficheiro: src/pages/EarningsPage.jsx (VERSÃO TURBINADA)
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import DeliveryService from '../services/deliveryService';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'; // Componentes de gráfico
+// ⚠️ O recharts NÃO é importado aqui — é o maior pedaço do app (108 KB
+// comprimidos) e ninguém precisa dele pra ver quanto ganhou. Ele vem no
+// GraficosGanhos, sob demanda. O esqueleto é import NORMAL de propósito: ele é
+// o fallback do Suspense e precisa estar pronto na hora; se viesse do mesmo
+// arquivo do gráfico, arrastaria o recharts de volta pro pedaço principal.
+const GraficosGanhos = lazy(() => import('../components/GraficosGanhos'));
+import EsqueletoGraficos from '../components/EsqueletoGraficos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Para os cards de sumário
 import { CalendarIcon, DollarSign, Truck } from 'lucide-react'; // Ícones
 import { format, subDays } from 'date-fns'; // Para formatação e manipulação de datas
@@ -224,35 +230,15 @@ export function EarningsPage() {
                 </Card>
             </div>
 
-            {/* Gráficos */}
+            {/* Gráficos — carregados DEPOIS da página (ver GraficosGanhos.jsx).
+                O recharts é 108 KB comprimidos, o maior pedaço do app. Enquanto
+                ele morava aqui, o entregador não via quanto ganhou antes de
+                baixar a biblioteca inteira. */}
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-5 border-b pb-2">Gráficos de Desempenho</h2>
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 mb-6 sm:mb-8">
-                <Card className="shadow-lg p-4">
-                    <CardTitle className="text-lg font-semibold mb-4 text-gray-700">Ganhos Diários</CardTitle>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={earningsData.dailyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="earning_date" tickFormatter={(tick) => { try { return format(new Date(tick), 'dd/MM'); } catch { return tick; } }} />
-                            <YAxis tickFormatter={(tick) => `R$${Number(tick).toFixed(2)}`} />
-                            <Tooltip formatter={(value) => [`R$${Number(value).toFixed(2)}`, 'Ganhos']} />
-                            <Legend />
-                            <Line type="monotone" dataKey="total_earned_daily" stroke="#16a34a" strokeWidth={2.5} activeDot={{ r: 8 }} name="Ganhos" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </Card>
-                <Card className="shadow-lg p-4">
-                    <CardTitle className="text-lg font-semibold mb-4 text-gray-700">Entregas Diárias</CardTitle>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={earningsData.dailyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="earning_date" tickFormatter={(tick) => { try { return format(new Date(tick), 'dd/MM'); } catch { return tick; } }} />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [value, 'Entregas']} />
-                            <Legend />
-                            <Bar dataKey="total_deliveries_daily" fill="#2563eb" radius={[4, 4, 0, 0]} name="Entregas" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </Card>
+                <Suspense fallback={<EsqueletoGraficos />}>
+                    <GraficosGanhos dados={earningsData.dailyEarnings} />
+                </Suspense>
             </div>
 
             {/* Tabela Detalhada de Entregas */}
