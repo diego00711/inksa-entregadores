@@ -19,15 +19,30 @@
     <meta name="description" content="App de entregas Inksa para entregadores profissionais">
     <meta name="keywords" content="delivery, entrega, inksa, entregador, app">
 
-  <!-- Sentry Error Monitoring (CDN — sem npm) -->
-  <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
+  <!-- Sentry — monitoramento de erro (CDN, sem npm).
+
+       ⚠️ `defer` + `onload`, e não script solto (09/09/2026). Sem o defer este
+       arquivo de 76 KB (25 KB comprimido) de um CDN de TERCEIRO travava a
+       leitura do HTML: DNS novo, TLS novo, download e execução — tudo antes do
+       navegador poder pintar o primeiro pixel. Num celular na rua isso é o app
+       "demorando pra abrir", e custava em TODA abertura, de TODO usuário.
+
+       O init NÃO foi pro DOMContentLoaded de propósito: lá ele rodaria depois
+       do app já ter iniciado, e os erros mais valiosos são os de ARRANQUE — as
+       telas brancas deste projeto foram todas assim. Com `onload` ele
+       inicializa assim que o bundle do Sentry executa, e isso ainda acontece
+       ANTES do main.jsx: `type="module"` também é adiado e vem depois na ordem
+       do documento. Se alguém mover o main.jsx pra cima, essa garantia cai. -->
   <script>
-    // Substitua SUA_DSN_AQUI pela DSN real em https://sentry.io → Projeto → Settings → Client Keys
     var SENTRY_DSN = "https://0ab4c11f20659cb2404109e7e177f018@o4511445143912448.ingest.us.sentry.io/4511445160099840";
-    if (window.Sentry && SENTRY_DSN !== "SUA_DSN_AQUI") {
-      window.Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 });
-    }
+    window.__iniciarSentry = function () {
+      if (window.Sentry && SENTRY_DSN !== "SUA_DSN_AQUI") {
+        window.Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 });
+      }
+    };
   </script>
+  <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js"
+          crossorigin="anonymous" defer onload="window.__iniciarSentry()"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -5,7 +5,13 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 // Adicione esta linha para o estilo do mapa
-import 'leaflet/dist/leaflet.css'; 
+// ⚠️ O CSS do Leaflet MUDOU PRA components/MapDisplay.jsx (09/09/2026).
+// Aqui ele entrava no pacote de estilo principal — 15 KB baixados por TODO
+// mundo, em toda abertura, mesmo por quem nunca chega a ver um mapa. O JS do
+// Leaflet já era carregado sob demanda (só existe no pedaço de MyDeliveriesPage);
+// o CSS é que estava fora do lugar. Importando dentro do componente, os dois
+// passam a viajar juntos, quando o mapa realmente aparece.
+
 
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';

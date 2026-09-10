@@ -5,6 +5,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
+// O CSS do Leaflet vive AQUI, junto de quem usa — veio do main.jsx, onde era
+// baixado por todo mundo mesmo sem mapa na tela. Sem esta linha o mapa
+// renderiza quebrado (tiles empilhados, controles fora do lugar).
+import 'leaflet/dist/leaflet.css';
 
 // Corrige os ícones padrão do Leaflet (senão o marcador some no bundle)
 delete L.Icon.Default.prototype._getIconUrl;
