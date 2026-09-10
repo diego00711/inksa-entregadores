@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md p-4 sm:p-8 space-y-6 bg-white rounded-lg shadow-xl mx-4 sm:mx-0">
         <div className="text-center">
           {/* Supondo que o logo esteja na pasta public */}
-          <img src="/inka-logo.png" alt="Inksa Logo" className="w-20 h-20 mx-auto" />
+          <img src="/inksa-marca.png" alt="Inksa Logo" className="h-16 w-auto mx-auto" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Recuperar Senha</h2>
           <p className="mt-2 text-sm text-gray-600">Insira o seu email para receber o link de redefinição.</p>
         </div>

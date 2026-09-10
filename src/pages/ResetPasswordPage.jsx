@@ -60,7 +60,7 @@ export function ResetPasswordPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-lg shadow-xl">
         <div className="text-center">
-          <img src="/inka-logo.png" alt="Inksa Logo" className="w-20 h-20 mx-auto" />
+          <img src="/inksa-marca.png" alt="Inksa Logo" className="h-16 w-auto mx-auto" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Definir Nova Senha</h2>
         </div>
         

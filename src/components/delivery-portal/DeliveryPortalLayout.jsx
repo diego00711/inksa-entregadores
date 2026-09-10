@@ -274,7 +274,7 @@ export default function DeliveryPortalLayout() {
         style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top))' }}
       >
         <Link to="/delivery/dashboard" onClick={closeSidebar} className="flex items-center gap-2.5 min-w-0">
-          <img src="/inka-logo.png" alt="Inksa" className="h-9 w-9 rounded-xl object-cover shadow" />
+          <img src="/inksa-marca.png" alt="Inksa" className="h-9 w-auto" />
           <div className="min-w-0">
             <p className="font-extrabold text-white leading-tight truncate">Inksa</p>
             <p className="text-[11px] uppercase tracking-wider text-orange-400 font-semibold leading-tight">
@@ -392,7 +392,7 @@ export default function DeliveryPortalLayout() {
               <Menu className="w-7 h-7" />
             </button>
             <div className="flex items-center gap-2">
-              <img src="/inka-logo.png" alt="Inksa" className="h-7 w-7 rounded-lg object-cover" />
+              <img src="/inksa-marca.png" alt="Inksa" className="h-7 w-auto" />
               <span className="font-bold text-sm">Inksa Entregadores</span>
             </div>
             {/* Pill de status rápido */}

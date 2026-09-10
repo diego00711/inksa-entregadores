@@ -70,7 +70,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md shadow-xl rounded-lg border-none">
         <CardHeader className="text-center space-y-2 pt-6 pb-2">
           <div className="flex justify-center mb-2">
-            <img src="/inka-logo.png" alt="Inksa Logo" className="w-24 h-24 object-contain" />
+            <img src="/inksa-marca.png" alt="Inksa Logo" className="h-20 w-auto" />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold text-gray-800">Crie sua Conta</CardTitle>

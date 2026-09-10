@@ -719,11 +719,21 @@
 /* Correção para elementos que podem vazar */
 @media (max-width: 1023px) {
 
-  /* Imagens responsivas */
-  img {
-    max-width: 100% !important;
-    height: auto !important;
-  }
+  /* ⚠️ REMOVIDO EM 10/09/2026:
+         img { max-width: 100% !important; height: auto !important; }
+
+     Era a mesma marreta das utilitárias, mas em seletor de ELEMENTO — por isso
+     escapou da limpeza de 09/09, que mirava nomes de classe do Tailwind.
+
+     O `height: auto !important` tornava IMPOSSÍVEL definir a altura de qualquer
+     imagem no celular. Não vencia nem `style` inline: o logo pedia `h-20` (80px)
+     e desenhava 181px; avatar, miniatura e ícone estavam no mesmo barco, e
+     ninguém tinha como descobrir olhando o componente.
+
+     E era redundante: o preflight do Tailwind já traz
+         img, video { max-width: 100%; height: auto; }
+     — o mesmo comportamento, mas como PADRÃO, que o componente pode sobrepor.
+     Repetir com !important transforma um padrão sensato em lei inquebrável. */
 
 
   /* Margem negativa problemática */
