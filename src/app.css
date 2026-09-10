@@ -1,3 +1,30 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   ⚠️ NÃO ESCREVA REGRA COM O NOME DE UMA CLASSE DO TAILWIND AQUI.
+
+   Até 09/09/2026 este arquivo tinha 18 blocos fazendo exatamente isso, dentro
+   de @media (max-width: 1023px) — ou seja, em TODO celular e tablet:
+
+       .flex   { flex-wrap: wrap !important }      <- 377 elementos no app
+       .text-3xl { font-size: 1.5rem !important }  <- todo título encolhido
+       .p-6    { padding: 1rem !important }        <- todo p-6 virava p-4
+       .gap-4  { gap: .75rem !important }          <- todo espaçamento mudado
+       ...e mais catorze.
+
+   Elas nasceram como um remendo de "deixar responsivo", mas o app usa Tailwind:
+   o que elas faziam era brigar com o próprio sistema de estilo, em silêncio e
+   em todo lugar. Quem escreve `flex` num componente espera uma linha; recebia
+   uma que quebra. Foi assim que "Pagamento em Dinheiro" foi parar embaixo do
+   próprio ícone no menu, e ninguém tinha como adivinhar o motivo olhando o
+   componente — a regra mora em outro arquivo, a 900 linhas de distância.
+
+   Precisa de comportamento diferente no celular? Use as variantes do próprio
+   Tailwind no componente (`flex-wrap md:flex-nowrap`, `p-4 md:p-6`). Fica onde
+   quem lê o componente consegue ver.
+
+   Regra de bolso: seletor aqui só pode ser classe NOSSA (.sidebar, .nav-link,
+   .fab-suporte) ou elemento/biblioteca (.leaflet-*). Nunca uma utilitária.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -607,21 +634,9 @@
      (sm:/lg:) quando precisa de 1 coluna no mobile — não precisa de reforço
      global aqui. */
 
-  .text-3xl {
-    font-size: 1.5rem !important;
-  }
 
-  .text-2xl {
-    font-size: 1.25rem !important;
-  }
 
-  .p-6 {
-    padding: 1rem !important;
-  }
 
-  .p-8 {
-    padding: 1.5rem !important;
-  }
 }
 
 /* Touch targets otimizados */
@@ -725,11 +740,6 @@
     flex-direction: column;
   }
 
-  /* Container principal com altura correta */
-  .min-h-screen {
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-  }
 
   /* Main content com safe areas */
   main {
@@ -793,10 +803,6 @@
     max-height: calc(100dvh - 120px) !important;
   }
 
-  /* Prevenir corte de conteúdo */
-  .p-4, .p-6 {
-    padding-bottom: 2rem !important;
-  }
 
   /* Formulários com espaço extra */
   .form-container,
@@ -836,10 +842,6 @@
 
 /* Layout flex mais robusto */
 @media (max-width: 1023px) {
-  .flex-1 {
-    flex: 1 1 0% !important;
-    min-height: 0 !important;
-  }
 
   /* REMOVIDO: ".bg-gray-50 { min-height: 100vh }" — bg-gray-50 é utilitário de
      COR usado em dezenas de cards pequenos (ex.: cada card de pedido a avaliar),
@@ -876,12 +878,6 @@
 
 /* Garantir que nada corte horizontalmente */
 @media (max-width: 1023px) {
-  /* Container principal sem overflow */
-  .min-h-screen {
-    overflow-x: hidden !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-  }
 
   /* Main content com largura total */
   main {
@@ -903,23 +899,8 @@
     margin-right: 0 !important;
   }
 
-  /* Containers de conteúdo */
-  .p-4, .p-6, .px-4, .px-6 {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
 
-  /* Grid responsivo sem overflow */
-  .grid, .grid-cols-1, .grid-cols-2, .grid-cols-3 {
-    max-width: 100% !important;
-    overflow: visible !important;
-  }
 
-  /* Flex containers */
-  .flex {
-    max-width: 100% !important;
-    flex-wrap: wrap !important;
-  }
 
   /* Formulários e inputs */
   input, select, textarea, .form-control {
@@ -940,19 +921,7 @@
     gap: 0.5rem !important;
   }
 
-  /* Text que pode quebrar */
-  .text-overflow, .truncate {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
 
-  /* Containers com scroll horizontal se necessário */
-  .overflow-x-auto {
-    max-width: 100vw !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
 
   /* Header mobile sem overflow */
   .mobile-header {
@@ -968,11 +937,6 @@
     margin: 0 auto !important;
   }
 
-  /* Cards grandes que podem ser problemáticos */
-  .w-full {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
 
   /* Espacamento uniforme */
   .space-x-2 > * + *,
@@ -981,14 +945,7 @@
     margin-left: 0.5rem !important;
   }
 
-  /* Gap responsivo */
-  .gap-4 {
-    gap: 0.75rem !important;
-  }
 
-  .gap-6 {
-    gap: 1rem !important;
-  }
 }
 
 /* Para telas muito pequenas - ainda mais restritivo */
@@ -1016,18 +973,10 @@
     margin-bottom: 0.75rem !important;
   }
 
-  /* Texto menor se necessário */
-  .text-sm {
-    font-size: 0.8rem !important;
-  }
 }
 
 /* Correção para elementos que podem vazar */
 @media (max-width: 1023px) {
-  /* Elementos absolutos problemáticos */
-  .absolute, .fixed {
-    max-width: 100vw !important;
-  }
 
   /* Imagens responsivas */
   img {
