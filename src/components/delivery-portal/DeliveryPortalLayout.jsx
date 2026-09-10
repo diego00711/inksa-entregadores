@@ -49,7 +49,10 @@ const NAVIGATION = [
   { name: 'Ganhos', href: '/delivery/ganhos', icon: DollarSign, primary: true },
   { name: 'Avaliações', href: '/delivery/avaliacoes', icon: Star, primary: false },
   { name: 'Clube Inksa', href: '/delivery/clube', icon: Trophy, primary: false },
-  { name: 'Pagamento em Dinheiro', href: '/delivery/pagamento-dinheiro', icon: Banknote, primary: false },
+  // "Pagamento em Dinheiro" não cabia numa linha da gaveta e quebrava; o título
+  // completo continua no topo da própria página. Rótulo de menu aqui é de uma
+  // ou duas palavras — Início, Entregas, Ganhos, Suporte, Sugestões.
+  { name: 'Dinheiro', href: '/delivery/pagamento-dinheiro', icon: Banknote, primary: false },
   { name: 'Suporte', href: '/delivery/suporte', icon: LifeBuoy, primary: false },
   // Porta separada da do suporte de proposito: quem tem uma ideia nao se
   // ve "abrindo um chamado". Mesmo destino, convite diferente.
@@ -315,7 +318,17 @@ export default function DeliveryPortalLayout() {
               to={item.href}
               onClick={closeSidebar}
               aria-current={active ? 'page' : undefined}
-              className={`${item.primary ? 'hidden lg:flex' : 'flex'} items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all min-h-[44px] ${
+              /* ⚠️ GRID, NÃO FLEX — e é de propósito.
+                 O App.css tem, dentro de @media (max-width: 1023px), um
+                 `.flex { flex-wrap: wrap !important }` que pega TODO elemento
+                 com a classe `flex` do Tailwind (são 377 no app). Aqui isso
+                 jogava o rótulo comprido pra linha de baixo, começando na
+                 margem esquerda, embaixo do ícone em vez de ao lado dele — foi
+                 o que o Diego viu em "Pagamento em Dinheiro" (09/09/2026).
+                 Sem a classe `flex`, a regra não alcança. E como bônus: se um
+                 rótulo crescer, ele quebra DENTRO da própria coluna, alinhado,
+                 em vez de escorregar pra debaixo do ícone. */
+              className={`${item.primary ? 'hidden lg:grid' : 'grid'} grid-cols-[auto_1fr] items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all min-h-[44px] ${
                 active
                   ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-900/30'
                   : 'text-gray-300 hover:bg-white/10 hover:text-white'
