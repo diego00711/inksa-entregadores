@@ -7,15 +7,23 @@ const AUTH_TOKEN_KEY = 'deliveryAuthToken';
 const USER_DATA_KEY = 'deliveryUser';
 const REFRESH_TOKEN_KEY = 'deliveryRefreshToken';
 
+// ⚠️ CÓPIA GÊMEA do processResponse de services/api.js — e as duas tinham o
+// MESMO defeito, corrigido junto em 09/09/2026: apagavam a sessão e faziam
+// window.location.href = '/login' no primeiro 401, sem tentar renovar.
+//
+// Aqui o único chamador é o register(), que já passa por apiFetch. Quem decide
+// que a sessão morreu é o apiClient — só depois da renovação falhar de verdade
+// — e ele avisa por 'auth:unauthorized', que o App.jsx trata com toast e
+// navigate(), sem recarregar a página inteira.
+//
+// O login NÃO passa por aqui, de propósito (ver o comentário lá): no login um
+// 401 é senha errada, não sessão expirada.
 const processResponse = async (response) => {
     if (response.status === 401) {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(USER_DATA_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-        window.location.href = '/login';
-        return null;
+        throw new Error('Sessão expirada. Faça login novamente.');
     }
-    
+
+
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
         throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);

@@ -7,6 +7,15 @@ import {
   Package, BarChart2, Crown
 } from 'lucide-react';
 import { DELIVERY_API_URL, createAuthHeaders, processResponse } from '../services/api';
+// ⚠️ Import na MESMA edição em que o uso entrou — a regra que este projeto
+// aprendeu com duas telas brancas (Lightbulb e PrecificacaoPage).
+//
+// POR QUE apiFetch E NÃO fetch: esta tela era a ÚNICA do app que chamava a API
+// com fetch cru. Um 401 aqui — token de uma hora vencendo, coisa rotineira —
+// deslogava o entregador na hora, sem tentar renovar a sessão, enquanto todo o
+// resto do app renova e repete a chamada. O apiFetch cuida disso e só desiste
+// quando a renovação falha de verdade.
+import apiFetch from '../services/apiClient';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
 import MyRedemptions from '../components/MyRedemptions';
@@ -162,7 +171,7 @@ function LeaderboardSection({ currentUserId }) {
     try {
       // Nota: "type" aqui e a aba local (points/deliveries/efficiency) usada so
       // pra exibir a coluna certa -- o backend nao ordena por ela, so por pontos.
-      const res = await fetch(
+      const res = await apiFetch(
         `${DELIVERY_API_URL}/api/gamification/leaderboard?scope=delivery&limit=10`,
         { headers: createAuthHeaders() }
       );
@@ -277,7 +286,7 @@ function ChallengesSection({ userId }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${DELIVERY_API_URL}/api/challenges/user/${userId}`,
           { headers: createAuthHeaders() }
         );
@@ -394,7 +403,7 @@ function RewardsSection({ userPoints, onPointsRefresh }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${DELIVERY_API_URL}/api/gamification/rewards?audience=delivery`,
           { headers: createAuthHeaders() }
         );
@@ -432,7 +441,7 @@ function RewardsSection({ userPoints, onPointsRefresh }) {
     setRedeeming(r.id);
     const cost = r.points_required ?? r.cost_points ?? r.points_cost ?? 0;
     try {
-      const res = await fetch(`${DELIVERY_API_URL}/api/gamification/rewards/${r.id}/redeem`, {
+      const res = await apiFetch(`${DELIVERY_API_URL}/api/gamification/rewards/${r.id}/redeem`, {
         method: 'POST',
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, user_type: 'delivery', user_name: userName, points_used: cost }),
@@ -659,7 +668,7 @@ function HowToEarnSection() {
     let alive = true;
     (async () => {
       try {
-        const res = await fetch(`${DELIVERY_API_URL}/api/gamification/point-rules?applies_to=delivery`, {
+        const res = await apiFetch(`${DELIVERY_API_URL}/api/gamification/point-rules?applies_to=delivery`, {
           headers: createAuthHeaders(),
         });
         const json = await processResponse(res);
@@ -829,7 +838,7 @@ export default function GamificationPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${DELIVERY_API_URL}/api/gamification/user-points/${userId}`,
         { headers: createAuthHeaders() }
       );
@@ -848,7 +857,7 @@ export default function GamificationPage() {
   const fetchClub = useCallback(async () => {
     try {
       const [stRes, lvRes] = await Promise.all([
-        fetch(`${DELIVERY_API_URL}/api/club/status`, { headers: createAuthHeaders() }),
+        apiFetch(`${DELIVERY_API_URL}/api/club/status`, { headers: createAuthHeaders() }),
         fetch(`${DELIVERY_API_URL}/api/club/levels?audience=delivery`),
       ]);
       const st = stRes.ok ? await stRes.json() : null;
