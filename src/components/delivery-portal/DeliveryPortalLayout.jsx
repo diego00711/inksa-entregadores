@@ -419,10 +419,13 @@ export default function DeliveryPortalLayout() {
             de QUALQUER tela ficava por baixo do FAB e o toque não pegava — foi
             o "Aceitar" e o código de retirada no E2E. 9rem = 144px > 128px da
             zona ocupada. */}
-        <main
-          className="flex-1 overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+9rem)] lg:pb-0"
-          style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-        >
+        {/* ⚠️ SEM style inline aqui (removido em 10/09/2026). Havia um
+            `paddingBottom: calc(5rem + safe)` que contradizia a classe acima
+            (9rem) e vencia dela — e o app.css ainda forçava os mesmos 5rem com
+            !important por cima dos dois. Resultado medido: 80px valendo, contra
+            os 144px que o comentário aqui em cima explica serem necessários. A
+            barra de baixo seguia cobrindo o fim da página. Uma definição só. */}
+        <main className="flex-1 overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+9rem)] lg:pb-0">
           <Outlet />
         </main>
       </div>

@@ -422,10 +422,10 @@
 
 
 
-  .w-24.h-24 {
-    width: 4rem !important;
-    height: 4rem !important;
-  }
+  /* ⚠️ REMOVIDO: .w-24.h-24 { width: 4rem !important; height: 4rem !important }
+     Encolhia pra 64px qualquer elemento que pedisse 96x96. Existia por causa do
+     logo das telas de login; o logo saiu dessa combinação em 10/09/2026 e a
+     regra ficou órfã — conferido, nenhum JSX usa w-24 com h-24 hoje. */
 
 
 
@@ -455,17 +455,34 @@
 
 /* Touch targets otimizados */
 @media (max-width: 1023px) {
+  /* Alvo mínimo de toque. Fica porque é acessibilidade de verdade: o
+     entregador usa isto de pé, na rua, com uma mão. `min-height`/`min-width`
+     não competem com `h-9`/`w-8` do Tailwind (são propriedades diferentes),
+     então NÃO precisam de !important pra valer — e sem ele um componente que
+     tenha um motivo consegue dizer o contrário. */
   button {
-    min-height: 44px !important;
-    min-width: 44px !important;
-    padding: 12px 16px !important;
+    min-height: 44px;
+    min-width: 44px;
+    /* ⚠️ REMOVIDO EM 10/09/2026: padding: 12px 16px !important;
+       O componente Button tem variantes de tamanho — sm (h-8 px-3),
+       default (h-9 px-4), lg (h-10 px-6), icon (size-9). Esta linha
+       ANULAVA TODAS: qualquer botão do app saía com o mesmo padding, e
+       `size="sm"` era indistinguível de `size="lg"`. É por causa dela que o
+       MapDisplay precisou de `shrink-0` pra um botão não sair achatado — o
+       comentário lá diz "é a terceira vez". Alvo de toque quem garante é o
+       min-height acima; padding não tem nada a ver com isso. */
   }
 
   /* Formulários mobile-friendly */
   input, select, textarea {
-    min-height: 44px !important;
-    font-size: 16px !important; /* Evita zoom no iOS */
-    border-radius: 8px !important;
+    min-height: 44px;
+    /* ESTE precisa de !important: abaixo de 16px o Safari do iPhone dá zoom
+       na página ao focar o campo, e o Tailwind manda `md:text-sm` (14px).
+       Sem vencer a utilitária, o zoom volta. */
+    font-size: 16px !important;
+    /* ⚠️ REMOVIDO: border-radius: 8px !important;
+       O componente Input já pede `rounded-md` (6px). Esta linha trocava por 8px
+       calada, em todo campo do app — o desenho do componente nunca valia. */
   }
 
 
@@ -540,13 +557,23 @@
 
 
   /* Main content com safe areas */
+  /* ⚠️ O PADDING SAIU DAQUI EM 10/09/2026 — e era um bug de verdade.
+     Havia TRÊS definições do mesmo padding-bottom do <main>:
+       1. a classe no JSX:  pb-[calc(safe + 9rem)]   = 144px
+       2. um style inline:  calc(5rem + safe)        =  80px
+       3. esta regra:       calc(5rem + safe)        =  80px, com !important
+     O !important ganhava de todas. Medido no navegador: 80px valendo.
+
+     Só que o comentário do JSX explica que precisa de 144px porque a barra
+     inferior + safe-area ocupam ~128px — e cita o sintoma que isso deveria ter
+     resolvido ("o Aceitar e o código de retirada"). Com 80px valendo, a barra
+     seguia cobrindo os últimos ~48px de conteúdo, e quem escreveu os 9rem nunca
+     soube que a correção não valia.
+
+     Agora quem manda é a classe, no arquivo onde a barra também é declarada. */
   main {
     flex: 1;
-    padding: 1rem !important;
-    /* Reserva espaço da barra de navegação inferior fixa (~56px) + safe-area.
-       Antes estava 1rem e a barra ficava sobreposta ao final de páginas longas
-       (perceptível só no Perfil, o único formulário comprido). */
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+    padding-top: 1rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     max-height: calc(100vh - 60px);
@@ -561,10 +588,10 @@
   }
 
   /* Garantir que conteúdo seja visível */
-  .space-y-4 > *:last-child,
-  .space-y-6 > *:last-child {
-    margin-bottom: 2rem !important;
-  }
+  /* ⚠️ REMOVIDO: .space-y-4/-6 > *:last-child { margin-bottom: 2rem !important }
+     Colava 32px depois do ÚLTIMO item de toda pilha vertical do app — dentro de
+     cartão, de modal, de lista curta. Espaço no fim da página quem reserva é o
+     <main>; empilhamento de conteúdo não deve carregar a régua do layout. */
 
   /* Crédito do mapa: obrigatório pela licença (OSM hoje, Stadia depois), mas
      não precisa gritar. Fica minúsculo e translúcido no canto, sem roubar
@@ -595,9 +622,11 @@
 
 
   /* Formulários com espaço extra */
-  form {
-    padding-bottom: 3rem !important;
-  }
+  /* ⚠️ REMOVIDO: form { padding-bottom: 3rem !important; }
+     Punha 48px no pé de TODO formulário do app — inclusive os curtos, os que
+     estão dentro de modal e os que já reservam o próprio espaço. Quem precisa
+     de folga no fim da página é o <main>, que já reserva (ver acima); formulário
+     é conteúdo, e conteúdo não deve carregar a régua do layout. */
 }
 
 /* Correção específica para iOS */
@@ -613,21 +642,24 @@
   }
 }
 
-/* Prevenir zoom em inputs */
-@media (max-width: 1023px) {
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="date"],
-  select,
-  textarea {
-    font-size: 16px !important;
-    transform: scale(1) !important;
-    zoom: 1 !important;
-  }
-}
+/* ⚠️ BLOCO INTEIRO REMOVIDO EM 10/09/2026.
+   Era a lista `input[type=text], input[type=email], ... select, textarea` com:
+       font-size: 16px !important;
+       transform: scale(1) !important;
+       zoom: 1 !important;
+
+   O font-size de 16px continua valendo — a regra `input, select, textarea` lá
+   em cima faz a mesma trava do zoom do iPhone, e pega TODOS os tipos, não só os
+   sete listados aqui. O que saiu de verdade foram os outros dois:
+     • transform: scale(1) — impedia QUALQUER transform nesses campos (animação
+       de entrada, foco), pra resolver um zoom que quem resolve é o font-size;
+     • zoom: 1 — propriedade não padronizada, sem efeito no Safari do iOS, que
+       era justamente o alvo.
+
+   (Ao remover, eu tinha cortado só a última linha do seletor e deixado as
+   outras sete penduradas — CSS inválido, o build pegou. Seletor de várias
+   linhas exige apagar a lista toda; é a segunda vez que isso me pega neste
+   arquivo.) */
 
 /* Layout flex mais robusto */
 @media (max-width: 1023px) {
@@ -655,12 +687,15 @@
 @media (max-width: 1023px) {
 
   /* Main content com largura total */
+  /* Padding lateral do <main> — a ÚNICA declaração dele agora. Antes o valor
+     estava aqui E numa terceira regra logo abaixo (≤640px), e o de cima ainda
+     mandava um `padding: 1rem` que zerava os dois. Três lugares pra saber uma
+     margem. box-sizing saiu: o preflight do Tailwind já põe border-box em tudo. */
   main {
-    width: 100% !important;
-    max-width: 100vw !important;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-    box-sizing: border-box !important;
+    width: 100%;
+    max-width: 100vw;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
 
@@ -668,16 +703,24 @@
 
 
   /* Formulários e inputs */
+  /* ⚠️ REMOVIDO: input, select, textarea { width: 100% !important; ... }
+     Tornava IMPOSSÍVEL dois campos lado a lado — CEP e número, cidade e UF,
+     validade e CVV. Qualquer grade de formulário virava uma coluna, e não havia
+     como escapar nem com classe nem com style.
+     Era redundante também: o componente Input já pede `w-full`, então o
+     comportamento normal continua igual. box-sizing já vem do preflight. */
   input, select, textarea {
-    max-width: 100% !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
+    max-width: 100%;
   }
 
   /* Tabelas responsivas */
+  /* `table-layout: fixed !important` saiu: ele obriga toda coluna a ter a
+     mesma largura, ignorando o conteúdo. Numa tabela de ganhos isso espreme a
+     data e o valor pra caber junto com a coluna larga de endereço. Largura
+     total continua 100%, mas sem !important — a tabela que precisar de outra
+     coisa consegue dizer. */
   table {
-    width: 100% !important;
-    table-layout: fixed !important;
+    width: 100%;
   }
 
 
@@ -687,9 +730,9 @@
 
 
   /* Espacamento uniforme */
-  .space-x-2 > * + * {
-    margin-left: 0.5rem !important;
-  }
+  /* ⚠️ REMOVIDO: .space-x-2 > * + * { margin-left: .5rem !important }
+     O `space-x-2` do Tailwind JÁ é 0,5rem. A regra não mudava nada — só
+     tornava o espaçamento impossível de ajustar em qualquer lista do app. */
 
 
 }
@@ -701,16 +744,23 @@
     box-sizing: border-box !important;
   }
 
+  /* O `container` do Tailwind está configurado com padding de 2rem, que num
+     celular de 375px come 64px de largura. Aqui ele aperta — mas SEM
+     !important: esta regra vem depois das utilitárias no arquivo, então já
+     ganha por ordem, e um componente com motivo consegue dizer outra coisa. */
   .container {
-    max-width: 100% !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    max-width: 100%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 
   /* Padding ainda menor para telas pequenas */
+  /* Tela bem estreita: aperta um pouco a margem lateral do <main>. Sem
+     !important — a regra de ≤1023px acima é do mesmo peso, e esta vem depois
+     no arquivo, então ganha por ordem, que é como CSS deve funcionar. */
   main {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 
 
@@ -737,10 +787,12 @@
 
 
   /* Margem negativa problemática */
-  .-mx-4, .-mx-6 {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
+  /* ⚠️ REMOVIDO: .-mx-4, .-mx-6 { margin-left: 0 !important; margin-right: 0 !important }
+     Matava toda margem negativa — ou seja, toda sangria de borda a borda. Foi
+     ela que tirou a moldura lateral do mapa da entrega ativa: o `-mt-4` passava
+     (não há regra contra) e os lados não, então o sintoma era assimétrico e não
+     parecia CSS. Quem precisa escapar do padding acumulado tem a `.sangria-total`
+     no fim deste arquivo, que mede sozinha. */
 
 }
 
