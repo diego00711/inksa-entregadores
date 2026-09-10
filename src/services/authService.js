@@ -123,12 +123,15 @@ const authService = {
         try {
             const token = localStorage.getItem(AUTH_TOKEN_KEY);
             if (token) {
-                await fetch(`${API_BASE_URL}/api/delivery/profile`, {
+                // apiFetch e nao fetch: com o token vencido esta chamada tomava
+                // 401 e morria no catch abaixo — e o entregador continuava
+                // marcado como DISPONIVEL depois de sair, que e exatamente o
+                // que ela existe pra evitar. O motor de despacho gastava oferta
+                // com quem ja tinha ido embora. Renovar aqui e barato; o
+                // best-effort continua valendo se a renovacao tambem falhar.
+                await apiFetch(`${API_BASE_URL}/api/delivery/profile`, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ is_available: false }),
                 });
             }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 
+// ⚠️ Import na MESMA edição em que o uso entrou.
+import apiFetch from '../services/apiClient';
 export function useGPSTracking({ enabled = false, onPositionUpdate } = {}) {
   const watchIdRef = useRef(null);
   const lastRef = useRef(null);
@@ -15,7 +17,7 @@ export function useGPSTracking({ enabled = false, onPositionUpdate } = {}) {
       // GPS tomava 404 e morria no catch silencioso abaixo. Por isso
       // current_lat/location_updated_at estavam null pra todo mundo, e o motor
       // de despacho só conseguia usar o endereço cadastrado.
-      await fetch(`${DELIVERY_API_URL}/api/delivery/heartbeat`, {
+      await apiFetch(`${DELIVERY_API_URL}/api/delivery/heartbeat`, {
         method: 'POST',
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ latitude: lat, longitude: lng }),

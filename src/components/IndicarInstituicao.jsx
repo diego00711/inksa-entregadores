@@ -21,6 +21,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { HeartHandshake, Check, Loader2, X, Pencil } from 'lucide-react';
 import { createAuthHeaders } from '../services/api';
 
+// ⚠️ Import na MESMA edição em que o uso entrou (a regra das duas telas brancas).
+import apiFetch from '../services/apiClient';
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const ROTA = `${API}/api/admin/social/nominations`;
 
@@ -40,7 +42,7 @@ export default function IndicarInstituicao() {
 
   const buscarMinha = useCallback(async () => {
     try {
-      const r = await fetch(`${ROTA}/minha`, { headers: createAuthHeaders() });
+      const r = await apiFetch(`${ROTA}/minha`, { headers: createAuthHeaders() });
       if (!r.ok) return;
       const d = await r.json();
       if (d?.minha) setMinha(d.minha);
@@ -65,7 +67,7 @@ export default function IndicarInstituicao() {
     if (limpo.length < 3) { setErro('Escreva o nome da instituição.'); return; }
     setEnviando(true); setErro('');
     try {
-      const r = await fetch(`${ROTA}/enviar`, {
+      const r = await apiFetch(`${ROTA}/enviar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
         body: JSON.stringify({ nome: limpo, motivo: motivo.trim() || null }),

@@ -7,6 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { Gift, Loader2, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 
+// ⚠️ Import na MESMA edição em que o uso entrou (a regra das duas telas brancas).
+import apiFetch from '../services/apiClient';
 const STATUS_META = {
   pending:   { label: 'Em análise', cls: 'bg-amber-100 text-amber-700', Icon: Clock },
   approved:  { label: 'Aprovado',   cls: 'bg-blue-100 text-blue-700',   Icon: CheckCircle2 },
@@ -31,7 +33,7 @@ export default function MyRedemptions({ refreshKey = 0 }) {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${DELIVERY_API_URL}/api/gamification/rewards/my-redemptions`,
           { headers: createAuthHeaders() }
         );

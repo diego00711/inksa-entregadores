@@ -5,6 +5,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send } from 'lucide-react';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
+// ⚠️ Import na MESMA edição em que o uso entrou (a regra das duas telas brancas).
+import apiFetch from '../services/apiClient';
 import { supabase } from '../lib/supabase';
 
 function playBeep() {
@@ -75,7 +77,7 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
     if (!orderId) return;
     const seq = ++seqRef.current;
     try {
-      const res = await fetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
+      const res = await apiFetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
         headers: createAuthHeaders(),
       });
       if (!res.ok) return;
@@ -148,7 +150,7 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
     setMessages(prev => [...prev, optimistic]);
     setSending(true);
     try {
-      const res = await fetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
+      const res = await apiFetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
         method: 'POST',
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, sender_type: senderType }),

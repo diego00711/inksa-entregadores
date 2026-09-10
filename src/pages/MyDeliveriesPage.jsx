@@ -14,6 +14,8 @@ import { acceptDelivery, completeDelivery, reportIncident, confirmReturn, getOrd
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { DELIVERY_API_URL } from '../services/api';
+// ⚠️ Import na MESMA edição em que o uso entrou (a regra das duas telas brancas).
+import apiFetch from '../services/apiClient';
 import { useChatAlarmCtx } from '../hooks/useChatAlarm.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { useOrderTracking } from '../hooks/useOrderTracking';
@@ -89,10 +91,11 @@ export function MyDeliveriesPage() {
 
   const fetchOrderWithPickupCode = async (orderId) => {
     try {
-      const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
-      const apiUrl = DELIVERY_API_URL;
-      const response = await fetch(`${apiUrl}/api/orders/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      // apiFetch põe o Authorization sozinho, do token que estiver valendo — e
+      // renova antes se estiver vencendo. Ler o token à mão aqui congelava o
+      // valor do momento da chamada, sem chance de renovação.
+      const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/${orderId}`, {
+        headers: { 'Content-Type': 'application/json' },
       });
       if (response.ok) return await response.json();
       return null;
@@ -127,10 +130,13 @@ export function MyDeliveriesPage() {
       // disponíveis
       let available = [];
       try {
-        const token = localStorage.getItem('deliveryAuthToken') || localStorage.getItem('token');
-        const apiUrl = DELIVERY_API_URL;
-        const resp = await fetch(`${apiUrl}/api/orders/available`, {
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        // ⚠️ ESTA É A CHAMADA QUE MOSTRA AS CORRIDAS DISPONÍVEIS. Com fetch cru,
+        // um token vencido devolvia 401, o `resp.ok` era falso e a lista virava
+        // [] — o entregador ficava olhando "nenhuma corrida" sem nada explicando,
+        // achando que a praça estava parada. Com apiFetch a sessão é renovada e
+        // a chamada repetida antes de desistir.
+        const resp = await apiFetch(`${DELIVERY_API_URL}/api/orders/available`, {
+          headers: { 'Content-Type': 'application/json' },
         });
         available = resp.ok ? await resp.json() : [];
         setAvailableOrders(available);

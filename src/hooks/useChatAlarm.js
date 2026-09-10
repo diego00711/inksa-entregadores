@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import DeliveryService from '../services/deliveryService';
 import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
+// ⚠️ Import na MESMA edição em que o uso entrou.
+import apiFetch from '../services/apiClient';
 import { useToast } from '../context/ToastContext';
 
 // Bip curto (mesmo som do aviso de mensagem da aba Entregas).
@@ -68,7 +70,7 @@ export function useChatAlarm() {
     let alive = true;
     const check = async () => {
       try {
-        const res = await fetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, { headers: createAuthHeaders() });
+        const res = await apiFetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, { headers: createAuthHeaders() });
         if (!alive || !res.ok) return;
         const data = await res.json();
         const listM = Array.isArray(data) ? data : (data?.messages || data?.data || []);
