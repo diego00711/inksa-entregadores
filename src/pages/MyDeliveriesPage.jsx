@@ -5,21 +5,6 @@ import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx';
 import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
-// ⚠️ MAPA CARREGADO SÓ QUANDO APARECE — não troque por import estático.
-//
-// O MapDisplay arrasta o Leaflet junto, e o Leaflet é ~180 KB dos 207 KB desta
-// tela. Só que o mapa é condicional: não existe sem entrega ativa, e o
-// entregador ainda pode escondê-lo no 👁️. Ou seja, a maior parte do peso
-// baixava para não ser usada.
-//
-// E mesmo COM entrega ativa isso ganha: o que a pessoa precisa na hora é o
-// endereço, o código de retirada e o botão — não o mapa. Carregando à parte,
-// tudo isso pinta primeiro, em vez de esperar 180 KB numa conexão de rua.
-//
-// Mesmo tratamento que o gráfico da tela de Ganhos levou (GraficosGanhos).
-const MapDisplay = lazy(() =>
-  import('../components/MapDisplay.jsx').then((m) => ({ default: m.MapDisplay }))
-);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
@@ -37,6 +22,23 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+
+// ⚠️ MAPA CARREGADO SÓ QUANDO APARECE — não troque por import estático.
+//
+// O MapDisplay arrasta o Leaflet junto, e o Leaflet é ~180 KB dos 207 KB desta
+// tela. Só que o mapa é condicional: não existe sem entrega ativa, e o
+// entregador ainda pode escondê-lo no 👁️. Ou seja, a maior parte do peso
+// baixava para não ser usada.
+//
+// E mesmo COM entrega ativa isso ganha: o que a pessoa precisa na hora é o
+// endereço, o código de retirada e o botão — não o mapa. Carregando à parte,
+// tudo isso pinta primeiro, em vez de esperar 180 KB numa conexão de rua.
+//
+// Mesmo tratamento que o gráfico da tela de Ganhos levou (GraficosGanhos).
+const MapDisplay = lazy(() =>
+  import('../components/MapDisplay.jsx').then((m) => ({ default: m.MapDisplay }))
+);
 
 const CACHE_KEY = 'delivery:minhas-entregas';
 
@@ -336,7 +338,8 @@ export function MyDeliveriesPage() {
       }
     } catch (e) {
       console.error('Erro ao completar entrega:', e);
-      addToast(e?.message || 'Erro ao confirmar entrega. Verifique o código e tente novamente.', 'error');
+      addToast(mensagemDeErro(e, 'Erro ao confirmar entrega. Verifique o código e tente novamente.',
+        'Sem conexão agora. O código continua valendo — tente de novo quando o sinal voltar.'), 'error');
     } finally {
       setFinishing(false);
     }

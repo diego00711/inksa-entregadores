@@ -27,6 +27,7 @@ import { haptics } from '../lib/haptics';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const DASHBOARD_CACHE_KEY = 'delivery:dashboard';
 
@@ -544,7 +545,8 @@ export default function ModernDeliveryDashboard() {
         openClientReview(completed);
       }
     } catch (err) {
-      addToast(err?.message || 'Erro ao completar entrega.', 'error');
+      addToast(mensagemDeErro(err, 'Erro ao completar entrega.',
+        'Sem conexão agora. O código continua valendo — tente de novo quando o sinal voltar.'), 'error');
     } finally {
       setCompleting(false);
     }
@@ -558,7 +560,8 @@ export default function ModernDeliveryDashboard() {
       setCashConfirmResult(result);
       fetchDashboardData(true);
     } catch (err) {
-      addToast(err?.message || 'Erro ao confirmar recebimento.', 'error');
+      addToast(mensagemDeErro(err, 'Erro ao confirmar recebimento.',
+        'Sem conexão agora. Nada foi perdido — confirme de novo quando o sinal voltar.'), 'error');
     } finally {
       setCashConfirmLoading(false);
     }

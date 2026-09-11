@@ -9,6 +9,7 @@ import {
 import { useToast } from '../context/ToastContext';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const StatusBadge = ({ status }) => {
   // status vem do backend em inglês aqui: 'ready' | 'accepted_by_delivery'
@@ -153,7 +154,8 @@ export default function PedidosDisponiveis() {
       setPedidos(Array.isArray(data) ? data : []);
     } catch (error) {
       if (!mountedRef.current) return;
-      setErrMsg(error?.message || 'Erro ao buscar pedidos disponíveis.');
+      setErrMsg(mensagemDeErro(error, 'Erro ao buscar pedidos disponíveis.',
+        'Sem conexão. A lista volta sozinha quando o sinal voltar.'));
       console.error('[PedidosDisponiveis] fetch error:', error);
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -172,7 +174,8 @@ export default function PedidosDisponiveis() {
       const code = res?.pickup_code || '';
       setPickupInfo({ open: true, code, orderId: pedidoId });
     } catch (error) {
-      const msg = error?.message || 'Erro ao aceitar pedido.';
+      const msg = mensagemDeErro(error, 'Erro ao aceitar pedido.',
+        'Sem conexão agora. A corrida pode ter ido pra outro — confira a lista quando o sinal voltar.');
       addToast(msg, 'error');
     }
   };
@@ -184,7 +187,8 @@ export default function PedidosDisponiveis() {
       const res = await declineDelivery(pedidoId);
       addToast(res?.message || 'Oferta recusada.', 'info');
     } catch (error) {
-      addToast(error?.message || 'Erro ao recusar a oferta.', 'error');
+      addToast(mensagemDeErro(error, 'Erro ao recusar a oferta.',
+        'Sem conexão agora. Tente recusar de novo quando o sinal voltar.'), 'error');
     }
   };
 
