@@ -3,6 +3,7 @@ import { Plus, Loader2, AlertCircle, MessageCircle, ArrowLeft, Send, CheckCircle
 import { DELIVERY_API_URL } from '../services/api';
 import apiFetch from '../services/apiClient';
 import authService from '../services/authService';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const STATUS_META = {
   aberto:    { label: 'Aberto',       cls: 'bg-slate-100 text-slate-700' },
@@ -53,7 +54,10 @@ function NovoTicket({ onCreated, onCancel, sugestao = false }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Erro ao abrir ticket');
       onCreated(data.data.id);
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      setError(mensagemDeErro(e, 'Não consegui carregar o suporte agora.',
+        'Sem conexão. O suporte carrega assim que o sinal voltar.'));
+    }
     finally { setSaving(false); }
   };
 

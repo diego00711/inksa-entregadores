@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { CameraIcon, MapPin, Loader2, ArrowLeft } from 'lucide-react';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 export default function DeliveryProfilePage() {
     const { profile: contextProfile, updateProfile: updateContextProfile, loading: profileLoading } = useProfile();
@@ -154,7 +155,8 @@ export default function DeliveryProfilePage() {
             setIsEditing(false);
             setSelectedFile(null);
         } catch (error) {
-            addToast(error.message || "Erro ao salvar perfil.", "error");
+            addToast(mensagemDeErro(error, "Erro ao salvar perfil.",
+        "Sem conexão agora. Suas alterações NÃO foram salvas — tente de novo quando o sinal voltar."), "error");
             console.error("Erro ao salvar perfil:", error);
         } finally {
             setIsSaving(false);

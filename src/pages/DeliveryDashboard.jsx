@@ -340,7 +340,8 @@ export default function ModernDeliveryDashboard() {
       setAvailableCount(available.length);
 
     } catch (err) {
-      const msg = err?.message || 'Não foi possível carregar as estatísticas.';
+      const msg = mensagemDeErro(err, 'Não foi possível carregar as estatísticas.',
+        'Sem conexão. Os números voltam sozinhos quando o sinal voltar.');
       if (!hasStatsRef.current) setError(msg);
       addToast(msg, 'error');
     } finally {

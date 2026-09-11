@@ -170,7 +170,8 @@ export function MyDeliveriesPage() {
       setPageCache(CACHE_KEY, { availableOrders: available, myDeliveries: withPickup, activeDelivery: ongoing });
     } catch (err) {
       console.error('Erro ao carregar entregas:', err);
-      addToast(err?.message || 'Não foi possível carregar as entregas.', 'error');
+      addToast(mensagemDeErro(err, 'Não foi possível carregar as entregas.',
+        'Sem conexão. A lista volta sozinha quando o sinal voltar.'), 'error');
     } finally {
       setPageLoading(false);
       hasLoadedOnceRef.current = true;
@@ -378,7 +379,8 @@ export function MyDeliveriesPage() {
       fetchDeliveries();
     } catch (e) {
       console.error('Erro ao reportar ocorrência:', e);
-      addToast(e?.message || 'Erro ao registrar a ocorrência.', 'error');
+      addToast(mensagemDeErro(e, 'Erro ao registrar a ocorrência.',
+        'Sem conexão agora. A ocorrência NÃO foi registrada — tente de novo quando o sinal voltar.'), 'error');
     } finally {
       setIncidentSubmitting(false);
     }
@@ -394,7 +396,8 @@ export function MyDeliveriesPage() {
       setActiveDelivery(null);
       fetchDeliveries();
     } catch (e) {
-      addToast(e?.message || 'Erro ao confirmar a devolução.', 'error');
+      addToast(mensagemDeErro(e, 'Erro ao confirmar a devolução.',
+        'Sem conexão agora. A devolução NÃO foi confirmada — tente de novo quando o sinal voltar.'), 'error');
     } finally {
       setConfirmingReturn(false);
     }

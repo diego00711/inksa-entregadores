@@ -8,6 +8,7 @@ import useDeliveredOrders from '../hooks/useDeliveredOrders';
 import ClientReviewForm from '../components/ClientReviewForm';
 import RestaurantReviewForm from '../components/RestaurantReviewForm';
 import { useToast } from '../context/ToastContext';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 // Card para uma avaliação recebida (com mais estilo)
 const ReviewReceivedCard = ({ review }) => (
@@ -50,7 +51,8 @@ export default function DeliverymanEvaluationsCenter() {
         .then(data => setReceivedReviews(data))
         .catch(err => {
           console.error("Erro ao buscar avaliações recebidas:", err);
-          setReceivedReviewsError(err?.message || 'Não foi possível carregar as avaliações.');
+          setReceivedReviewsError(mensagemDeErro(err, 'Não foi possível carregar as avaliações.',
+          'Sem conexão. As avaliações aparecem assim que o sinal voltar.'));
         })
         .finally(() => setLoadingReceived(false));
     }

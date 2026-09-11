@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import DeliveryService from '../services/deliveryService';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 export function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -50,7 +51,8 @@ export function ResetPasswordPage() {
       const response = await DeliveryService.resetPassword(token, password);
       setMessage(response.message);
     } catch (err) {
-      setError(err.message);
+      setError(mensagemDeErro(err, 'Não consegui trocar a senha agora.',
+        'Sem conexão agora. A senha NÃO foi trocada — tente de novo quando o sinal voltar.'));
     } finally {
       setIsLoading(false);
     }

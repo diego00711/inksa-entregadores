@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarIcon, DollarSign, Truck } from 'lucide-react'; // Ícones
 import { format, subDays } from 'date-fns'; // Para formatação e manipulação de datas
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const EARNINGS_CACHE_KEY = 'delivery:ganhos';
 
@@ -95,8 +96,10 @@ export function EarningsPage() {
             setPageCache(EARNINGS_CACHE_KEY, data);
         } catch (err) {
             console.error("Erro ao buscar histórico de ganhos:", err);
-            setError(err.message || 'Não foi possível carregar o histórico de ganhos.');
-            addToast(err.message || 'Erro ao carregar ganhos', 'error');
+            setError(mensagemDeErro(err, 'Não foi possível carregar o histórico de ganhos.',
+        'Sem conexão. Seus ganhos aparecem assim que o sinal voltar.'));
+            addToast(mensagemDeErro(err, 'Erro ao carregar ganhos',
+        'Sem conexão. Seus ganhos aparecem assim que o sinal voltar.'), 'error');
         } finally {
             setLoading(false);
             hasLoadedOnceRef.current = true;

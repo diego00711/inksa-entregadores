@@ -23,6 +23,7 @@ import { createAuthHeaders } from '../services/api';
 
 // ⚠️ Import na MESMA edição em que o uso entrou (a regra das duas telas brancas).
 import apiFetch from '../services/apiClient';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const ROTA = `${API}/api/admin/social/nominations`;
 
@@ -79,7 +80,8 @@ export default function IndicarInstituicao() {
       setTrocando(false);
       setNome(''); setMotivo('');
     } catch (e2) {
-      setErro(e2.message || 'Não consegui registrar agora.');
+      setErro(mensagemDeErro(e2, 'Não consegui registrar agora.',
+        'Sem conexão agora. A indicação não foi registrada — tente de novo quando o sinal voltar.'));
     } finally {
       setEnviando(false);
     }

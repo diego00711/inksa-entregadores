@@ -19,6 +19,7 @@ import apiFetch from '../services/apiClient';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
 import MyRedemptions from '../components/MyRedemptions';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -454,7 +455,8 @@ function RewardsSection({ userPoints, onPointsRefresh }) {
       addToast(json.data?.message ?? `"${r.name}" resgatado!`, 'success');
       onPointsRefresh?.();
     } catch (err) {
-      addToast(err.message || 'Erro ao resgatar recompensa.', 'error');
+      addToast(mensagemDeErro(err, 'Erro ao resgatar recompensa.',
+        'Sem conexão agora. O resgate NÃO foi feito e seus pontos continuam lá — tente de novo quando o sinal voltar.'), 'error');
     } finally {
       setRedeeming(null);
     }
@@ -846,7 +848,8 @@ export default function GamificationPage() {
       const json = await res.json();
       setUserPoints(json.data ?? json);
     } catch (err) {
-      setError(err.message || 'Não foi possível carregar seus pontos.');
+      setError(mensagemDeErro(err, 'Não foi possível carregar seus pontos.',
+        'Sem conexão. Seus pontos aparecem assim que o sinal voltar.'));
     } finally {
       setLoading(false);
     }
