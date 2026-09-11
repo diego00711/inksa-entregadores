@@ -1,11 +1,25 @@
 // src/pages/MyDeliveriesPage.jsx – VERSÃO COMPLETA (finalização com delivery_code)
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
 import DeliveryService from '../services/deliveryService.js';
 import { DeliveryCard } from '../components/DeliveryCard.jsx';
 import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
-import { MapDisplay } from '../components/MapDisplay.jsx';
+// ⚠️ MAPA CARREGADO SÓ QUANDO APARECE — não troque por import estático.
+//
+// O MapDisplay arrasta o Leaflet junto, e o Leaflet é ~180 KB dos 207 KB desta
+// tela. Só que o mapa é condicional: não existe sem entrega ativa, e o
+// entregador ainda pode escondê-lo no 👁️. Ou seja, a maior parte do peso
+// baixava para não ser usada.
+//
+// E mesmo COM entrega ativa isso ganha: o que a pessoa precisa na hora é o
+// endereço, o código de retirada e o botão — não o mapa. Carregando à parte,
+// tudo isso pinta primeiro, em vez de esperar 180 KB numa conexão de rua.
+//
+// Mesmo tratamento que o gráfico da tela de Ganhos levou (GraficosGanhos).
+const MapDisplay = lazy(() =>
+  import('../components/MapDisplay.jsx').then((m) => ({ default: m.MapDisplay }))
+);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
@@ -183,10 +197,35 @@ export function MyDeliveriesPage() {
     return () => document.body.classList.remove('entrega-ativa');
   }, [activeDelivery?.id]);
 
+  // ── Atualização automática, PARADA COM A TELA APAGADA ─────────────────────
+  //
+  // Antes era um `setInterval` puro: a cada 20s, para sempre, mesmo com o
+  // celular no bolso. E não é uma chamada só — `fetchDeliveries` faz duas
+  // (estatísticas + corridas disponíveis) mais uma por entrega ativa sem
+  // código de retirada. Numa jornada de 8 horas dá alguns milhares de
+  // requisições que ninguém ia ler, gastando dados e, principalmente,
+  // acordando o rádio do aparelho — que é onde a bateria vai embora.
+  //
+  // O painel (DeliveryDashboard) já fazia certo; isto aqui só passou batido.
+  // Ao voltar pro app, busca NA HORA em vez de esperar o próximo ciclo: quem
+  // reabre a tela quer ver o estado agora, não daqui a 20 segundos.
   useEffect(() => {
+    let id;
+    const start = () => { if (!id) id = setInterval(fetchDeliveries, 20000); };
+    const stop = () => { if (id) { clearInterval(id); id = undefined; } };
+
     fetchDeliveries();
-    const id = setInterval(fetchDeliveries, 20000);
-    return () => clearInterval(id);
+    start();
+
+    const aoTrocarVisibilidade = () => {
+      if (document.visibilityState === 'visible') { fetchDeliveries(); start(); }
+      else stop();
+    };
+    document.addEventListener('visibilitychange', aoTrocarVisibilidade);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', aoTrocarVisibilidade);
+    };
   }, [fetchDeliveries]);
 
   // GPS ao vivo do entregador enquanto houver entrega ativa (alimenta o mapa)
@@ -453,15 +492,26 @@ export function MyDeliveriesPage() {
                   {/* Camada de baixo: o trajeto preenchendo o bloco inteiro */}
                   {showMap && (getPickupCoords(activeDelivery) || getDeliveryCoords(activeDelivery)) ? (
                     <div className="absolute inset-0">
-                      <MapDisplay
-                        fullscreen
-                        driverCoords={driverCoords}
-                        pickupCoords={getPickupCoords(activeDelivery)}
-                        deliveryCoords={getDeliveryCoords(activeDelivery)}
-                        phase={isDeliveryPhase ? 'delivery' : 'pickup'}
-                        onRouteInfo={setRouteInfo}
-                        vehicle={profile?.vehicle_type}
-                      />
+                      {/* O fallback ocupa o MESMO espaço do mapa. Um buraco
+                          branco aqui pareceria tela quebrada justo na hora em
+                          que a pessoa está na rua com pressa. */}
+                      <Suspense
+                        fallback={
+                          <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                            <p className="text-sm text-gray-500">Carregando o trajeto…</p>
+                          </div>
+                        }
+                      >
+                        <MapDisplay
+                          fullscreen
+                          driverCoords={driverCoords}
+                          pickupCoords={getPickupCoords(activeDelivery)}
+                          deliveryCoords={getDeliveryCoords(activeDelivery)}
+                          phase={isDeliveryPhase ? 'delivery' : 'pickup'}
+                          onRouteInfo={setRouteInfo}
+                          vehicle={profile?.vehicle_type}
+                        />
+                      </Suspense>
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-100 px-6 text-center">
