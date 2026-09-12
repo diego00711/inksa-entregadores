@@ -24,6 +24,21 @@
 
         </activity>
 
+        <!-- Serviço de turno: mantém o entregador online com o app fechado.
+             O "porquê" inteiro está no cabeçalho do HeartbeatService.java.
+
+             O TIPO É "location" DE PROPÓSITO, e não "dataSync": desde o Android
+             15 o dataSync morre depois de 6 horas por dia, no meio de um turno.
+
+             ⚠️ ESTE TIPO PRECISA SER DECLARADO NO PLAY CONSOLE
+             (App content → Foreground service types), com descrição e vídeo,
+             senão a publicação é recusada. -->
+        <service
+            android:name=".HeartbeatService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -57,4 +72,13 @@
          execução (Android 13+), mas NÃO a declara no manifesto dele. Sem esta
          linha o pedido é negado na hora, sem mostrar o diálogo. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Serviço de turno. A partir do Android 14 não basta FOREGROUND_SERVICE:
+         cada TIPO usado exige a sua própria permissão, e faltando ela o app
+         estoura SecurityException na hora de entrar em primeiro plano.
+
+         NÃO pedimos ACCESS_BACKGROUND_LOCATION: serviço em primeiro plano
+         iniciado com o app aberto já lê posição em segundo plano, e aquela
+         permissão dispararia a revisão pesada do Google sem nos dar nada. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 </manifest>

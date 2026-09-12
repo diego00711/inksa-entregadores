@@ -139,6 +139,17 @@ const authService = {
             // ignora -- nao bloqueia o logout
         }
 
+        // Serviço de turno do Android. TEM que morrer aqui: ele vive fora do
+        // WebView, entao nao cai junto com a sessao -- ficaria uma notificacao
+        // "Voce esta ONLINE" pendurada na barra de quem acabou de sair, e o
+        // servico seguiria batendo com a credencial de 30 dias.
+        try {
+            const { desligarTurno } = await import('./turnoNativo.js');
+            await desligarTurno();
+        } catch {
+            // navegador, ou plugin ausente: nao ha servico pra desligar
+        }
+
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_DATA_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);

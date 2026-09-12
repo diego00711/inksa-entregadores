@@ -36,6 +36,7 @@ import authService from '../../services/authService.js';
 import { useNewOrderAlarm } from '../../hooks/useNewOrderAlarm.js';
 import { useChatAlarm, ChatAlarmContext } from '../../hooks/useChatAlarm.js';
 import { useIdleLogout } from '../../hooks/useIdleLogout.js';
+import { ligarTurno, desligarTurno } from '../../services/turnoNativo.js';
 import { ChatModal } from '../ChatModal.jsx';
 
 // O padrão de 1h mudou de casa: agora é PADRAO_MS em utils/tempoInatividade.js,
@@ -140,6 +141,18 @@ export default function DeliveryPortalLayout() {
   // recriado, disparando um ping a cada render em vez de a cada 2 min.
   const updateProfileRef = React.useRef(updateProfile);
   useEffect(() => { updateProfileRef.current = updateProfile; }, [updateProfile]);
+
+  // Serviço de turno do Android, espelhando o botão. O JS acima continua
+  // batendo enquanto o app está acordado: os dois juntos não incomodam ninguém
+  // (o heartbeat só carimba a hora), e o do JS é o único que existe no
+  // navegador e no iPhone.
+  //
+  // Ligar aqui, e não dentro do toggleOnline, cobre também quem abre o app já
+  // online — celular reiniciado, app fechado à força, APK recém-instalado.
+  useEffect(() => {
+    if (loading || !profile) return;
+    if (isOnline) { ligarTurno(); } else { desligarTurno(); }
+  }, [isOnline, loading, profile]);
 
   // Religa o entregador que o job desligou enquanto o app dormia.
   const religar = React.useCallback(async () => {
