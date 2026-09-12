@@ -42,6 +42,22 @@ import { ChatModal } from '../ChatModal.jsx';
 // junto da busca que o consome. Duas cópias do mesmo número em arquivos
 // diferentes é como um deles envelhece sozinho.
 
+// Intenção do entregador: ele QUER estar online? Só o botão escreve aqui, e o
+// logout apaga. É diferente de `is_available` do servidor, que é o estado —
+// e que o servidor derruba sozinho quando o app passa tempo demais sem dar
+// sinal de vida (celular bloqueado no bolso congela os temporizadores do JS).
+//
+// Sem esta memória o entregador abria o app e se descobria OFFLINE sem ter
+// desligado nada. Com ela, o app percebe a divergência e volta pra online.
+const QUER_ONLINE_KEY = 'inksa.entregador.quer_online';
+
+function querEstarOnline() {
+  try { return localStorage.getItem(QUER_ONLINE_KEY) === 'true'; } catch { return false; }
+}
+function anotarQuerOnline(valor) {
+  try { localStorage.setItem(QUER_ONLINE_KEY, valor ? 'true' : 'false'); } catch {}
+}
+
 // Navegação principal (aparece na sidebar e na barra inferior)
 const NAVIGATION = [
   { name: 'Início', href: '/delivery/dashboard', icon: Home, primary: true },
@@ -125,6 +141,29 @@ export default function DeliveryPortalLayout() {
   const updateProfileRef = React.useRef(updateProfile);
   useEffect(() => { updateProfileRef.current = updateProfile; }, [updateProfile]);
 
+  // Religa o entregador que o job desligou enquanto o app dormia.
+  const religar = React.useCallback(async () => {
+    try {
+      await updateProfileRef.current?.({ is_available: true });
+      try { addToast('Você voltou pra ONLINE 🟢', 'info'); } catch {}
+    } catch {
+      // Não conseguiu religar: aceita o offline, senão o botão mente e ele
+      // fica esperando pedido que não vem.
+      try { await updateProfileRef.current?.({ is_available: false }); } catch {}
+    }
+  }, [addToast]);
+
+  // App que foi FECHADO e reaberto entra aqui: o perfil já chega do servidor
+  // com is_available=false, então o efeito do heartbeat abaixo nem roda (ele
+  // só vive enquanto online) e ninguém perceberia a divergência. Uma vez, na
+  // montagem, basta — de lá em diante o heartbeat cuida.
+  const jaConferiu = React.useRef(false);
+  useEffect(() => {
+    if (jaConferiu.current || loading || !profile) return;
+    jaConferiu.current = true;
+    if (!isOnline && querEstarOnline()) religar();
+  }, [loading, profile, isOnline, religar]);
+
   useEffect(() => {
     if (!isOnline) return undefined;
 
@@ -137,9 +176,22 @@ export default function DeliveryPortalLayout() {
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           const server = d?.data?.is_available;
-          if (typeof server === 'boolean' && server !== isOnline) {
-            updateProfileRef.current?.({ is_available: server });
+          if (typeof server !== 'boolean' || server === isOnline) return;
+
+          // Servidor diz que ele está OFFLINE e ele não desligou na mão: foi o
+          // job de inatividade. O app estava dormindo, não o entregador — ele
+          // está aqui agora, com a tela aberta. Volta pra online em vez de
+          // aceitar o desligamento em silêncio.
+          //
+          // A intenção é a fonte da verdade porque só o BOTÃO a escreve. Quem
+          // se desligou de propósito tem 'false' guardado e não é religado por
+          // abrir o app pra ver os ganhos.
+          if (server === false && querEstarOnline()) {
+            religar();
+            return;
           }
+
+          updateProfileRef.current?.({ is_available: server });
         })
         .catch(() => {});
     };
@@ -200,6 +252,9 @@ export default function DeliveryPortalLayout() {
     setSavingStatus(true);
     try {
       await updateProfile({ is_available: next });
+      // ESTE é o único lugar que escreve a intenção: desligar aqui significa
+      // "quero ficar offline" e o app não religa sozinho depois.
+      anotarQuerOnline(next);
       haptics.success();
       addToast(`Você está ${next ? 'ONLINE 🟢' : 'OFFLINE 🔴'}!`, 'success');
     } catch {

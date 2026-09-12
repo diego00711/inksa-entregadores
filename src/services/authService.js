@@ -142,6 +142,10 @@ const authService = {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_DATA_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        // Intenção de estar online (DeliveryPortalLayout). Sem apagar aqui, o
+        // próximo entregador a logar NESTE aparelho seria religado sozinho por
+        // uma intenção que não é dele.
+        localStorage.removeItem('inksa.entregador.quer_online');
         window.location.href = '/login';
     },
 
