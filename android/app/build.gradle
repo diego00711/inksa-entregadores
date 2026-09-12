@@ -23,8 +23,13 @@ android {
         applicationId "com.inksa.entregador"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
-        versionName "1.0.5"
+        // 7 / 1.0.6 (12/09/2026): serviço de turno em primeiro plano.
+        // ⚠️ Esta é a versão que introduz o foregroundServiceType="location" —
+        // ANTES de publicar, a declaração no Play Console (App content →
+        // Foreground service types) precisa estar aprovada, senão a release é
+        // recusada.
+        versionCode 7
+        versionName "1.0.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
