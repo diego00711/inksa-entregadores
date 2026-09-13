@@ -705,13 +705,27 @@ export default function ModernDeliveryDashboard() {
             </div>
 
             <div className="flex gap-2 items-center flex-wrap">
-              {/* Available orders badge */}
+              {/* PEDIDOS DISPONÍVEIS — BOTÃO, não enfeite.
+                  Isto era uma <div>. Tinha borda, cantos arredondados, ícone e
+                  um contador pulsando: tudo que faz uma coisa PARECER botão. E
+                  não fazia nada.
+                  Em 13/09/2026 o Fernando tocou aqui pra pegar a entrega da Me
+                  Mimei, não aconteceu nada, e ele avisou que "não conseguiu
+                  aceitar". O pedido ficou parado com a cliente esperando. Eu
+                  cheguei a atribuir isso à janela de 60s da oferta — não era:
+                  ele nunca chegou na tela.
+                  Elemento que parece clicável TEM que ser clicável, ou não deve
+                  parecer. */}
               {availableCount > 0 && (
-                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+                <button
+                  onClick={() => navigate('/delivery/entregas')}
+                  aria-label={`Ver ${availableCount} pedido(s) disponível(is)`}
+                  className="flex items-center gap-2 bg-orange-50 hover:bg-orange-100 active:bg-orange-200 border border-orange-200 rounded-xl px-3 py-2 min-h-[44px] transition-colors cursor-pointer"
+                >
                   <Package className="h-4 w-4 text-orange-500" />
                   <span className="text-sm font-semibold text-orange-700">Disponíveis</span>
                   <PulsingBadge count={availableCount} />
-                </div>
+                </button>
               )}
 
               <button
