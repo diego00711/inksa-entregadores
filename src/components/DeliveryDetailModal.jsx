@@ -9,6 +9,7 @@ import { acceptDelivery, getPickupCode } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
 import { ChatModal } from './ChatModal';
 import { brl } from '../utils/dinheiro';
+import { abrirWaze, abrirMaps } from '../utils/navegacao';
 
 // helpers
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
@@ -35,59 +36,9 @@ const itemQty = (it) => Number(it.quantity ?? it.qty ?? 1) || 1;
 const itemUnit = (it) => toNumber(it.unit_price ?? it.price ?? it.preco ?? 0);
 const isDeliveryFeeItem = (it) => /taxa de entrega/i.test(itemName(it));
 
-/**
- * Abre o app de navegação DE VERDADE, fora do nosso app.
- *
- * ⚠️ NÃO DÁ PRA EMBUTIR O WAZE NUMA JANELA. O site dele recusa ser carregado
- * dentro de outra página (X-Frame-Options), e mesmo se deixasse seria o mapa
- * web, sem voz e sem rota virada a virada. O que serve é ENTREGAR o destino
- * pro app que a pessoa já tem instalado.
- *
- * TRÊS COISAS ESTAVAM ERRADAS AQUI, e as três apareceram no pedido #1006
- * (13/09/2026), quando o mapa levou o Diego pra longe da loja:
- *
- * 1. MANDAVA TEXTO, NÃO COORDENADA. Ia `?q=<endereço escrito>` e o Waze
- *    geocodificava de novo por conta dele. Endereço com bairro/CEP trocados —
- *    que foi o caso da Me Mimei — leva o entregador pro lugar errado com toda
- *    a confiança do mundo. Coordenada não tem essa ambiguidade.
- *
- * 2. SÓ TINHA BOTÃO PRO CLIENTE. A corrida começa na LOJA, e pra chegar nela
- *    o entregador tinha que se virar.
- *
- * 3. `_blank` NÃO SAI DA WEBVIEW. No APK isso abre dentro do próprio app, que
- *    é onde a navegação não existe. `_system` é o que entrega pro Waze.
- */
-const abrirFora = (url) => {
-  try {
-    if (window.Capacitor?.Plugins?.Browser?.open) {
-      // No app, o plugin respeita o app-link e o Waze assume.
-      window.Capacitor.Plugins.Browser.open({ url });
-      return;
-    }
-  } catch { /* sem plugin: cai no window.open */ }
-  try {
-    window.open(url, '_system') || window.open(url, '_blank');
-  } catch { /* navegador bloqueou: nada a fazer além de não quebrar a tela */ }
-};
-
-const temCoord = (lat, lng) =>
-  lat !== null && lat !== undefined && lng !== null && lng !== undefined &&
-  !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng));
-
-// `ll` quando temos coordenada; `q` (texto) só como último recurso — ver o
-// defeito nº 1 acima.
-const abrirWaze = (lat, lng, endereco) => {
-  abrirFora(temCoord(lat, lng)
-    ? `https://waze.com/ul?ll=${Number(lat)},${Number(lng)}&navigate=yes`
-    : `https://waze.com/ul?q=${encodeURIComponent(endereco || '')}&navigate=yes`);
-};
-
-const abrirMaps = (lat, lng, endereco) => {
-  abrirFora(temCoord(lat, lng)
-    ? `https://www.google.com/maps/dir/?api=1&destination=${Number(lat)},${Number(lng)}&travelmode=driving`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(endereco || '')}&travelmode=driving`);
-};
-
+// Navegação vem de utils/navegacao.js — MESMA implementação que o card da
+// entrega usa. Havia uma cópia aqui dentro, e o efeito colateral foi que o
+// card (onde o entregador realmente fica) não tinha navegação nenhuma.
 const parseAddress = (address) => {
   if (!address) return 'Endereço não disponível';
   if (typeof address === 'string') {

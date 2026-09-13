@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { getPickupCode } from '../services/orderService';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
+import { BotaoWaze } from './BotaoWaze';
 
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
 
@@ -135,6 +136,17 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
                 <p className="text-sm text-gray-700 break-words">{deliveryAddress}</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* NAVEGAR, NO CARD — não escondido dentro do modal.
+            O entregador vive nesta lista; obrigar a abrir um modal pra achar o
+            botão de navegar é um toque a mais de capacete no trânsito. Só
+            aparece em corrida ACEITA: numa entrega ainda disponível não há pra
+            onde ir, ele só está decidindo se pega. */}
+        {!isAvailable && (
+          <div className="mb-3">
+            <BotaoWaze pedido={delivery} />
           </div>
         )}
 
