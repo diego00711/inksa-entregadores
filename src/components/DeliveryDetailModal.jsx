@@ -35,6 +35,59 @@ const itemQty = (it) => Number(it.quantity ?? it.qty ?? 1) || 1;
 const itemUnit = (it) => toNumber(it.unit_price ?? it.price ?? it.preco ?? 0);
 const isDeliveryFeeItem = (it) => /taxa de entrega/i.test(itemName(it));
 
+/**
+ * Abre o app de navegação DE VERDADE, fora do nosso app.
+ *
+ * ⚠️ NÃO DÁ PRA EMBUTIR O WAZE NUMA JANELA. O site dele recusa ser carregado
+ * dentro de outra página (X-Frame-Options), e mesmo se deixasse seria o mapa
+ * web, sem voz e sem rota virada a virada. O que serve é ENTREGAR o destino
+ * pro app que a pessoa já tem instalado.
+ *
+ * TRÊS COISAS ESTAVAM ERRADAS AQUI, e as três apareceram no pedido #1006
+ * (13/09/2026), quando o mapa levou o Diego pra longe da loja:
+ *
+ * 1. MANDAVA TEXTO, NÃO COORDENADA. Ia `?q=<endereço escrito>` e o Waze
+ *    geocodificava de novo por conta dele. Endereço com bairro/CEP trocados —
+ *    que foi o caso da Me Mimei — leva o entregador pro lugar errado com toda
+ *    a confiança do mundo. Coordenada não tem essa ambiguidade.
+ *
+ * 2. SÓ TINHA BOTÃO PRO CLIENTE. A corrida começa na LOJA, e pra chegar nela
+ *    o entregador tinha que se virar.
+ *
+ * 3. `_blank` NÃO SAI DA WEBVIEW. No APK isso abre dentro do próprio app, que
+ *    é onde a navegação não existe. `_system` é o que entrega pro Waze.
+ */
+const abrirFora = (url) => {
+  try {
+    if (window.Capacitor?.Plugins?.Browser?.open) {
+      // No app, o plugin respeita o app-link e o Waze assume.
+      window.Capacitor.Plugins.Browser.open({ url });
+      return;
+    }
+  } catch { /* sem plugin: cai no window.open */ }
+  try {
+    window.open(url, '_system') || window.open(url, '_blank');
+  } catch { /* navegador bloqueou: nada a fazer além de não quebrar a tela */ }
+};
+
+const temCoord = (lat, lng) =>
+  lat !== null && lat !== undefined && lng !== null && lng !== undefined &&
+  !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng));
+
+// `ll` quando temos coordenada; `q` (texto) só como último recurso — ver o
+// defeito nº 1 acima.
+const abrirWaze = (lat, lng, endereco) => {
+  abrirFora(temCoord(lat, lng)
+    ? `https://waze.com/ul?ll=${Number(lat)},${Number(lng)}&navigate=yes`
+    : `https://waze.com/ul?q=${encodeURIComponent(endereco || '')}&navigate=yes`);
+};
+
+const abrirMaps = (lat, lng, endereco) => {
+  abrirFora(temCoord(lat, lng)
+    ? `https://www.google.com/maps/dir/?api=1&destination=${Number(lat)},${Number(lng)}&travelmode=driving`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(endereco || '')}&travelmode=driving`);
+};
+
 const parseAddress = (address) => {
   if (!address) return 'Endereço não disponível';
   if (typeof address === 'string') {
@@ -70,6 +123,14 @@ export function DeliveryDetailModal({
   const items = parseItems(order.items ?? order.itens).filter((it) => !isDeliveryFeeItem(it));
   const deliveryAddress = parseAddress(order.delivery_address);
   const restaurantAddress = order.restaurant_address || 'Endereço do restaurante não disponível';
+
+  // Coordenadas: o pedido JÁ TRAZ as quatro (restaurant_latitude/longitude do
+  // perfil da loja, client_latitude/longitude do endereço da entrega). A tela
+  // simplesmente não usava.
+  const restLat = order.restaurant_latitude;
+  const restLng = order.restaurant_longitude;
+  const cliLat = order.client_latitude;
+  const cliLng = order.client_longitude;
 
   const subtotal = toNumber(order.total_amount_items ?? (order.total_amount - order.delivery_fee));
   const deliveryFee = toNumber(order.delivery_fee);
@@ -271,31 +332,44 @@ export function DeliveryDetailModal({
                     <Navigation className="h-5 w-5 text-orange-500" />
                     Mapa da Rota
                   </h3>
-                  <div className="bg-gray-100 rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center gap-4">
-                    <p className="text-gray-600">Abrir navegação:</p>
-                    <div className="flex flex-wrap justify-center gap-3">
+                  <div className="bg-gray-100 rounded-lg p-4 sm:p-6 flex flex-col gap-4">
+                    {/* PRIMEIRO A LOJA, DEPOIS O CLIENTE — nessa ordem, que é a
+                        ordem da corrida. Antes só existia botão pro cliente, e
+                        o entregador tinha que se virar pra achar o restaurante:
+                        foi exatamente o que travou o pedido #1006 em 13/09/2026. */}
+                    <div>
+                      <p className="text-gray-600 text-sm font-semibold mb-2">1. Ir até a LOJA</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => abrirWaze(restLat, restLng, restaurantAddress)}
+                          className="bg-[#00D8FF] hover:bg-[#00C4E6] text-white min-h-[44px]"
+                        >
+                          Waze
+                        </Button>
+                        <Button
+                          onClick={() => abrirMaps(restLat, restLng, restaurantAddress)}
+                          className="bg-blue-600 hover:bg-blue-700 min-h-[44px]"
+                        >
+                          Maps
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="border-t pt-3">
+                      <p className="text-gray-600 text-sm font-semibold mb-2">2. Levar ao CLIENTE</p>
+                      <div className="flex flex-wrap gap-2">
                       <Button
-                        onClick={() =>
-                          window.open(
-                            `https://waze.com/ul?q=${encodeURIComponent(deliveryAddress)}`, '_blank'
-                          )
-                        }
-                        className="bg-[#00D8FF] hover:bg-[#00C4E6] text-white"
+                        onClick={() => abrirWaze(cliLat, cliLng, deliveryAddress)}
+                        className="bg-[#00D8FF] hover:bg-[#00C4E6] text-white min-h-[44px]"
                       >
-                        Abrir no Waze
+                        Waze
                       </Button>
                       <Button
-                        onClick={() =>
-                          window.open(
-                            `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                              deliveryAddress
-                            )}`, '_blank'
-                          )
-                        }
-                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => abrirMaps(cliLat, cliLng, deliveryAddress)}
+                        className="bg-blue-600 hover:bg-blue-700 min-h-[44px]"
                       >
-                        Abrir no Maps
+                        Maps
                       </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
