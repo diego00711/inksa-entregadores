@@ -971,7 +971,7 @@ export default function ModernDeliveryDashboard() {
               type="text"
               value={pendingCode}
               onChange={e => setPendingCode(limparCodigo(e.target.value))}
-              placeholder="Ex: 480315"
+              placeholder="Ex: 4803"
               maxLength={6}
               inputMode="numeric"
               pattern="[0-9]*"

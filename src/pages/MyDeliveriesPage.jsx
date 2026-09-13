@@ -8,7 +8,7 @@ import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
-import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star } from 'lucide-react';
+import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star, KeyRound } from 'lucide-react';
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn, getOrdersToReview } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
@@ -691,6 +691,27 @@ export function MyDeliveriesPage() {
                           Confirmar entrega
                         </button>
                       )}
+                      {/* CÓDIGO DE RETIRADA NA ALÇA, indo pra loja.
+                          Mesma ideia do atalho de entrega ao lado, pro outro
+                          lado da corrida. O entregador NÃO confirma retirada —
+                          quem confirma é a loja — mas ele precisa MOSTRAR o
+                          código, e ele estava dentro do painel fechado.
+                          Na prática: ele chega na loja voltando do Waze, com o
+                          painel recolhido, e a única coisa que precisa ali é
+                          justamente a que não está na tela. Agora está. */}
+                      {!isDeliveryPhase && activeDelivery.pickup_code && (
+                        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-purple-300 bg-purple-50 px-3 py-1.5 shadow-sm">
+                          <KeyRound className="h-4 w-4 shrink-0 text-purple-600" />
+                          <div className="leading-tight">
+                            <p className="text-[9px] font-semibold uppercase tracking-wide text-purple-700">
+                              Mostre na loja
+                            </p>
+                            <p className="font-mono text-lg font-extrabold tracking-widest text-purple-700">
+                              {activeDelivery.pickup_code}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {/* O corte reto no fim do painel parecia informação perdida,
                         não conteúdo rolável — o Diego leu como bug. A faixa que
@@ -902,7 +923,7 @@ export function MyDeliveriesPage() {
               type="text"
               value={finishCode}
               onChange={e => setFinishCode(limparCodigo(e.target.value))}
-              placeholder="Ex: 480315"
+              placeholder="Ex: 4803"
               maxLength={6}
               inputMode="numeric"
               pattern="[0-9]*"
