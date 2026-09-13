@@ -8,7 +8,7 @@ import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
-import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star, KeyRound } from 'lucide-react';
+import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star, Navigation } from 'lucide-react';
 import { acceptDelivery, completeDelivery, reportIncident, confirmReturn, getOrdersToReview } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
@@ -24,6 +24,7 @@ import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 import { limparCodigo, codigoCompleto, AVISO_CODIGO } from '../utils/codigoDoPedido';
+import { abrirWaze, destinoDaCorrida } from '../utils/navegacao';
 
 // ⚠️ MAPA CARREGADO SÓ QUANDO APARECE — não troque por import estático.
 //
@@ -691,26 +692,31 @@ export function MyDeliveriesPage() {
                           Confirmar entrega
                         </button>
                       )}
-                      {/* CÓDIGO DE RETIRADA NA ALÇA, indo pra loja.
-                          Mesma ideia do atalho de entrega ao lado, pro outro
-                          lado da corrida. O entregador NÃO confirma retirada —
-                          quem confirma é a loja — mas ele precisa MOSTRAR o
-                          código, e ele estava dentro do painel fechado.
-                          Na prática: ele chega na loja voltando do Waze, com o
-                          painel recolhido, e a única coisa que precisa ali é
-                          justamente a que não está na tela. Agora está. */}
-                      {!isDeliveryPhase && activeDelivery.pickup_code && (
-                        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-purple-300 bg-purple-50 px-3 py-1.5 shadow-sm">
-                          <KeyRound className="h-4 w-4 shrink-0 text-purple-600" />
-                          <div className="leading-tight">
-                            <p className="text-[9px] font-semibold uppercase tracking-wide text-purple-700">
-                              Mostre na loja
-                            </p>
-                            <p className="font-mono text-lg font-extrabold tracking-widest text-purple-700">
-                              {activeDelivery.pickup_code}
-                            </p>
-                          </div>
-                        </div>
+                      {/* DIRIGIR, indo pra loja — o par do "Confirmar entrega".
+                          Cada fase tem UMA ação na alça, e é a ação daquela
+                          fase: indo buscar, dirigir; indo entregar, confirmar.
+
+                          ⚠️ Aqui esteve o código de retirada, e foi erro meu:
+                          ele JÁ aparece no chip roxo em cima do mapa. Repetir o
+                          mesmo número em dois lugares da mesma tela não informa
+                          duas vezes — só ocupa o lugar da ação que faltava.
+                          O Diego apontou no primeiro teste (13/09/2026).
+
+                          Vai pelo mesmo caminho dos botões do card
+                          (utils/navegacao): coordenada, não endereço escrito, e
+                          `_system` pra sair da WebView e cair no Waze. */}
+                      {!isDeliveryPhase && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = destinoDaCorrida(activeDelivery);
+                            abrirWaze(d.lat, d.lng, d.endereco);
+                          }}
+                          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#00D8FF] px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
+                        >
+                          <Navigation className="h-4 w-4" />
+                          Dirigir
+                        </button>
                       )}
                     </div>
                     {/* O corte reto no fim do painel parecia informação perdida,
