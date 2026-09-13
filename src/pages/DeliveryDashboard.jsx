@@ -28,6 +28,7 @@ import { getPageCache, setPageCache } from '../lib/pageCache.js';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+import { limparCodigo, codigoCompleto, AVISO_CODIGO } from '../utils/codigoDoPedido';
 
 const DASHBOARD_CACHE_KEY = 'delivery:dashboard';
 
@@ -495,7 +496,7 @@ export default function ModernDeliveryDashboard() {
   const confirmComplete = async () => {
     if (completing) return; // já está confirmando — ignora cliques repetidos
     const deliveryCode = String(pendingCode).replace(/\D/g, '');
-    if (deliveryCode.length !== 6) { haptics.warn(); addToast('O código tem 6 números.', 'warning'); return; }
+    if (!codigoCompleto(deliveryCode)) { haptics.warn(); addToast(AVISO_CODIGO, 'warning'); return; }
     setCompleting(true);
     try {
       await completeDelivery(pendingCompleteId, deliveryCode);
@@ -965,11 +966,11 @@ export default function ModernDeliveryDashboard() {
               <KeyRound className="h-5 w-5 text-orange-500" />
               Código de Entrega
             </h3>
-            <p className="text-sm text-gray-500 mb-4">Peça o código de 6 números ao cliente para confirmar a entrega.</p>
+            <p className="text-sm text-gray-500 mb-4">Peça o código do pedido ao cliente para confirmar a entrega.</p>
             <input
               type="text"
               value={pendingCode}
-              onChange={e => setPendingCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={e => setPendingCode(limparCodigo(e.target.value))}
               placeholder="Ex: 480315"
               maxLength={6}
               inputMode="numeric"
@@ -988,7 +989,7 @@ export default function ModernDeliveryDashboard() {
               </button>
               <button
                 onClick={confirmComplete}
-                disabled={completing || pendingCode.trim().length !== 6}
+                disabled={completing || !codigoCompleto(pendingCode)}
                 className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {completing ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Confirmando...</>) : (<><CheckCircle className="h-4 w-4" /> Confirmar</>)}
