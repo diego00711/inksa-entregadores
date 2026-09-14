@@ -705,19 +705,25 @@ export function MyDeliveriesPage() {
                           Vai pelo mesmo caminho dos botões do card
                           (utils/navegacao): coordenada, não endereço escrito, e
                           `_system` pra sair da WebView e cair no Waze. */}
-                      {!isDeliveryPhase && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const d = destinoDaCorrida(activeDelivery);
-                            abrirWaze(d.lat, d.lng, d.endereco);
-                          }}
-                          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#00D8FF] px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
-                        >
-                          <Navigation className="h-4 w-4" />
-                          Dirigir
-                        </button>
-                      )}
+                      {/* NAS DUAS FASES, e essa foi a correção seguinte.
+                          Primeiro ele só existia indo à loja — mas aí, na fase
+                          de entrega, a alça só tinha "Confirmar entrega" e a
+                          navegação até o cliente ficava só no modal. Tirar o
+                          modal (que é o que o Diego pediu) deixaria o caminho
+                          de volta sem mapa nenhum.
+                          O destino quem escolhe é destinoDaCorrida, pelo status:
+                          antes de retirar vai pra loja, depois vai pro cliente. */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = destinoDaCorrida(activeDelivery);
+                          abrirWaze(d.lat, d.lng, d.endereco);
+                        }}
+                        className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#00D8FF] px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
+                      >
+                        <Navigation className="h-4 w-4" />
+                        Dirigir
+                      </button>
                     </div>
                     {/* O corte reto no fim do painel parecia informação perdida,
                         não conteúdo rolável — o Diego leu como bug. A faixa que

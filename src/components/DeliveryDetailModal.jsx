@@ -2,14 +2,13 @@
 import React, { useState } from 'react';
 import {
   X, MapPin, Package, DollarSign, Clock,
-  Navigation, CheckCircle, Loader2, KeyRound, MessageCircle
+  CheckCircle, Loader2, KeyRound, MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { acceptDelivery, getPickupCode } from '../services/orderService';
 import { useToast } from '../context/ToastContext';
 import { ChatModal } from './ChatModal';
 import { brl } from '../utils/dinheiro';
-import { abrirWaze, abrirMaps } from '../utils/navegacao';
 
 // helpers
 const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
@@ -75,13 +74,6 @@ export function DeliveryDetailModal({
   const deliveryAddress = parseAddress(order.delivery_address);
   const restaurantAddress = order.restaurant_address || 'Endereço do restaurante não disponível';
 
-  // Coordenadas: o pedido JÁ TRAZ as quatro (restaurant_latitude/longitude do
-  // perfil da loja, client_latitude/longitude do endereço da entrega). A tela
-  // simplesmente não usava.
-  const restLat = order.restaurant_latitude;
-  const restLng = order.restaurant_longitude;
-  const cliLat = order.client_latitude;
-  const cliLng = order.client_longitude;
 
   const subtotal = toNumber(order.total_amount_items ?? (order.total_amount - order.delivery_fee));
   const deliveryFee = toNumber(order.delivery_fee);
@@ -276,55 +268,15 @@ export function DeliveryDetailModal({
                 </div>
               </div>
 
-              {/* rota */}
-              {(restaurantAddress || deliveryAddress) && (
-                <div>
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-orange-500" />
-                    Mapa da Rota
-                  </h3>
-                  <div className="bg-gray-100 rounded-lg p-4 sm:p-6 flex flex-col gap-4">
-                    {/* PRIMEIRO A LOJA, DEPOIS O CLIENTE — nessa ordem, que é a
-                        ordem da corrida. Antes só existia botão pro cliente, e
-                        o entregador tinha que se virar pra achar o restaurante:
-                        foi exatamente o que travou o pedido #1006 em 13/09/2026. */}
-                    <div>
-                      <p className="text-gray-600 text-sm font-semibold mb-2">1. Ir até a LOJA</p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          onClick={() => abrirWaze(restLat, restLng, restaurantAddress)}
-                          className="bg-[#00D8FF] hover:bg-[#00C4E6] text-white min-h-[44px]"
-                        >
-                          Waze
-                        </Button>
-                        <Button
-                          onClick={() => abrirMaps(restLat, restLng, restaurantAddress)}
-                          className="bg-blue-600 hover:bg-blue-700 min-h-[44px]"
-                        >
-                          Maps
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="border-t pt-3">
-                      <p className="text-gray-600 text-sm font-semibold mb-2">2. Levar ao CLIENTE</p>
-                      <div className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={() => abrirWaze(cliLat, cliLng, deliveryAddress)}
-                        className="bg-[#00D8FF] hover:bg-[#00C4E6] text-white min-h-[44px]"
-                      >
-                        Waze
-                      </Button>
-                      <Button
-                        onClick={() => abrirMaps(cliLat, cliLng, deliveryAddress)}
-                        className="bg-blue-600 hover:bg-blue-700 min-h-[44px]"
-                      >
-                        Maps
-                      </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* MAPA DA ROTA SAIU DAQUI (13/09/2026, a pedido do Diego).
+                  Eram quatro botões (Waze/Maps × loja/cliente) num modal que
+                  a pessoa precisa ABRIR — enquanto a tela da corrida já tem o
+                  botão "Dirigir" na alça, sempre visível e escolhendo o
+                  destino sozinho pelo status do pedido.
+                  Quatro botões pedindo escolha, atrás de um toque, competindo
+                  com um botão que não pede escolha nenhuma: o modal perdia.
+                  A navegação vive em utils/navegacao.js e continua no card da
+                  lista (BotaoWaze) e na alça da entrega ativa. */}
 
               {/* ações */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
