@@ -38,6 +38,16 @@ const isDeliveryFeeItem = (it) => /taxa de entrega/i.test(itemName(it));
 // Navegação vem de utils/navegacao.js — MESMA implementação que o card da
 // entrega usa. Havia uma cópia aqui dentro, e o efeito colateral foi que o
 // card (onde o entregador realmente fica) não tinha navegação nenhuma.
+/** Status em português. Sem isto a tela mostra o código do banco, em inglês. */
+const ROTULOS_STATUS = {
+  pending: 'Pendente', accepted: 'Aceito', preparing: 'Preparando',
+  ready: 'Pronto para retirada', accepted_by_delivery: 'Aguardando retirada',
+  picked_up: 'Retirado', delivering: 'Em rota', on_the_way: 'Em rota',
+  delivered: 'Entregue', cancelled: 'Cancelado', canceled: 'Cancelado',
+  delivery_failed: 'Entrega não concluída', awaiting_payment: 'Aguardando pagamento',
+};
+const rotuloDoStatus = (s) => ROTULOS_STATUS[s] || s || '—';
+
 const parseAddress = (address) => {
   if (!address) return 'Endereço não disponível';
   if (typeof address === 'string') {
@@ -196,7 +206,9 @@ export function DeliveryDetailModal({
                   {order.status && (
                     <div>
                       <p className="text-sm text-gray-600 font-medium">Status:</p>
-                      <p className="text-gray-800">{order.status}</p>
+                      {/* Estava `{order.status}` cru: o entregador lia
+                          "accepted_by_delivery" na tela de detalhes. */}
+                      <p className="text-gray-800">{rotuloDoStatus(order.status)}</p>
                     </div>
                   )}
                   <div>

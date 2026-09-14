@@ -69,6 +69,10 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
       accepted_by_delivery:{ t: 'Aguardando Retirada', cls: 'bg-fuchsia-600' },
       delivering:          { t: 'Entregando',          cls: 'bg-green-600' },
       delivered:           { t: 'Entregue',            cls: 'bg-gray-500' },
+      preparing:           { t: 'Preparando',          cls: 'bg-orange-500' },
+      cancelled:           { t: 'Cancelado',           cls: 'bg-red-600' },
+      canceled:            { t: 'Cancelado',           cls: 'bg-red-600' },
+      delivery_failed:     { t: 'Não concluída',       cls: 'bg-red-600' },
     };
     return map[status] || { t: status || '—', cls: 'bg-gray-500' };
   }, [status]);

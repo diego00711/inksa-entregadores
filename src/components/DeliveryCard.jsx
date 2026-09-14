@@ -28,7 +28,12 @@ const StatusBadge = ({ status }) => {
     preparing: { label: 'Preparando', cls: 'bg-orange-100 text-orange-800' },
     accepted_by_delivery: { label: 'Aguardando Retirada', cls: 'bg-pink-100 text-pink-800' },
     delivering: { label: 'Em Rota', cls: 'bg-purple-100 text-purple-800' },
-    delivered: { label: 'Entregue', cls: 'bg-gray-100 text-gray-800' }
+    delivered: { label: 'Entregue', cls: 'bg-gray-100 text-gray-800' },
+    // Sem estes dois o badge caía no `|| { label: status }` e mostrava
+    // "cancelled" em inglês, cinza, pro entregador.
+    cancelled: { label: 'Cancelado', cls: 'bg-red-100 text-red-800' },
+    canceled: { label: 'Cancelado', cls: 'bg-red-100 text-red-800' },
+    delivery_failed: { label: 'Entrega não concluída', cls: 'bg-red-100 text-red-800' }
   };
   const info = map[status] || { label: status, cls: 'bg-gray-100 text-gray-800' };
   return <Badge className={`${info.cls} font-medium`}>{info.label}</Badge>;

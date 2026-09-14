@@ -105,6 +105,15 @@ export function MyDeliveriesPage() {
   // Resumo do dinheiro devolvido pelo backend ao fechar uma entrega em dinheiro
   // ({voce_recebeu, sua_taxa, deve_a_plataforma, ..., _order}).
   const [cashInfo, setCashInfo] = useState(null);
+  // AVISO DE CANCELAMENTO.
+  //
+  // A loja pode cancelar com o entregador já na rua ('accepted_by_delivery' ->
+  // 'cancelled' é transição válida no backend). Até 14/09/2026 o resultado na
+  // tela era o pior possível: a corrida SUMIA do painel sem uma palavra, e
+  // reaparecia na lista como um card cinza escrito "cancelled", em inglês.
+  // Ele seguia dirigindo e descobria no balcão.
+  const [pedidoCancelado, setPedidoCancelado] = useState(null);
+  const ultimaAtivaRef = useRef(null);
   // (O aviso de nova mensagem do cliente — toast/bip/badge — agora é ÚNICO e vive
   // no layout via useChatAlarm/ChatAlarmContext; este card só LÊ o `unread`.)
 
@@ -167,6 +176,19 @@ export function MyDeliveriesPage() {
       const ongoing = withPickup.find((d) =>
         ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
       );
+
+      // A corrida que ESTAVA ativa virou cancelada? Então avisa, em vez de
+      // deixar ela sumir. Compara com o que estava antes porque a lista não
+      // diz "acabou de mudar" — só traz o estado de agora.
+      const antes = ultimaAtivaRef.current;
+      if (antes) {
+        const agora = withPickup.find((d) => d.id === antes.id);
+        if (agora && ['cancelled', 'canceled'].includes(agora.status)) {
+          setPedidoCancelado(agora);
+        }
+      }
+      ultimaAtivaRef.current = ongoing || null;
+
       setActiveDelivery(ongoing);
 
       setPageCache(CACHE_KEY, { availableOrders: available, myDeliveries: withPickup, activeDelivery: ongoing });
@@ -941,6 +963,40 @@ export function MyDeliveriesPage() {
 
       {/* O ChatModal do chat com o cliente vive no layout (global), aberto pelo
           botão do card via chat.setOpen — não é mais montado aqui. */}
+
+      {/* ⚠️ TELA INTEIRA, e não um aviso de canto.
+          Quem está com o capacete na mão e o celular no suporte não lê toast.
+          Isto é a única mensagem do app que manda a pessoa PARAR — e chegar
+          fraco aqui custa a viagem inteira. */}
+      {pedidoCancelado && (
+        <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+              <AlertTriangle className="h-9 w-9 text-red-600" />
+            </div>
+            <h3 className="mb-1 text-xl font-bold text-gray-900">Pedido cancelado</h3>
+            <p className="mb-1 text-sm text-gray-600">
+              A loja cancelou o pedido {numeroPedido(pedidoCancelado)}.
+            </p>
+            {/* O nome da loja importa: ele pode estar com mais de uma corrida
+                na cabeça, e "pedido cancelado" sozinho não diz qual. */}
+            {pedidoCancelado.restaurant_name && (
+              <p className="mb-3 text-sm font-semibold text-gray-800">
+                {pedidoCancelado.restaurant_name}
+              </p>
+            )}
+            <p className="mb-5 text-base font-bold text-red-700">
+              Não precisa mais ir buscar.
+            </p>
+            <button
+              onClick={() => { setPedidoCancelado(null); fetchDeliveries(); }}
+              className="w-full rounded-xl bg-gray-900 py-3 font-bold text-white active:scale-95"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
 
       {pendingFinishId && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
