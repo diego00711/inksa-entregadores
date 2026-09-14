@@ -40,20 +40,94 @@ const temCoord = (lat, lng) =>
   !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng)) &&
   !(Number(lat) === 0 && Number(lng) === 0);
 
-// ⚠️ COORDENADA, NÃO TEXTO. Mandar o endereço escrito faz o Waze geocodificar
-// de novo por conta dele — e endereço com bairro ou CEP trocado leva o
-// entregador pro lugar errado com toda a confiança do mundo. Foi o que
-// aconteceu no pedido #1006 (13/09/2026). Texto fica só como último recurso.
+/**
+ * O endereço tem NÚMERO DE CASA? É isso que decide texto ou coordenada.
+ *
+ * Procura um número solto de 1 a 5 dígitos — "Rua X, 307", "Av. Y 1420".
+ * Ignora número colado em CEP (8 dígitos) e em "31 de Março", que é nome.
+ */
+function temNumeroDeCasa(endereco) {
+  const e = String(endereco || '');
+  if (!e) return false;
+  // tira CEP pra ele não passar por número de casa
+  const semCep = e.replace(/\b\d{5}-?\d{3}\b/g, ' ');
+  return /(?:^|,|\s)n?º?\s*\d{1,5}(?:\b|,)/i.test(semCep);
+}
+
+// ⚠️ NOME DE RUA COM NÚMERO CAI AQUI COMO FALSO POSITIVO — e está certo assim.
+//
+// "Rua 31 de Março - São Sebastião - Lages" não tem número de casa, mas o "31"
+// dispara o teste acima e o endereço vai por TEXTO. Testado: acontece também
+// com "15 de Novembro".
+//
+// Deixei de propósito, porque o resultado é MELHOR: o texto leva o bairro
+// junto, e é o bairro que separa os 3 km dessa rua. A nossa coordenada, que
+// seria a alternativa, apontava pro trecho errado — foi o passeio de 2,3 km do
+// pedido #1006. Um detector "mais correto" aqui pioraria a entrega.
+
+/**
+ * ⚠️ TEXTO QUANDO HÁ NÚMERO; COORDENADA QUANDO NÃO HÁ. E a ordem importa.
+ *
+ * Eu tinha invertido isso, e a razão estava errada. Depois do pedido #1006
+ * (13/09/2026) concluí "coordenada sempre, texto nunca" — mas o que falhou ali
+ * não foi o texto: foi o ENDEREÇO, cadastrado com bairro e CEP de outro trecho
+ * da rua. Com endereço errado a coordenada sai igualmente errada, porque nasce
+ * dele. Trocar um pelo outro não consertava nada.
+ *
+ * O que decide de verdade é PRECISÃO, e aí a conta é outra:
+ *
+ *   nossa coordenada  -> nível de RUA. Medido: a casa da cliente (nº 307) e o
+ *                        Yo!Frango (nº 284) têm coordenada IDÊNTICA.
+ *   Waze com o texto  -> nível de PORTA. Medido no mesmo dia: o Waze achou
+ *                        "Rua 31 de Março, 126" que o nosso geocodificador
+ *                        não achou de jeito nenhum.
+ *
+ * E o Diego apontou o que isso significa na rua: a Rua 31 de Março tem ~3 km.
+ * Largar o entregador "na rua certa" ali é largar ele procurando por 3 km.
+ *
+ * Então: tendo número de casa, o texto vai — o Waze é melhor nisso que a gente.
+ * Sem número, a coordenada é o que sobra e pelo menos chega na rua.
+ */
 export function abrirWaze(lat, lng, endereco) {
-  return abrirFora(temCoord(lat, lng)
-    ? `https://waze.com/ul?ll=${Number(lat)},${Number(lng)}&navigate=yes`
-    : `https://waze.com/ul?q=${encodeURIComponent(endereco || '')}&navigate=yes`);
+  const porTexto = temNumeroDeCasa(endereco);
+  return abrirFora(porTexto
+    ? `https://waze.com/ul?q=${encodeURIComponent(endereco)}&navigate=yes`
+    : temCoord(lat, lng)
+      ? `https://waze.com/ul?ll=${Number(lat)},${Number(lng)}&navigate=yes`
+      : `https://waze.com/ul?q=${encodeURIComponent(endereco || '')}&navigate=yes`);
 }
 
 export function abrirMaps(lat, lng, endereco) {
-  return abrirFora(temCoord(lat, lng)
-    ? `https://www.google.com/maps/dir/?api=1&destination=${Number(lat)},${Number(lng)}&travelmode=driving`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(endereco || '')}&travelmode=driving`);
+  const porTexto = temNumeroDeCasa(endereco);
+  const destino = porTexto
+    ? encodeURIComponent(endereco)
+    : temCoord(lat, lng)
+      ? `${Number(lat)},${Number(lng)}`
+      : encodeURIComponent(endereco || '');
+  return abrirFora(`https://www.google.com/maps/dir/?api=1&destination=${destino}&travelmode=driving`);
+}
+
+/**
+ * Endereço de entrega como TEXTO, venha ele como string, JSON ou objeto.
+ *
+ * Importa mais do que parece: é o texto que carrega o NÚMERO DA CASA, e é o
+ * número que decide se o Waze vai até a porta ou larga o entregador na rua.
+ * Devolvendo '' pra objeto (como estava), todo pedido cujo endereço veio
+ * estruturado caía na coordenada de nível de rua sem ninguém perceber.
+ */
+function enderecoComoTexto(end) {
+  if (!end) return '';
+  if (typeof end === 'string') {
+    const t = end.trim();
+    if (!t.startsWith('{')) return t;
+    try { return enderecoComoTexto(JSON.parse(t)); } catch { return t; }
+  }
+  if (typeof end !== 'object') return '';
+  const partes = [
+    [end.street, end.number].filter(Boolean).join(', '),
+    end.neighborhood, end.city, end.state,
+  ].filter(Boolean);
+  return partes.join(' - ');
 }
 
 // Status em que o entregador ainda NÃO pegou o pedido — ou seja, o destino é a
@@ -89,9 +163,7 @@ export function destinoDaCorrida(pedido) {
     rotulo: 'Levar ao cliente',
     lat: p.client_latitude,
     lng: p.client_longitude,
-    // O endereço da entrega às vezes vem como objeto; quem chama já normaliza,
-    // mas aqui aceita string direta também.
-    endereco: typeof p.delivery_address === 'string' ? p.delivery_address : '',
+    endereco: enderecoComoTexto(p.delivery_address),
   };
 }
 
