@@ -1,5 +1,9 @@
 // src/utils/navegacao.js
 //
+// Import ESTATICO de proposito: o que este arquivo faz precisa acontecer na
+// mesma batida do toque, e import() dinamico e promessa.
+import { DELIVERY_API_URL } from '../services/api';
+//
 // TODA a navegação do app sai daqui. UM lugar, de propósito.
 //
 // Antes isto vivia solto dentro do DeliveryDetailModal, e o resultado foi que
@@ -114,20 +118,33 @@ export function destinoTemCoordenada(pedido) {
  */
 export function pedirAtalhoDeVolta(pedidoId) {
   if (!pedidoId) return;
-  // Import tardio: este arquivo é usado em telas que não precisam da API, e
-  // carregar o cliente HTTP junto com elas não tem porquê.
-  //
-  // apiFetch (e não fetch cru) porque ele põe o Authorization do token que
-  // está valendo e renova antes de vencer. Token lido à mão congelaria o
-  // valor do momento — e aqui a pessoa pode estar há horas na rua.
-  Promise.all([
-    import('../services/apiClient'),
-    import('../services/api'),
-  ]).then(([{ default: apiFetch }, { DELIVERY_API_URL }]) => {
-    apiFetch(`${DELIVERY_API_URL}/api/orders/${pedidoId}/atalho-de-volta`, {
+  try {
+    // ⚠️ NADA DE `await` ANTES DO fetch. ESTA É A REGRA DESTA FUNÇÃO.
+    //
+    // O Waze abre na linha seguinte e o app vai pro fundo NA MESMA HORA. No
+    // WebView, JS em segundo plano congela — qualquer espera antes da chamada
+    // perde a corrida e a requisição nunca sai.
+    //
+    // A primeira versão errou nisso duas vezes ao mesmo tempo:
+    //   1. `import()` dinâmico, que é uma promessa
+    //   2. `apiFetch`, que pode aguardar a renovação do token antes de disparar
+    // Resultado: no teste do Diego (13/09/2026) o push não chegou. O código
+    // estava certo, mas rodava tarde demais pra existir.
+    //
+    // Agora: token lido do armazenamento (síncrono) e `fetch` disparado na
+    // MESMA batida do toque.
+    //
+    // O preço é não renovar token vencido. É o preço certo: se o token venceu,
+    // esta pessoa está prestes a ser deslogada de qualquer jeito, e um atalho
+    // de conveniência não é o lugar de resolver isso.
+    const token = localStorage.getItem('deliveryAuthToken');
+    if (!token) return;
+    fetch(`${DELIVERY_API_URL}/api/orders/${pedidoId}/atalho-de-volta`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,  // o app vai pro fundo em seguida; sem isto a requisição morre no meio
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      // keepalive: o navegador se compromete a terminar o envio mesmo com a
+      // página indo embora. É o que existe justamente pra este caso.
+      keepalive: true,
     }).catch(() => {});
-  }).catch(() => { /* nunca atrapalha a navegação */ });
+  } catch { /* nunca atrapalha a navegação */ }
 }

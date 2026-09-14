@@ -678,7 +678,16 @@ export function MyDeliveriesPage() {
                         className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-lg py-1 active:bg-gray-50"
                       >
                         <span className="h-1 w-10 rounded-full bg-gray-400" />
-                        <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        {/* O TEXTO SOME QUANDO HÁ DOIS BOTÕES.
+                            Na fase de entrega a alça carrega "Confirmar entrega"
+                            E "Dirigir" — e aí a legenda era espremida até virar
+                            "CAR PARA VER TU", que não é texto, é sujeira. A alça
+                            (o risquinho) já comunica sozinha que dá pra puxar.
+                            Some só onde falta espaço; indo à loja, onde há um
+                            botão só, a legenda continua. */}
+                        <span className={`truncate text-[11px] font-semibold uppercase tracking-wide text-gray-500 ${
+                          isDeliveryPhase ? 'hidden sm:inline' : ''
+                        }`}>
                           {painelAberto ? 'tocar para ver o mapa' : 'tocar para ver tudo'}
                         </span>
                       </button>
@@ -725,7 +734,11 @@ export function MyDeliveriesPage() {
                         className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#00D8FF] px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
                       >
                         <Navigation className="h-4 w-4" />
-                        Dirigir
+                        {/* Só o ícone quando divide a alça com "Confirmar
+                            entrega": um caminhão de seta é reconhecível, e
+                            dois rótulos longos lado a lado é o que espremia
+                            a legenda até cortar. */}
+                        <span className={isDeliveryPhase ? 'hidden sm:inline' : ''}>Dirigir</span>
                       </button>
                     </div>
                     {/* O corte reto no fim do painel parecia informação perdida,
