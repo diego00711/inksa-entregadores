@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
           {/* Supondo que o logo esteja na pasta public */}
           <img src="/inksa-marca.png" alt="Inksa Logo" className="h-16 w-auto mx-auto" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Recuperar Senha</h2>
-          <p className="mt-2 text-sm text-gray-600">Insira o seu email para receber o link de redefinição.</p>
+          <p className="mt-2 text-sm text-gray-600">Digite seu e-mail para receber o link de redefinição.</p>
         </div>
         
         <form className="space-y-6" onSubmit={handleSubmit}>
@@ -65,13 +65,13 @@ export default function ForgotPasswordPage() {
               disabled={isLoading || message} // Desativa o botão se estiver a carregar ou se já enviou
               className="w-full flex justify-center min-h-[44px] py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:bg-orange-300"
             >
-              {isLoading ? 'A Enviar...' : 'Enviar Link de Recuperação'}
+              {isLoading ? 'Enviando...' : 'Enviar Link de Recuperação'}
             </button>
           </div>
         </form>
 
         <p className="text-sm text-center text-gray-600">
-          Lembrou-se da senha?{' '}
+          Lembrou a senha?{' '}
           <Link to="/login" className="font-medium text-orange-600 hover:text-orange-500">
             Voltar para o login
           </Link>

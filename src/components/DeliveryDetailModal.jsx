@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { acceptDelivery, getPickupCode } from '../services/orderService';
+import { rotuloDeStatus as rotuloDoStatus } from '../utils/rotuloDeStatus';
 import { useToast } from '../context/ToastContext';
 import { ChatModal } from './ChatModal';
 import { brl } from '../utils/dinheiro';
@@ -39,14 +40,6 @@ const isDeliveryFeeItem = (it) => /taxa de entrega/i.test(itemName(it));
 // entrega usa. Havia uma cópia aqui dentro, e o efeito colateral foi que o
 // card (onde o entregador realmente fica) não tinha navegação nenhuma.
 /** Status em português. Sem isto a tela mostra o código do banco, em inglês. */
-const ROTULOS_STATUS = {
-  pending: 'Pendente', accepted: 'Aceito', preparing: 'Preparando',
-  ready: 'Pronto para retirada', accepted_by_delivery: 'Aguardando retirada',
-  picked_up: 'Retirado', delivering: 'Em rota', on_the_way: 'Em rota',
-  delivered: 'Entregue', cancelled: 'Cancelado', canceled: 'Cancelado',
-  delivery_failed: 'Entrega não concluída', awaiting_payment: 'Aguardando pagamento',
-};
-const rotuloDoStatus = (s) => ROTULOS_STATUS[s] || s || '—';
 
 const parseAddress = (address) => {
   if (!address) return 'Endereço não disponível';

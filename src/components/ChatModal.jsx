@@ -9,22 +9,6 @@ import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import apiFetch from '../services/apiClient';
 import { supabase } from '../lib/supabase';
 
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.2);
-  } catch { /* silencioso */ }
-}
-
 // created_at vem do banco como "timestamp without time zone" em UTC, SEM 'Z'.
 // new Date() interpretaria isso como hora LOCAL — e mostrava 3h a mais (o valor
 // UTC como se fosse de SP). Aqui, se não houver fuso na string, assumimos UTC.
@@ -64,11 +48,9 @@ function mergeMessages(prev, incoming) {
 export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const bottomRef = useRef(null);
   const lastMessageIdRef = useRef(null);
-  const unreadRef = useRef(0);
   // Sequência das buscas: resposta de uma busca antiga que chega atrasada é
   // descartada (não pode sobrescrever um estado mais novo).
   const seqRef = useRef(0);
@@ -148,7 +130,6 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
     };
     setInputText('');
     setMessages(prev => [...prev, optimistic]);
-    setSending(true);
     try {
       const res = await apiFetch(`${DELIVERY_API_URL}/api/chat/${orderId}/messages`, {
         method: 'POST',
@@ -169,8 +150,6 @@ export function ChatModal({ orderId, isOpen, onClose, senderType = 'delivery', o
       // Falhou: tira a bolha pendente e devolve o texto pro input pra reenviar.
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInputText(prev => (prev ? prev : text));
-    } finally {
-      setSending(false);
     }
   };
 

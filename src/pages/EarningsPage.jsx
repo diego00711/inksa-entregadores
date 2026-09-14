@@ -5,6 +5,7 @@ import DeliveryService from '../services/deliveryService';
 import { useProfile } from '../context/DeliveryProfileContext';
 import { useToast } from '../context/ToastContext';
 import { brl } from '../utils/dinheiro';
+import { rotuloDeStatus, classeDeStatus, CLASSES_GANHOS } from '../utils/rotuloDeStatus';
 // ⚠️ O recharts NÃO é importado aqui — é o maior pedaço do app (108 KB
 // comprimidos) e ninguém precisa dele pra ver quanto ganhou. Ele vem no
 // GraficosGanhos, sob demanda. O esqueleto é import NORMAL de propósito: ele é
@@ -25,35 +26,13 @@ const EARNINGS_CACHE_KEY = 'delivery:ganhos';
 // Se não, você precisará de um input de data HTML simples ou outra biblioteca.
 
 // Traduz e estiliza o status do pedido (mesmo padrão do DeliveryCard)
-const STATUS_BADGE = {
-    delivered: { label: 'Entregue', cls: 'bg-green-100 text-green-800' },
-    delivery_failed: { label: 'Não entregue', cls: 'bg-red-100 text-red-800' },
-    delivering: { label: 'Em rota', cls: 'bg-purple-100 text-purple-800' },
-    accepted_by_delivery: { label: 'Aguardando retirada', cls: 'bg-pink-100 text-pink-800' },
-    ready: { label: 'Pronto', cls: 'bg-green-100 text-green-800' },
-    preparing: { label: 'Preparando', cls: 'bg-orange-100 text-orange-800' },
-    accepted: { label: 'Aceito', cls: 'bg-blue-100 text-blue-800' },
-    pending: { label: 'Pendente', cls: 'bg-yellow-100 text-yellow-800' },
-    cancelled: { label: 'Cancelado', cls: 'bg-gray-100 text-gray-700' },
-};
 
-const StatusBadge = ({ status }) => {
-    const info = STATUS_BADGE[status] || { label: status || '—', cls: 'bg-gray-100 text-gray-700' };
-    return (
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${info.cls}`}>
-            {info.label}
-        </span>
-    );
-};
+const StatusBadge = ({ status }) => (
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${classeDeStatus(status, CLASSES_GANHOS)}`}>
+        {rotuloDeStatus(status)}
+    </span>
+);
 
-// Helper para formatar o endereço (reutilizado do dashboard)
-const formatAddress = (street, number, neighborhood, city, state) => {
-    if (street || number || neighborhood || city || state) {
-        const parts = [street, number, neighborhood, city, state].filter(Boolean);
-        return parts.join(', ');
-    }
-    return 'Endereço não informado';
-};
 
 export function EarningsPage() {
     const { profile, loading: profileLoading } = useProfile();

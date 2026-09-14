@@ -140,7 +140,9 @@ export default function DeliveryProfilePage() {
             // Upload de imagem se selecionada
             if (selectedFile) {
                 try {
-                    const avatarUrl = await DeliveryService.uploadDeliveryAvatar(selectedFile);
+                    // O backend grava `avatar_url` no perfil ele mesmo; a URL
+                    // devolvida aqui não precisa ser guardada.
+                    await DeliveryService.uploadDeliveryAvatar(selectedFile);
                     addToast("Foto de perfil atualizada!", "success");
                 } catch (uploadError) {
                     addToast("Erro ao fazer upload da imagem.", "warning");

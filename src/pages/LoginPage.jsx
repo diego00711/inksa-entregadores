@@ -21,7 +21,7 @@ export function LoginPage() {
   const { login, isAuthenticated } = useProfile();
 
   // ✅ 3. LÓGICA DE REDIRECIONAMENTO REATIVO
-  // Se o utilizador já estiver autenticado (ou assim que o estado mudar para autenticado),
+  // Se o usuário já estiver autenticado (ou assim que o estado mudar para autenticado),
   // este componente irá automaticamente navegar para a página de entregas.
   if (isAuthenticated) {
     return <Navigate to="/delivery/entregas" replace />;

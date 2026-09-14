@@ -124,7 +124,7 @@ export default function RegisterPage() {
             </p>
 
             <Button type="submit" className="w-full min-h-[44px] text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white" disabled={loading}>
-              {loading ? 'A Criar...' : 'Criar Conta'}
+              {loading ? 'Criando conta...' : 'Criar Conta'}
             </Button>
           </form>
 

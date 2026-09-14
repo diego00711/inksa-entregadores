@@ -8,8 +8,11 @@ import { DeliveryDetailModal } from '../components/DeliveryDetailModal.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '../components/Header.jsx';
-import { Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, ExternalLink, Route, Package, AlertTriangle, MessageCircle, CheckCircle, Star, Navigation } from 'lucide-react';
-import { acceptDelivery, completeDelivery, reportIncident, confirmReturn, getOrdersToReview } from '../services/orderService';
+import {
+  Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, Route, Package,
+  AlertTriangle, MessageCircle, CheckCircle, Star, Navigation,
+} from 'lucide-react';
+import { acceptDelivery, completeDelivery, reportIncident, getOrdersToReview } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { DELIVERY_API_URL } from '../services/api';
@@ -93,7 +96,6 @@ export function MyDeliveriesPage() {
   const [incidentOrderId, setIncidentOrderId] = useState(null);
   const [incidentSubmitting, setIncidentSubmitting] = useState(false);
   const [returnOrder, setReturnOrder] = useState(null);
-  const [confirmingReturn, setConfirmingReturn] = useState(false);
   // Chat: fonte ÚNICA compartilhada com o FAB do layout (ChatAlarmContext). O
   // badge do botão de chat do card lê o MESMO `unread`, então mensagem que
   // chegou em outra tela (Início) continua contando aqui — e abrir o chat pelo
@@ -101,7 +103,6 @@ export function MyDeliveriesPage() {
   const chat = useChatAlarmCtx();
   // Avaliação do cliente após concluir a entrega ("Avaliar / deixar pra depois")
   const [pendingReviewOrder, setPendingReviewOrder] = useState(null);
-  const [showReviewForm, setShowReviewForm] = useState(false);
   // Resumo do dinheiro devolvido pelo backend ao fechar uma entrega em dinheiro
   // ({voce_recebeu, sua_taxa, deve_a_plataforma, ..., _order}).
   const [cashInfo, setCashInfo] = useState(null);
@@ -358,7 +359,6 @@ export function MyDeliveriesPage() {
       if (cash) {
         setCashInfo({ ...cash, _order: reviewOrder });
       } else if (reviewOrder) {
-        setShowReviewForm(false);
         setPendingReviewOrder(reviewOrder);
       }
     } catch (e) {
@@ -376,7 +376,6 @@ export function MyDeliveriesPage() {
     const order = cashInfo?._order;
     setCashInfo(null);
     if (order?.client_id || order?.restaurant_id) {
-      setShowReviewForm(false);
       setPendingReviewOrder(order);
     }
   };
@@ -410,22 +409,11 @@ export function MyDeliveriesPage() {
     }
   };
 
-  const handleConfirmReturn = async () => {
-    if (!returnOrder) return;
-    setConfirmingReturn(true);
-    try {
-      await confirmReturn(returnOrder.id);
-      addToast('Devolução confirmada. Obrigado!', 'success');
-      setReturnOrder(null);
-      setActiveDelivery(null);
-      fetchDeliveries();
-    } catch (e) {
-      addToast(mensagemDeErro(e, 'Erro ao confirmar a devolução.',
-        'Sem conexão agora. A devolução NÃO foi confirmada — tente de novo quando o sinal voltar.'), 'error');
-    } finally {
-      setConfirmingReturn(false);
-    }
-  };
+  // Aqui existia `handleConfirmReturn`, que chamava POST /confirm-return pra o
+  // ENTREGADOR encerrar a devolucao. Ficou sem botao quando o desenho mudou:
+  // hoje quem valida o codigo e confirma e o RESTAURANTE (ver o comentario do
+  // modal de devolucao mais abaixo). Nada chamava isto.
+  // ⚠️ A rota do backend CONTINUA existindo e sem chamador nenhum no app.
 
   if (pageLoading || profileLoading) {
     return (
@@ -440,11 +428,6 @@ export function MyDeliveriesPage() {
 
   // Fase da entrega: antes de retirar → rota ao RESTAURANTE; depois → ao CLIENTE
   const isDeliveryPhase = !!activeDelivery && ['delivering', 'on_the_way', 'picked_up', 'delivered'].includes(activeDelivery.status);
-  const navAddress = !activeDelivery
-    ? ''
-    : isDeliveryPhase
-      ? (activeDelivery.delivery_address || '')
-      : [activeDelivery.restaurant_name, activeDelivery.restaurant_street, activeDelivery.restaurant_number, activeDelivery.restaurant_neighborhood, activeDelivery.restaurant_city].filter(Boolean).join(', ');
 
   return (
     <div className="flex-1 flex flex-col">
@@ -801,21 +784,19 @@ export function MyDeliveriesPage() {
                       {activeDelivery.delivery_address ? ` — ${activeDelivery.delivery_address}` : ''}
                     </p>
 
+                    {/* Os botoes "Waze" e "Maps" que ficavam aqui SAIRAM (pedido do
+                        Diego, 13/09/2026: "aqueles dois waze rota ate na loja e ate o
+                        cliente pode tirar"). Eram duplicata do "Dirigir" la em cima e
+                        erravam tres coisas que o utils/navegacao ja resolve:
+                          - `_blank` NAO sai da WebView: no APK abria o mapa DENTRO do
+                            app, onde nao existe navegacao virada a virada;
+                          - iam sempre por `?q=<texto>`, fazendo o Waze geocodificar de
+                            novo em vez de usar a coordenada quando ela e melhor;
+                          - nao disparavam o atalho de volta pro Inksa.
+                        O telefone fica: `tel:` com `_self` e o caminho certo. */}
                     <div className="flex gap-2">
-                      <Button
-                        size="sm" variant="outline" className="flex-1 min-w-0"
-                        onClick={() => window.open(`https://waze.com/ul?q=${encodeURIComponent(navAddress)}`, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1 shrink-0" /> Waze
-                      </Button>
-                      <Button
-                        size="sm" variant="outline" className="flex-1 min-w-0"
-                        onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(navAddress)}`, '_blank')}
-                      >
-                        <Route className="w-4 h-4 mr-1 shrink-0" /> Maps
-                      </Button>
                       <Button size="sm" variant="outline" className="shrink-0" onClick={() => window.open(`tel:${activeDelivery.customer?.phone || ''}`, '_self')}>
-                        <Phone className="w-4 h-4" />
+                        <Phone className="w-4 h-4" /> <span className="ml-1">Ligar para o cliente</span>
                       </Button>
                     </div>
 
@@ -1084,7 +1065,7 @@ export function MyDeliveriesPage() {
                 <Star className="h-5 w-5 text-orange-500" /> Avalie esta entrega
               </h3>
               <button
-                onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
+                onClick={() => setPendingReviewOrder(null)}
                 className="text-sm font-semibold text-gray-400 hover:text-gray-600"
               >
                 Depois
@@ -1098,7 +1079,6 @@ export function MyDeliveriesPage() {
               onDone={() => {
                 addToast('Avaliação enviada! Obrigado 🙌', 'success');
                 setPendingReviewOrder(null);
-                setShowReviewForm(false);
               }}
             />
           </div>
@@ -1147,8 +1127,11 @@ export function MyDeliveriesPage() {
                 )}
                 <button
                   onClick={() => {
+                    // Mesmo caminho de todo o resto do app: `_system` pra sair da
+                    // WebView, e coordenada da loja quando existir. Antes isto era
+                    // Google Maps com `_blank` e abria dentro do proprio app.
                     const addr = returnOrder.restaurant_address || returnOrder.restaurant?.address || returnOrder.restaurant_name || '';
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`, '_blank');
+                    abrirWaze(returnOrder.restaurant_latitude, returnOrder.restaurant_longitude, addr);
                   }}
                   className="w-full mb-2 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
                 >

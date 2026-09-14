@@ -280,10 +280,10 @@ export default function SuportePage() {
         target="_blank" rel="noopener noreferrer"
         className="block rounded-xl border border-orange-200 bg-orange-50 p-4 hover:border-orange-300"
       >
-        <p className="font-semibold text-orange-900">Imposto e formalizacao</p>
+        <p className="font-semibold text-orange-900">Imposto e formalização</p>
         <p className="mt-0.5 text-sm text-orange-800">
-          O repasse cai inteiro na sua conta &mdash; a Inksa nao desconta imposto.
-          Veja o que isso significa e o que muda entre pessoa fisica e MEI.
+          O repasse cai inteiro na sua conta &mdash; a Inksa não desconta imposto.
+          Veja o que isso significa e o que muda entre pessoa física e MEI.
         </p>
         <p className="mt-2 text-sm font-semibold text-orange-700">Ler &rarr;</p>
       </a>

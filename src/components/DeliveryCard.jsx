@@ -8,9 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { getPickupCode } from '../services/orderService';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
+import { rotuloDeStatus, classeDeStatus } from '../utils/rotuloDeStatus';
 import { BotaoWaze } from './BotaoWaze';
-
-const toNumber = (v) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0);
 
 const formatDate = (s) => {
   if (!s) return 'Data não disponível';
@@ -20,24 +19,9 @@ const formatDate = (s) => {
   } catch { return 'Data inválida'; }
 };
 
-const StatusBadge = ({ status }) => {
-  const map = {
-    pending: { label: 'Pendente', cls: 'bg-yellow-100 text-yellow-800' },
-    accepted: { label: 'Aceito', cls: 'bg-blue-100 text-blue-800' },
-    ready: { label: 'Pronto', cls: 'bg-green-100 text-green-800' },
-    preparing: { label: 'Preparando', cls: 'bg-orange-100 text-orange-800' },
-    accepted_by_delivery: { label: 'Aguardando Retirada', cls: 'bg-pink-100 text-pink-800' },
-    delivering: { label: 'Em Rota', cls: 'bg-purple-100 text-purple-800' },
-    delivered: { label: 'Entregue', cls: 'bg-gray-100 text-gray-800' },
-    // Sem estes dois o badge caía no `|| { label: status }` e mostrava
-    // "cancelled" em inglês, cinza, pro entregador.
-    cancelled: { label: 'Cancelado', cls: 'bg-red-100 text-red-800' },
-    canceled: { label: 'Cancelado', cls: 'bg-red-100 text-red-800' },
-    delivery_failed: { label: 'Entrega não concluída', cls: 'bg-red-100 text-red-800' }
-  };
-  const info = map[status] || { label: status, cls: 'bg-gray-100 text-gray-800' };
-  return <Badge className={`${info.cls} font-medium`}>{info.label}</Badge>;
-};
+const StatusBadge = ({ status }) => (
+  <Badge className={`${classeDeStatus(status)} font-medium`}>{rotuloDeStatus(status)}</Badge>
+);
 
 export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
   const [inlineCode, setInlineCode] = useState('');

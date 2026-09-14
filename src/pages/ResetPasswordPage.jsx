@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import DeliveryService from '../services/deliveryService';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
@@ -13,7 +13,6 @@ export function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const navigate = useNavigate();
 
   // Este useEffect é executado uma vez para extrair o token da URL
   useEffect(() => {
@@ -25,7 +24,7 @@ export function ResetPasswordPage() {
     if (accessToken) {
       setToken(accessToken);
     } else {
-      setError('Token de redefinição não encontrado ou inválido. Por favor, tente novamente.');
+      setError('Este link não é válido ou já expirou. Peça um novo e-mail de recuperação de senha.');
     }
   }, []);
 
@@ -101,7 +100,7 @@ export function ResetPasswordPage() {
 
             <div>
               <button type="submit" disabled={isLoading || !token} className="w-full flex justify-center min-h-[44px] py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300">
-                {isLoading ? 'A Redefinir...' : 'Redefinir Senha'}
+                {isLoading ? 'Redefinindo...' : 'Redefinir Senha'}
               </button>
             </div>
           </form>

@@ -36,13 +36,6 @@ function resolveLevel(totalPoints) {
   return LEVELS.find(l => pts >= l.min && pts <= l.max) || LEVELS[0];
 }
 
-function calcProgress(totalPoints, levelObj) {
-  if (levelObj.max === Infinity) return 100;
-  const range = levelObj.max - levelObj.min + 1;
-  const done  = totalPoints - levelObj.min;
-  return Math.max(4, Math.min(100, Math.round((done / range) * 100)));
-}
-
 const LEADERBOARD_TABS = [
   { key: 'points',     label: 'Por Pontos',     icon: Trophy    },
   { key: 'deliveries', label: 'Por Entregas',   icon: Package   },
