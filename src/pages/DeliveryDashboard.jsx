@@ -7,7 +7,7 @@ import { acceptDelivery, completeDelivery, getOrdersToReview } from '../services
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Calendar, Bell,
-  Target, Award, Activity, RefreshCw, ExternalLink, Phone, Navigation,
+  Target, Award, Activity, RefreshCw, ExternalLink, Phone,
   KeyRound, Zap, CheckCircle, TrendingUp, Package,
 } from 'lucide-react';
 
@@ -18,6 +18,7 @@ import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import PainelDoDia from '../components/PainelDoDia';
+import { BotaoWaze } from '../components/BotaoWaze';
 import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import SocialDayBanner from '../components/SocialDayBanner';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
@@ -81,14 +82,6 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
   const showNet = net > 0;
   const feePct = showNet && fee > net ? Math.round((1 - net / fee) * 100) : 0;
 
-  // Rota até o RESTAURANTE (retirada) — o botão Rota de baixo leva ao cliente.
-  const restaurantAddress = [
-    order?.restaurant_name, order?.restaurant_street, order?.restaurant_number,
-    order?.restaurant_neighborhood, order?.restaurant_city,
-  ].filter(Boolean).join(', ');
-  const restaurantMapsUrl = restaurantAddress
-    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(restaurantAddress)}`
-    : null;
 
   return (
     <Card
@@ -139,15 +132,6 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
               <p className="font-semibold text-gray-800 truncate">{order.restaurant_name || 'Restaurante'}</p>
               <p className="text-sm text-gray-600">Local de coleta</p>
             </div>
-            {restaurantMapsUrl && (
-              <a
-                href={restaurantMapsUrl}
-                target="_blank" rel="noreferrer"
-                className="shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-orange-200 bg-white text-xs font-semibold text-orange-700 hover:bg-orange-100"
-              >
-                <Navigation className="h-4 w-4" /> Rota
-              </a>
-            )}
           </div>
 
           <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
@@ -207,15 +191,18 @@ const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isN
               </button>
             )}
 
-            {order.delivery_address && (
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.delivery_address)}`}
-                target="_blank" rel="noreferrer"
-                className="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl border text-sm font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center gap-2"
-              >
-                <Navigation className="h-4 w-4" /> Rota
-              </a>
-            )}
+            {/* UM botão de navegar, e ele decide o destino sozinho.
+                Aqui havia DOIS links "Rota" — um pro restaurante (acima) e este
+                pro cliente — os dois mandando o ENDEREÇO ESCRITO pro Google
+                Maps, sem coordenada, sem Waze, e por <a href> (que no APK pode
+                nem sair da WebView).
+                Era o mesmo código que levou o Diego 2,3 km pra longe da Me
+                Mimei em 13/09/2026. Eu consertei no MyDeliveriesPage e não vi
+                que existia aqui também — esta tela nem importava utils/navegacao.
+                O BotaoWaze traz tudo junto: destino pelo status, endereço com
+                número quando há, Waze e Maps, saída da WebView, e o push que
+                serve de "voltar ao Inksa". */}
+            <BotaoWaze pedido={order} className="w-full sm:w-auto" compacto />
           </div>
         </div>
       </CardContent>
