@@ -24,7 +24,7 @@ import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 import { limparCodigo, codigoCompleto, AVISO_CODIGO } from '../utils/codigoDoPedido';
-import { abrirWaze, destinoDaCorrida } from '../utils/navegacao';
+import { abrirWaze, destinoDaCorrida, pedirAtalhoDeVolta } from '../utils/navegacao';
 
 // ⚠️ MAPA CARREGADO SÓ QUANDO APARECE — não troque por import estático.
 //
@@ -716,6 +716,9 @@ export function MyDeliveriesPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          // Push primeiro: ele vira o "voltar ao Inksa" na barra
+                          // do sistema enquanto o Waze ocupa a tela.
+                          pedirAtalhoDeVolta(activeDelivery.id);
                           const d = destinoDaCorrida(activeDelivery);
                           abrirWaze(d.lat, d.lng, d.endereco);
                         }}

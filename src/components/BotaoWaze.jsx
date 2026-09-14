@@ -1,7 +1,7 @@
 // src/components/BotaoWaze.jsx
 import React from 'react';
 import { Navigation } from 'lucide-react';
-import { abrirWaze, abrirMaps, destinoDaCorrida, destinoTemCoordenada } from '../utils/navegacao';
+import { abrirWaze, abrirMaps, destinoDaCorrida, destinoTemCoordenada, pedirAtalhoDeVolta } from '../utils/navegacao';
 
 /**
  * O botão de navegar da corrida. Grande, e sabendo pra onde ir sozinho.
@@ -24,6 +24,8 @@ export function BotaoWaze({ pedido, className = '', compacto = false }) {
   const ir = (fn) => (e) => {
     e.stopPropagation();
     e.preventDefault();
+    // Push que vira o botão de voltar na barra do sistema — o Waze não tem um.
+    pedirAtalhoDeVolta(pedido?.id);
     fn(destino.lat, destino.lng, destino.endereco);
   };
 

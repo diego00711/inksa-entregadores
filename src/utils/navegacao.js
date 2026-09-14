@@ -96,3 +96,38 @@ export function destinoTemCoordenada(pedido) {
   const d = destinoDaCorrida(pedido);
   return temCoord(d.lat, d.lng);
 }
+
+/**
+ * Pede ao servidor o push que vira o "voltar ao Inksa" na barra do sistema.
+ *
+ * ⚠️ O WAZE NÃO TEM BOTÃO DE VOLTAR pro app que o chamou — isso só existe pra
+ * quem tem acordo de SDK com eles. E no Android um app não traz outro pra
+ * frente. O Diego procurou esse caminho em 13/09/2026 e não achou: não existia.
+ *
+ * O que o sistema sabe fazer é notificação. Ela fica na barra enquanto o Waze
+ * ocupa a tela, e tocar nela abre o app na tela da corrida (o listener de toque
+ * já existia). As duas pontas estavam prontas; faltava disparar.
+ *
+ * ⚠️ DISPARA E SEGUE. Nada aqui pode atrasar a abertura do Waze: a pessoa
+ * apertou "Dirigir" pra dirigir. Se a rede estiver ruim, o Waze abre do mesmo
+ * jeito e ela volta pelos recentes, como antes.
+ */
+export function pedirAtalhoDeVolta(pedidoId) {
+  if (!pedidoId) return;
+  // Import tardio: este arquivo é usado em telas que não precisam da API, e
+  // carregar o cliente HTTP junto com elas não tem porquê.
+  //
+  // apiFetch (e não fetch cru) porque ele põe o Authorization do token que
+  // está valendo e renova antes de vencer. Token lido à mão congelaria o
+  // valor do momento — e aqui a pessoa pode estar há horas na rua.
+  Promise.all([
+    import('../services/apiClient'),
+    import('../services/api'),
+  ]).then(([{ default: apiFetch }, { DELIVERY_API_URL }]) => {
+    apiFetch(`${DELIVERY_API_URL}/api/orders/${pedidoId}/atalho-de-volta`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,  // o app vai pro fundo em seguida; sem isto a requisição morre no meio
+    }).catch(() => {});
+  }).catch(() => { /* nunca atrapalha a navegação */ });
+}
