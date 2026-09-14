@@ -2,13 +2,10 @@
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeliveryService from '../services/deliveryService';
-import { acceptDelivery, completeDelivery, getOrdersToReview } from '../services/orderService';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
-  DollarSign, Truck, Star, Wifi, WifiOff, MapPin, Calendar, Bell,
-  Target, Award, Activity, RefreshCw, ExternalLink, Phone,
-  KeyRound, Zap, CheckCircle, TrendingUp, Package,
+  Wifi, WifiOff, Calendar, Activity, RefreshCw, Package,
 } from 'lucide-react';
 
 import { useProfile } from '../context/DeliveryProfileContext.jsx';
@@ -18,18 +15,13 @@ import { useGPSTracking } from '../hooks/useGPSTracking';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import PainelDoDia from '../components/PainelDoDia';
-import { BotaoWaze } from '../components/BotaoWaze';
 import { DeliverySkeleton } from '../components/skeletons/DeliverySkeleton';
 import SocialDayBanner from '../components/SocialDayBanner';
-import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { supabase } from '../lib/supabase';
-import { DELIVERY_API_URL, createAuthHeaders } from '../services/api';
 import { haptics } from '../lib/haptics';
 import { getPageCache, setPageCache } from '../lib/pageCache.js';
-import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
-import { limparCodigo, codigoCompleto, AVISO_CODIGO } from '../utils/codigoDoPedido';
 
 const DASHBOARD_CACHE_KEY = 'delivery:dashboard';
 
@@ -57,164 +49,17 @@ const PulsingBadge = memo(({ count }) => {
   );
 });
 
-// ─── ModernActiveOrderCard ────────────────────────────────────────────────────
-const ModernActiveOrderCard = memo(({ order, onAcceptOrder, onCompleteOrder, isNew, isAccepting }) => {
-  const status = order?.status;
+// O CARD DA ENTREGA ATIVA NÃO VIVE MAIS AQUI.
+//
+// Ele foi pra aba Entregas (MyDeliveriesPage) e, no Início, sobrou só um
+// atalho que leva pra lá. O componente antigo ficou definido e NUNCA
+// renderizado — 157 linhas que pareciam vivas.
+//
+// ⚠️ Isso não é cosmético: em 14/09/2026 eu consertei DUAS coisas aqui
+// dentro (a navegação por coordenada e as etiquetas de status em português)
+// achando que estava arrumando a tela do entregador. Nenhuma das duas
+// chegava a rodar. Código morto que parece vivo não é sujeira — é armadilha.
 
-  const badge = useMemo(() => {
-    const map = {
-      pending:             { t: 'Disponível',         cls: 'bg-yellow-500' },
-      accepted:            { t: 'Aceito',              cls: 'bg-blue-500' },
-      ready:               { t: 'Pronto p/ retirada',  cls: 'bg-purple-500' },
-      accepted_by_delivery:{ t: 'Aguardando Retirada', cls: 'bg-fuchsia-600' },
-      delivering:          { t: 'Entregando',          cls: 'bg-green-600' },
-      delivered:           { t: 'Entregue',            cls: 'bg-gray-500' },
-      preparing:           { t: 'Preparando',          cls: 'bg-orange-500' },
-      cancelled:           { t: 'Cancelado',           cls: 'bg-red-600' },
-      canceled:            { t: 'Cancelado',           cls: 'bg-red-600' },
-      delivery_failed:     { t: 'Não concluída',       cls: 'bg-red-600' },
-    };
-    return map[status] || { t: status || '—', cls: 'bg-gray-500' };
-  }, [status]);
-
-  const showPickup = status === 'accepted_by_delivery' && order?.pickup_code;
-
-  // O entregador vê o LÍQUIDO (frete menos a taxa da plataforma), não o frete
-  // bruto — senão vira o susto do Gabriel ("dizia 5, caiu 4,80").
-  const fee = toNumber(order?.delivery_fee);
-  const net = toNumber(order?.valor_repassado_entregador);
-  const showNet = net > 0;
-  const feePct = showNet && fee > net ? Math.round((1 - net / fee) * 100) : 0;
-
-
-  return (
-    <Card
-      className={`relative overflow-hidden border-0 shadow-xl bg-white/90 backdrop-blur-sm transition-all duration-500
-        ${isNew ? 'animate-[slideInRight_0.4s_ease-out]' : ''}`}
-    >
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500" />
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex justify-between items-start mb-4 gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base sm:text-lg font-bold text-gray-800">{numeroPedido(order)}</h3>
-            <div className={`px-2 py-0.5 rounded-full text-xs font-bold text-white ${badge.cls}`}>{badge.t}</div>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              {brl(showNet ? net : fee)}
-            </div>
-            <p className="text-xs text-gray-500">{showNet ? 'Você recebe' : 'Taxa de entrega'}</p>
-            {showNet && feePct > 0 && (
-              <p className="text-[11px] text-gray-400 leading-tight">
-                Frete {brl(fee)} · taxa {feePct}%
-              </p>
-            )}
-          </div>
-        </div>
-
-        {showPickup && (
-          <div className="mb-4 p-4 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="bg-purple-600 p-2 rounded-full"><KeyRound className="h-4 w-4 text-white" /></div>
-                <div>
-                  <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Código de Retirada</p>
-                  <p className="text-sm text-purple-600">Mostre no balcão do restaurante</p>
-                </div>
-              </div>
-              <div className="bg-white px-4 py-2 rounded-lg border-2 border-purple-300 shadow">
-                <span className="text-2xl font-extrabold text-purple-700 tracking-widest">{order.pickup_code}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
-            <div className="p-2 bg-orange-100 rounded-lg"><ExternalLink className="h-4 w-4 text-orange-600" /></div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-800 truncate">{order.restaurant_name || 'Restaurante'}</p>
-              <p className="text-sm text-gray-600">Local de coleta</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-            <div className="p-2 bg-green-100 rounded-lg shrink-0"><MapPin className="h-4 w-4 text-green-600" /></div>
-            {/* min-w-0: sem isto o flex-1 não deixa o truncate agir e o
-                endereço longo estourava/cortava na borda da tela. */}
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-800 truncate">{order.client_name || 'Cliente'}</p>
-              <p className="text-sm text-gray-600 truncate">{order.delivery_address || 'Endereço de entrega'}</p>
-            </div>
-            <Phone className="h-4 w-4 text-gray-400 shrink-0" />
-          </div>
-
-          {/* Payment info */}
-          {order.payment_method === 'cash' ? (
-            <div className="p-3 rounded-xl border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-yellow-50">
-              <p className="text-sm font-black text-orange-700 flex items-center gap-2">
-                💵 COBRAR{' '}
-                <span className="text-base">{brl(toNumber(order.total_amount))}</span>
-                {' '}EM DINHEIRO
-              </p>
-              {toNumber(order.change_for) > 0 && (
-                <p className="text-xs text-orange-600 mt-1">
-                  Levar troco de {brl(toNumber(order.change_for) - toNumber(order.total_amount))}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
-              <span className="text-green-600 text-sm font-semibold">✅ Pago online</span>
-            </div>
-          )}
-
-          {/* Botões empilham no mobile (cada um largura cheia) e ficam lado a
-              lado no sm+. Antes, "Entreguei" (flex-1) + "Rota" na mesma linha
-              estouravam a largura no celular e o "Rota" saía cortado. */}
-          <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            {status === 'pending' && (
-              <button
-                onClick={() => onAcceptOrder(order.id)}
-                disabled={isAccepting}
-                className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isAccepting
-                  ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Aceitando…</>)
-                  : (<><Zap className="h-4 w-4" /> Aceitar Pedido</>)}
-              </button>
-            )}
-
-            {(status === 'accepted' || status === 'ready' || status === 'accepted_by_delivery' || status === 'delivering') && (
-              <button
-                onClick={() => onCompleteOrder(order.id)}
-                className="w-full sm:flex-1 min-w-0 min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm"
-              >
-                <CheckCircle className="h-4 w-4" />
-                {status === 'delivering' ? 'Confirmar entrega (código)' : 'Próximo passo'}
-              </button>
-            )}
-
-            {/* UM botão de navegar, e ele decide o destino sozinho.
-                Aqui havia DOIS links "Rota" — um pro restaurante (acima) e este
-                pro cliente — os dois mandando o ENDEREÇO ESCRITO pro Google
-                Maps, sem coordenada, sem Waze, e por <a href> (que no APK pode
-                nem sair da WebView).
-                Era o mesmo código que levou o Diego 2,3 km pra longe da Me
-                Mimei em 13/09/2026. Eu consertei no MyDeliveriesPage e não vi
-                que existia aqui também — esta tela nem importava utils/navegacao.
-                O BotaoWaze traz tudo junto: destino pelo status, endereço com
-                número quando há, Waze e Maps, saída da WebView, e o push que
-                serve de "voltar ao Inksa". */}
-            <BotaoWaze pedido={order} className="w-full sm:w-auto" compacto />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-});
-
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function ModernDeliveryDashboard() {
   const navigate = useNavigate();
   const { profile, updateProfile, loading: profileLoading } = useProfile();
@@ -229,22 +74,10 @@ export default function ModernDeliveryDashboard() {
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [pendingCompleteId, setPendingCompleteId] = useState(null);
-  const [pendingCompleteOrder, setPendingCompleteOrder] = useState(null);
-  const [pendingCode, setPendingCode] = useState('');
-  const [completing, setCompleting] = useState(false); // trava anti-duplo-clique no "Confirmar" do código
-  const [pendingCashConfirm, setPendingCashConfirm] = useState(null);
-  const [cashConfirmResult, setCashConfirmResult] = useState(null);
-  const [cashConfirmLoading, setCashConfirmLoading] = useState(false);
   // Pedido recém-entregue esperando a avaliação do cliente (prompt "Avaliar /
   // deixar para depois" que aparece antes do pedido sumir da tela).
-  const [pendingReviewOrder, setPendingReviewOrder] = useState(null);
-  const [showReviewForm, setShowReviewForm] = useState(false);
   const [availableCount, setAvailableCount] = useState(0);
-  const [newOrderIds, setNewOrderIds] = useState(new Set());
   const knownAvailableRef = useRef(null);
-  const [acceptingId, setAcceptingId] = useState(null);
-  const acceptingRef = useRef(false);
 
   const isAvailable = dashboardStats?.is_available || false;
   const activeOrders = dashboardStats?.activeOrders || [];
@@ -324,8 +157,10 @@ export default function ModernDeliveryDashboard() {
         if (newIds.length > 0) {
           // som fica por conta do alarme em loop (useEffect mais abaixo)
           addToast(`🛵 ${newIds.length === 1 ? 'Novo pedido disponível!' : `${newIds.length} novos pedidos!`}`, 'success');
-          setNewOrderIds(prev => new Set([...prev, ...newIds]));
-          setTimeout(() => setNewOrderIds(new Set()), 4000);
+          // O aviso do pedido novo é o toast + o alarme. Aqui havia também um
+          // `newOrderIds` que marcava os cards novos por 4s — mas os cards de
+          // pedido disponível não são desenhados nesta tela, então o estado era
+          // alimentado e limpo sem ninguém nunca ler.
         }
       }
       knownAvailableRef.current = new Set(available.map(o => o.id));
@@ -438,127 +273,17 @@ export default function ModernDeliveryDashboard() {
     }
   };
 
-  const handleAcceptOrder = async (orderId) => {
-    if (acceptingRef.current) return;          // trava o duplo clique
-    acceptingRef.current = true;
-    setAcceptingId(orderId);
-    haptics.tap();
-    try {
-      await acceptDelivery(orderId);
-      playSound('accepted');
-      haptics.success();
-      addToast('Pedido aceito com sucesso! 🎉', 'success');
-      await fetchDashboardData(true);
-    } catch {
-      haptics.error();
-      addToast('Erro ao aceitar pedido.', 'error');
-    } finally {
-      acceptingRef.current = false;
-      setAcceptingId(null);
-    }
-  };
 
-  const handleCompleteOrder = (orderId) => {
-    const order = activeOrders.find(o => o.id === orderId) || null;
-    setPendingCompleteId(orderId);
-    setPendingCompleteOrder(order);
-    setPendingCode('');
-  };
 
   // Abre o prompt de avaliação pós-entrega (restaurante + cliente). Basta ter UM
   // dos dois pra valer a pena abrir: antes exigia client_id e, quando o pedido
   // vinha sem esse campo, a avaliação simplesmente não aparecia — o entregador
   // terminava a entrega e nada acontecia.
-  const openClientReview = (order) => {
-    if (!order || (!order.client_id && !order.restaurant_id)) return;
-    setPendingReviewOrder(order);
-    setShowReviewForm(false);
-  };
 
   // Fecha o modal de dinheiro e, em seguida, oferece avaliar o cliente daquele
   // pedido — mantém a sequência entrega → dinheiro → avaliação.
-  const closeCashConfirm = () => {
-    const order = pendingCashConfirm;
-    setPendingCashConfirm(null);
-    setCashConfirmResult(null);
-    openClientReview(order);
-  };
 
-  const confirmComplete = async () => {
-    if (completing) return; // já está confirmando — ignora cliques repetidos
-    const deliveryCode = String(pendingCode).replace(/\D/g, '');
-    if (!codigoCompleto(deliveryCode)) { haptics.warn(); addToast(AVISO_CODIGO, 'warning'); return; }
-    setCompleting(true);
-    try {
-      await completeDelivery(pendingCompleteId, deliveryCode);
-      playSound('delivered');
-      haptics.notify();
-      addToast('Pedido entregue com sucesso! 🎉', 'success');
 
-      // ⚠️ O MODAL FECHA AQUI, E NÃO NO FIM. Neste ponto a entrega JÁ ESTÁ
-      // concluída no servidor — o cliente já vê "entregue" na tela dele.
-      // Tudo que vem depois é refinamento nosso (descobrir qual pedido oferecer
-      // pra avaliar). Antes isso ficava ANTES do fecha-modal, então o entregador
-      // segurava o celular na porta do cliente olhando um spinner enquanto uma
-      // SEGUNDA chamada de rede ia e voltava. No teste de 06/09/2026 deu 15 a 20
-      // segundos — provavelmente o backend saindo de hibernação.
-      //
-      // Trabalho já feito não pode ficar refém de trabalho enfeite.
-      const idConcluido = pendingCompleteId;
-      const local = pendingCompleteOrder
-        || activeOrders.find(o => o.id === idConcluido)
-        || null;
-
-      setPendingCompleteId(null);
-      setPendingCompleteOrder(null);
-      setPendingCode('');
-      setCompleting(false);
-      fetchDashboardData(true);
-
-      // Resolve o pedido a avaliar pela MESMA fonte da Central de Avaliações
-      // (/pending-delivery-review). Antes dependíamos só do objeto em memória —
-      // se ele se perdesse no refetch, o modal não abria e o entregador tinha
-      // que ir na Central. Agora, se aparece na Central, aparece aqui.
-      // Continua sendo esperado, mas com o modal do código já fora da tela.
-      let completed = local;
-      try {
-        const pendentes = await getOrdersToReview();
-        const achado = pendentes.find(o => String(o.id) === String(idConcluido));
-        if (achado) completed = { ...achado, payment_method: local?.payment_method, change_for: local?.change_for, total_amount: achado.total_amount ?? local?.total_amount };
-      } catch {
-        /* rede fora: segue com o objeto local */
-      }
-      if (completed?.payment_method === 'cash') {
-        // Dinheiro: confirma o recebimento primeiro; a avaliação abre depois
-        // que esse modal fechar (ver handlers do modal de dinheiro).
-        setPendingCashConfirm(completed);
-        setCashConfirmResult(null);
-      } else {
-        // Cartão/PIX: já oferece avaliar antes do pedido sumir da lista.
-        openClientReview(completed);
-      }
-    } catch (err) {
-      addToast(mensagemDeErro(err, 'Erro ao completar entrega.',
-        'Sem conexão agora. O código continua valendo — tente de novo quando o sinal voltar.'), 'error');
-    } finally {
-      setCompleting(false);
-    }
-  };
-
-  const handleCashConfirm = async () => {
-    if (!pendingCashConfirm) return;
-    setCashConfirmLoading(true);
-    try {
-      const result = await DeliveryService.confirmCashPayment(pendingCashConfirm.id);
-      setCashConfirmResult(result);
-      fetchDashboardData(true);
-    } catch (err) {
-      addToast(mensagemDeErro(err, 'Erro ao confirmar recebimento.',
-        'Sem conexão agora. Nada foi perdido — confirme de novo quando o sinal voltar.'), 'error');
-    } finally {
-      setCashConfirmLoading(false);
-    }
-  };
 
   // ── Loading / Error states ─────────────────────────────────────────────────
   if (initialLoading) {
@@ -877,152 +602,14 @@ export default function ModernDeliveryDashboard() {
       </div>
 
       {/* ── Cash payment confirmation modal ───────────────────────────────── */}
-      {pendingCashConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" data-sem-pull style={{ paddingBottom: '1.5rem' }}>
-            {cashConfirmResult ? (
-              <div className="text-center">
-                <div className="text-5xl mb-3">✅</div>
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Pagamento Registrado!</h3>
-                <div className="space-y-2 text-left bg-gray-50 rounded-xl p-4 mb-4">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Você recebeu</span>
-                    <span className="font-bold text-green-600">{brl(toNumber(cashConfirmResult.voce_recebeu))}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Sua taxa de entrega</span>
-                    <span className="font-bold text-blue-600">{brl(toNumber(cashConfirmResult.sua_taxa))}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="text-sm text-gray-600">Débito com plataforma</span>
-                    <span className="font-bold text-orange-600">{brl(toNumber(cashConfirmResult.deve_a_plataforma))}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mb-4">
-                  {brl(toNumber(cashConfirmResult.deve_a_plataforma))} será descontado do seu próximo repasse online.
-                </p>
-                <button
-                  onClick={closeCashConfirm}
-                  className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
-                >
-                  Entendido!
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="text-center mb-5">
-                  <div className="text-5xl mb-2">💵</div>
-                  <h3 className="text-lg font-bold text-gray-800">Confirmar Recebimento</h3>
-                  <p className="text-sm text-gray-500 mt-1">Este era um pedido em dinheiro</p>
-                </div>
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-5 text-center">
-                  <p className="text-3xl font-black text-orange-700">
-                    {brl(toNumber(pendingCashConfirm.total_amount))}
-                  </p>
-                  <p className="text-sm text-orange-600 mt-1">Você já recebeu este valor do cliente?</p>
-                  {toNumber(pendingCashConfirm.change_for) > 0 && (
-                    <p className="text-xs text-orange-500 mt-1">
-                      Troco levado: {brl(toNumber(pendingCashConfirm.change_for) - toNumber(pendingCashConfirm.total_amount))}
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={closeCashConfirm}
-                    className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-                  >
-                    Não agora
-                  </button>
-                  <button
-                    onClick={handleCashConfirm}
-                    disabled={cashConfirmLoading}
-                    className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-                  >
-                    {cashConfirmLoading
-                      ? <RefreshCw className="h-4 w-4 animate-spin" />
-                      : '✅ Sim, confirmar'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Delivery code modal ────────────────────────────────────────────── */}
-      {pendingCompleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
-            <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-orange-500" />
-              Código de Entrega
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">Peça o código do pedido ao cliente para confirmar a entrega.</p>
-            <input
-              type="text"
-              value={pendingCode}
-              onChange={e => setPendingCode(limparCodigo(e.target.value))}
-              placeholder="Ex: 4803"
-              maxLength={6}
-              inputMode="numeric"
-              pattern="[0-9]*"
-              autoFocus
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-base sm:text-xl font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
-              onKeyDown={e => { if (e.key === 'Enter') confirmComplete(); }}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setPendingCompleteId(null); setPendingCode(''); }}
-                disabled={completing}
-                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmComplete}
-                disabled={completing || !codigoCompleto(pendingCode)}
-                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {completing ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Confirmando...</>) : (<><CheckCircle className="h-4 w-4" /> Confirmar</>)}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Avaliar cliente após entrega ───────────────────────────────────────
           Aparece logo depois de confirmar a entrega (e do modal de dinheiro,
           quando for o caso), oferecendo avaliar o cliente ou deixar pra depois.
           "Deixar para depois" não perde nada: o pedido continua na lista de
           avaliações pendentes na Central de Avaliações. */}
-      {pendingReviewOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 max-h-[90vh] overflow-y-auto mx-0 sm:mx-4" data-sem-pull style={{ paddingBottom: '1.5rem' }}>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Star className="h-5 w-5 text-orange-500" /> Avalie esta entrega
-              </h3>
-              <button
-                onClick={() => { setPendingReviewOrder(null); setShowReviewForm(false); }}
-                className="text-sm font-semibold text-gray-400 hover:text-gray-600"
-              >
-                Depois
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Entrega concluída{pendingReviewOrder.client_name ? ` para ${pendingReviewOrder.client_name}` : ''}. Toque nas estrelas:
-            </p>
-            <PostDeliveryRating
-              order={pendingReviewOrder}
-              onDone={() => {
-                addToast('Avaliação enviada! Obrigado 🙌', 'success');
-                setPendingReviewOrder(null);
-                setShowReviewForm(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
