@@ -559,15 +559,23 @@ export function MyDeliveriesPage() {
                             "pedido mil e dois, código quatro-oito-zero...". */}
                         <span className="opacity-60">·</span>
                         <span className="tabular-nums">{numeroPedido(activeDelivery)}</span>
+                        {/* A ROTA ENTROU AQUI, e não numa linha própria.
+                            Era o quarto chip da pilha, e pilha alta foi o que
+                            empurrou o CÓDIGO pra fora da tela no teste de
+                            16/09/2026. Distância e tempo são leitura de relance;
+                            cabem na mesma linha da fase sem disputar espaço com
+                            o dado que a pessoa precisa LER no balcão. */}
+                        {routeInfo && (
+                          <>
+                            <span className="opacity-60">·</span>
+                            <span className="tabular-nums">
+                              {routeInfo.km.toFixed(1).replace('.', ',')} km
+                            </span>
+                            <span className="opacity-60">·</span>
+                            <span className="tabular-nums">~{routeInfo.min} min</span>
+                          </>
+                        )}
                       </span>
-                      {routeInfo && (
-                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-gray-800 shadow-lg backdrop-blur">
-                          <Route className="w-3.5 h-3.5 shrink-0 text-orange-500" />
-                          {routeInfo.km.toFixed(1).replace('.', ',')} km
-                          <span className="text-gray-400">·</span>
-                          ~{routeInfo.min} min
-                        </span>
-                      )}
 
                       {/* ── O DADO CRÍTICO, SEMPRE VISÍVEL ───────────────────
                           Recolher o painel só até a alça libertou o mapa, mas
@@ -581,28 +589,7 @@ export function MyDeliveriesPage() {
                           código que ele vai falar no balcão; indo ao cliente,
                           o que importa é quanto cobrar. O resto continua no
                           painel, a um toque. */}
-                    </div>
-                    <button
-                      onClick={() => setShowMap(!showMap)}
-                      className="pointer-events-auto shrink-0 rounded-full bg-white/95 p-2.5 text-gray-700 shadow-lg backdrop-blur active:scale-95"
-                      aria-label={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
-                    >
-                      {showMap ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
 
-                  {/* ── O DADO CRÍTICO VIVE AQUI EMBAIXO, e a razão é o cabeçalho ──
-                      Estes dois chips moravam na faixa DE CIMA do mapa. O
-                      cabeçalho do app é `sticky top-0 z-30` e eles são z-10:
-                      basta o mapa deslocar um pouco e o código passa POR BAIXO
-                      da tarja laranja. No teste de 16/09/2026 o Diego fotografou
-                      exatamente isso — "Código 5008" cortado ao meio, e os chips
-                      de fase e rota sumidos atrás da barra.
-                      O `pt-11` lá de cima compensa a sangria de 2rem, mas só com
-                      a tela parada no topo; não é trava, é sorte de posição.
-                      Aqui embaixo nada cobre: o que vem depois é o painel, que
-                      começa abaixo do mapa. */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-start gap-2 px-3 pb-3">
                       {!isDeliveryPhase && activeDelivery.pickup_code && (
                         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-purple-600/95 px-3.5 py-2 text-sm font-bold text-white shadow-xl backdrop-blur">
                           <Package className="w-4 h-4 shrink-0" />
@@ -616,7 +603,7 @@ export function MyDeliveriesPage() {
                           ("e não apareceu o valor") — ele estava indo ao
                           restaurante, onde o chip ainda não existia. */}
                       {activeDelivery.payment_method === 'cash' && (
-                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-orange-600/95 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-orange-600/95 px-3.5 py-2 text-sm font-bold text-white shadow-xl backdrop-blur">
                           💵 Cobrar {brl(Number(activeDelivery.total_amount || 0))}
                           {Number(activeDelivery.change_for || 0) > Number(activeDelivery.total_amount || 0) && (
                             <span className="font-semibold opacity-90">
@@ -625,6 +612,14 @@ export function MyDeliveriesPage() {
                           )}
                         </span>
                       )}
+                    </div>
+                    <button
+                      onClick={() => setShowMap(!showMap)}
+                      className="pointer-events-auto shrink-0 rounded-full bg-white/95 p-2.5 text-gray-700 shadow-lg backdrop-blur active:scale-95"
+                      aria-label={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
+                    >
+                      {showMap ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
 
                   {/* ── Painel de vidro por cima da base do mapa ──────────────
