@@ -28,8 +28,8 @@ android {
         // ANTES de publicar, a declaração no Play Console (App content →
         // Foreground service types) precisa estar aprovada, senão a release é
         // recusada.
-        versionCode 7
-        versionName "1.0.6"
+        versionCode 8
+        versionName "1.0.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
