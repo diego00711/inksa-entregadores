@@ -581,9 +581,31 @@ export function MyDeliveriesPage() {
                           código que ele vai falar no balcão; indo ao cliente,
                           o que importa é quanto cobrar. O resto continua no
                           painel, a um toque. */}
+                    </div>
+                    <button
+                      onClick={() => setShowMap(!showMap)}
+                      className="pointer-events-auto shrink-0 rounded-full bg-white/95 p-2.5 text-gray-700 shadow-lg backdrop-blur active:scale-95"
+                      aria-label={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
+                    >
+                      {showMap ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* ── O DADO CRÍTICO VIVE AQUI EMBAIXO, e a razão é o cabeçalho ──
+                      Estes dois chips moravam na faixa DE CIMA do mapa. O
+                      cabeçalho do app é `sticky top-0 z-30` e eles são z-10:
+                      basta o mapa deslocar um pouco e o código passa POR BAIXO
+                      da tarja laranja. No teste de 16/09/2026 o Diego fotografou
+                      exatamente isso — "Código 5008" cortado ao meio, e os chips
+                      de fase e rota sumidos atrás da barra.
+                      O `pt-11` lá de cima compensa a sangria de 2rem, mas só com
+                      a tela parada no topo; não é trava, é sorte de posição.
+                      Aqui embaixo nada cobre: o que vem depois é o painel, que
+                      começa abaixo do mapa. */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-start gap-2 px-3 pb-3">
                       {!isDeliveryPhase && activeDelivery.pickup_code && (
-                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-purple-600/95 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
-                          <Package className="w-3.5 h-3.5 shrink-0" />
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-purple-600/95 px-3.5 py-2 text-sm font-bold text-white shadow-xl backdrop-blur">
+                          <Package className="w-4 h-4 shrink-0" />
                           Código
                           <span className="tracking-widest">{activeDelivery.pickup_code}</span>
                         </span>
@@ -603,14 +625,6 @@ export function MyDeliveriesPage() {
                           )}
                         </span>
                       )}
-                    </div>
-                    <button
-                      onClick={() => setShowMap(!showMap)}
-                      className="pointer-events-auto shrink-0 rounded-full bg-white/95 p-2.5 text-gray-700 shadow-lg backdrop-blur active:scale-95"
-                      aria-label={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
-                    >
-                      {showMap ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
                   </div>
 
                   {/* ── Painel de vidro por cima da base do mapa ──────────────

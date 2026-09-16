@@ -145,6 +145,27 @@ const ANTES_DA_RETIRADA = new Set([
  *
  * Devolve { rotulo, lat, lng, endereco, perna }.
  */
+/**
+ * Endereço da LOJA, venha ele em que formato vier.
+ *
+ * ⚠️ O PEDIDO CHEGA EM DOIS FORMATOS, E SÓ UM TEM `restaurant_address`.
+ *
+ * `GET /api/orders/<id>` monta a string pronta, com número.
+ * `GET /api/delivery/stats/dashboard-stats` — que é de onde sai a CORRIDA
+ * ATIVA — manda as partes separadas: `restaurant_street`, `restaurant_number`,
+ * `restaurant_neighborhood`, `restaurant_city`. Nenhum `restaurant_address`.
+ *
+ * Lendo só `p.restaurant_address`, a corrida ativa dava `undefined` -> texto
+ * vazio -> `abrirWaze` caía na COORDENADA, que é de nível de rua. O número 76
+ * do Gelaê estava no banco e nas duas rotas de pedido; ele se perdia aqui, na
+ * última curva. Achado no teste do Diego em 16/09/2026.
+ */
+function enderecoDaLoja(p) {
+  if (p.restaurant_address) return String(p.restaurant_address).trim();
+  const rua = [p.restaurant_street, p.restaurant_number].filter(Boolean).join(', ');
+  return [rua, p.restaurant_neighborhood, p.restaurant_city].filter(Boolean).join(' - ');
+}
+
 export function destinoDaCorrida(pedido) {
   const p = pedido || {};
   const indoBuscar = ANTES_DA_RETIRADA.has(p.status);
@@ -155,7 +176,7 @@ export function destinoDaCorrida(pedido) {
       rotulo: p.restaurant_name ? `Ir até ${p.restaurant_name}` : 'Ir até a loja',
       lat: p.restaurant_latitude,
       lng: p.restaurant_longitude,
-      endereco: p.restaurant_address || '',
+      endereco: enderecoDaLoja(p),
     };
   }
   return {
