@@ -66,29 +66,45 @@ function temNumeroDeCasa(endereco) {
 // pedido #1006. Um detector "mais correto" aqui pioraria a entrega.
 
 /**
- * ⚠️ TEXTO QUANDO HÁ NÚMERO; COORDENADA QUANDO NÃO HÁ. E a ordem importa.
+ * COMO SE ESCOLHE O DESTINO — três regras, nesta ordem. A ordem é o conteúdo.
  *
- * Eu tinha invertido isso, e a razão estava errada. Depois do pedido #1006
- * (13/09/2026) concluí "coordenada sempre, texto nunca" — mas o que falhou ali
- * não foi o texto: foi o ENDEREÇO, cadastrado com bairro e CEP de outro trecho
- * da rua. Com endereço errado a coordenada sai igualmente errada, porque nasce
- * dele. Trocar um pelo outro não consertava nada.
+ * 1º  COORDENADA PRECISA, quando existe.
+ *     Só vale pro GPS do APARELHO do cliente (`client_coord_origem = 'gps'`),
+ *     que tem precisão de metros. É o melhor dado que a plataforma tem.
  *
- * O que decide de verdade é PRECISÃO, e aí a conta é outra:
+ *     ⚠️ Esta regra entrou em 16/09/2026 CONSERTANDO UM ERRO MEU do mesmo dia:
+ *     fiz o carrinho puxar o número de casa do cadastro, o número entrou no
+ *     texto, `temNumeroDeCasa` virou true — e a navegação trocou o ponto do GPS
+ *     por uma busca de texto. Melhorei a leitura e piorei a entrega.
  *
- *   nossa coordenada  -> nível de RUA. Medido: a casa da cliente (nº 307) e o
- *                        Yo!Frango (nº 284) têm coordenada IDÊNTICA.
- *   Waze com o texto  -> nível de PORTA. Medido no mesmo dia: o Waze achou
- *                        "Rua 31 de Março, 126" que o nosso geocodificador
- *                        não achou de jeito nenhum.
+ * 2º  TEXTO, quando há número de casa e a coordenada NÃO é precisa.
+ *     Veio do pedido #1006 (13/09/2026). Eu tinha concluído o contrário
+ *     ("coordenada sempre") e a razão estava errada: o que falhou ali não foi o
+ *     texto, foi o ENDEREÇO, cadastrado com bairro e CEP de outro trecho da rua
+ *     — e coordenada nasce do endereço, então saiu errada junto.
  *
- * E o Diego apontou o que isso significa na rua: a Rua 31 de Março tem ~3 km.
- * Largar o entregador "na rua certa" ali é largar ele procurando por 3 km.
+ *       nossa coordenada  -> nível de RUA. Medido: a casa da cliente (nº 307) e
+ *                            o Yo!Frango (nº 284) têm coordenada IDÊNTICA.
+ *       Waze com o texto  -> às vezes nível de PORTA. Medido: o Waze achou
+ *                            "Rua 31 de Março, 126" que o nosso não achou.
  *
- * Então: tendo número de casa, o texto vai — o Waze é melhor nisso que a gente.
- * Sem número, a coordenada é o que sobra e pelo menos chega na rua.
+ *     O Diego apontou o que isso significa na rua: a Rua 31 de Março tem ~3 km.
+ *     Largar o entregador "na rua certa" ali é largar ele procurando.
+ *
+ *     ⚠️ Mas é APOSTA, não garantia. Em 16/09/2026 ficou provado que
+ *     "Rua Rodolfo Reis Figueira 76, Lages" e a mesma rua sem número devolvem
+ *     EXATAMENTE o mesmo resultado: essas ruas não têm numeração na base.
+ *
+ * 3º  COORDENADA imprecisa, como último recurso. Chega na rua, e é melhor que
+ *     texto sem número nenhum.
+ *
+ * O conserto de verdade, que dispensa as três, continua pendente: o parceiro e
+ * o cliente MARCAREM O PONTO no mapa.
  */
-export function abrirWaze(lat, lng, endereco) {
+export function abrirWaze(lat, lng, endereco, opcoes = {}) {
+  if (opcoes.coordPrecisa && temCoord(lat, lng)) {
+    return abrirFora(`https://waze.com/ul?ll=${Number(lat)},${Number(lng)}&navigate=yes`);
+  }
   const porTexto = temNumeroDeCasa(endereco);
   return abrirFora(porTexto
     ? `https://waze.com/ul?q=${encodeURIComponent(endereco)}&navigate=yes`
@@ -97,7 +113,11 @@ export function abrirWaze(lat, lng, endereco) {
       : `https://waze.com/ul?q=${encodeURIComponent(endereco || '')}&navigate=yes`);
 }
 
-export function abrirMaps(lat, lng, endereco) {
+export function abrirMaps(lat, lng, endereco, opcoes = {}) {
+  // Mesma precedência do abrirWaze — ver o comentário lá.
+  if (opcoes.coordPrecisa && temCoord(lat, lng)) {
+    return abrirFora(`https://www.google.com/maps/dir/?api=1&destination=${Number(lat)},${Number(lng)}`);
+  }
   const porTexto = temNumeroDeCasa(endereco);
   const destino = porTexto
     ? encodeURIComponent(endereco)
@@ -137,15 +157,6 @@ const ANTES_DA_RETIRADA = new Set([
 ]);
 
 /**
- * Pra onde ESTA corrida aponta agora.
- *
- * O entregador não deveria ter que escolher entre dois botões enquanto dirige.
- * O pedido já sabe em que perna está: antes de retirar, o destino é a loja;
- * depois, é o cliente. O botão só precisa perguntar.
- *
- * Devolve { rotulo, lat, lng, endereco, perna }.
- */
-/**
  * Endereço da LOJA, venha ele em que formato vier.
  *
  * ⚠️ O PEDIDO CHEGA EM DOIS FORMATOS, E SÓ UM TEM `restaurant_address`.
@@ -166,6 +177,15 @@ function enderecoDaLoja(p) {
   return [rua, p.restaurant_neighborhood, p.restaurant_city].filter(Boolean).join(' - ');
 }
 
+/**
+ * Pra onde ESTA corrida aponta agora.
+ *
+ * O entregador não deveria ter que escolher entre dois botões enquanto dirige.
+ * O pedido já sabe em que perna está: antes de retirar, o destino é a loja;
+ * depois, é o cliente. O botão só precisa perguntar.
+ *
+ * Devolve { rotulo, lat, lng, endereco, perna, coordPrecisa }.
+ */
 export function destinoDaCorrida(pedido) {
   const p = pedido || {};
   const indoBuscar = ANTES_DA_RETIRADA.has(p.status);
@@ -177,6 +197,10 @@ export function destinoDaCorrida(pedido) {
       lat: p.restaurant_latitude,
       lng: p.restaurant_longitude,
       endereco: enderecoDaLoja(p),
+      // A coordenada da loja sai do nosso geocodificador, nível de rua. Nunca
+      // é "precisa" no sentido daqui. O dia em que o parceiro marcar o ponto
+      // no mapa, é esta linha que muda.
+      coordPrecisa: false,
     };
   }
   return {
@@ -185,6 +209,12 @@ export function destinoDaCorrida(pedido) {
     lat: p.client_latitude,
     lng: p.client_longitude,
     endereco: enderecoComoTexto(p.delivery_address),
+    // ⚠️ SÓ 'gps' É PRECISO. O pedido carrega de onde a coordenada veio
+    // (orders.client_coord_origem): 'gps' é o aparelho do cliente, metros;
+    // 'endereco' é geocodificação, que resolve a RUA e devolve o MESMO ponto
+    // pro nº 284 e pro nº 307 — medido nos dados reais.
+    // NULL (pedido antigo) conta como impreciso, que mantém a regra de antes.
+    coordPrecisa: p.client_coord_origem === 'gps',
   };
 }
 

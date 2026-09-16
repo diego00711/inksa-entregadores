@@ -743,7 +743,7 @@ export function MyDeliveriesPage() {
                           // do sistema enquanto o Waze ocupa a tela.
                           pedirAtalhoDeVolta(activeDelivery.id);
                           const d = destinoDaCorrida(activeDelivery);
-                          abrirWaze(d.lat, d.lng, d.endereco);
+                          abrirWaze(d.lat, d.lng, d.endereco, { coordPrecisa: d.coordPrecisa });
                         }}
                         className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#00D8FF] px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
                       >

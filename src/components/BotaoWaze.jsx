@@ -26,7 +26,8 @@ export function BotaoWaze({ pedido, className = '', compacto = false }) {
     e.preventDefault();
     // Push que vira o botão de voltar na barra do sistema — o Waze não tem um.
     pedirAtalhoDeVolta(pedido?.id);
-    fn(destino.lat, destino.lng, destino.endereco);
+    // `coordPrecisa` decide se o ponto ganha do texto — ver navegacao.js.
+    fn(destino.lat, destino.lng, destino.endereco, { coordPrecisa: destino.coordPrecisa });
   };
 
   return (
