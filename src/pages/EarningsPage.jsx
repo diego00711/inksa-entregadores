@@ -299,11 +299,16 @@ export function EarningsPage() {
                                                 <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                                                     {delivery.client_name}
                                                 </td>
-                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right">
-                                                    {parseFloat(delivery.delivery_fee || 0).toFixed(2)}
+                                                {/* brl(), não toFixed(2): esta tabela ficou pra trás
+                                                    quando os cards acima passaram a usar o formatador,
+                                                    e mostrava "6.90" (sem R$ e com ponto) ao lado de
+                                                    "R$ 6,90" na mesma tela. Aparece de sm pra cima:
+                                                    tablet, celular deitado e a versão web. */}
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right tabular-nums">
+                                                    {brl(parseFloat(delivery.delivery_fee || 0))}
                                                 </td>
-                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right">
-                                                    {parseFloat(delivery.total_amount || 0).toFixed(2)}
+                                                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right tabular-nums">
+                                                    {brl(parseFloat(delivery.total_amount || 0))}
                                                 </td>
                                                 <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                                                     <StatusBadge status={delivery.status} />
