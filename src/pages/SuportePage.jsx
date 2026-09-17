@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Loader2, AlertCircle, MessageCircle, ArrowLeft, Send, CheckCircle2, Mail, Phone } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, MessageCircle, ArrowLeft, Send, CheckCircle2, Mail, Phone, Volume2, RefreshCw, ChevronDown } from 'lucide-react';
 import { DELIVERY_API_URL } from '../services/api';
 import apiFetch from '../services/apiClient';
 import authService from '../services/authService';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+import { criarCanalUrgente, diagnosticoDeCanais } from '../services/notificationService.js';
 
 const STATUS_META = {
   aberto:    { label: 'Aberto',       cls: 'bg-slate-100 text-slate-700' },
@@ -38,6 +39,116 @@ const MODO_SUGESTAO = {
 function headers() {
   const token = authService?.getToken?.() || localStorage.getItem('deliveryAuthToken');
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+}
+
+// SOM DO AVISO — POR QUE EXISTE UM CARD DE DIAGNÓSTICO NUMA TELA DE SUPORTE
+//
+// Em 16/09/2026 um entregador relatou "o tok tá baixo", "andando de moto não
+// escuta" e "ele não sobe". Fomos olhar as Configurações do aparelho dele (um
+// Samsung) e a tela de notificações do app NÃO mostrava categoria nenhuma —
+// sinal de que o canal `inksa_urgente` nunca chegou a ser criado ali. Sem
+// canal, o push cai no canal padrão do FCM: som curto, sem prioridade.
+//
+// Não dava pra saber de fora. A criação do canal vivia dentro de um `catch`
+// vazio, e `console.log` não ajuda: o build de produção apaga todo console.*
+// nos quatro apps. A única forma de enxergar o estado real do aparelho é o
+// próprio aparelho dizer — que é o que este card faz, com `listChannels()`.
+//
+// E ele não é só pra nós: o botão "Configurar de novo" resolve na mão do
+// entregador o caso em que a criação falhou, sem depender de atualização.
+function SomDoAviso() {
+  const [diag, setDiag] = useState(null);
+  const [aberto, setAberto] = useState(false);
+  const [tentando, setTentando] = useState(false);
+
+  const ler = useCallback(async () => {
+    setDiag(await diagnosticoDeCanais());
+  }, []);
+
+  useEffect(() => { ler(); }, [ler]);
+
+  const reconfigurar = async () => {
+    setTentando(true);
+    try {
+      await criarCanalUrgente();
+      await ler();
+    } finally {
+      setTentando(false);
+    }
+  };
+
+  if (!diag) return null;
+  if (!diag.ehApp) return null; // no navegador não existe canal: card não faria sentido
+
+  const nossos = diag.canais.filter((c) => String(c.id).startsWith('inksa_'));
+  const ok = nossos.some((c) => c.importancia >= 4);
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${ok ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+          <Volume2 className={`w-5 h-5 ${ok ? 'text-emerald-600' : 'text-amber-600'}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-gray-800">Som do aviso de corrida</h2>
+          {ok ? (
+            <p className="mt-0.5 text-sm text-gray-600">
+              Configurado neste aparelho. Para deixar mais alto, ajuste o
+              <strong> volume de notificação</strong> nas configurações do celular.
+            </p>
+          ) : (
+            <p className="mt-0.5 text-sm text-amber-800">
+              <strong>Não está configurado neste aparelho.</strong> O aviso de corrida
+              nova pode chegar baixo ou sem som. Toque em "Configurar de novo".
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              onClick={reconfigurar}
+              disabled={tentando}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {tentando ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Configurar de novo
+            </button>
+            <button
+              onClick={() => setAberto((v) => !v)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-700"
+            >
+              Detalhes técnicos
+              <ChevronDown className={`w-4 h-4 transition-transform ${aberto ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {aberto && (
+            <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700 space-y-2 break-words">
+              <p>
+                <span className="font-semibold">Criação:</span>{' '}
+                {diag.tentativa?.estado || '—'}
+                {diag.tentativa?.erro ? ` (${diag.tentativa.erro})` : ''}
+              </p>
+              {diag.erro && (
+                <p className="text-red-600"><span className="font-semibold">Leitura:</span> {diag.erro}</p>
+              )}
+              <p><span className="font-semibold">Canais no aparelho:</span> {diag.canais.length}</p>
+              {diag.canais.length === 0 ? (
+                <p className="text-amber-700">Nenhum canal registrado.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {diag.canais.map((c) => (
+                    <li key={c.id} className="font-mono">
+                      {c.id} · imp {String(c.importancia)} · som {c.som ? String(c.som) : 'padrão'}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function NovoTicket({ onCreated, onCancel, sugestao = false }) {
@@ -241,6 +352,8 @@ export default function SuportePage() {
           </div>
         </a>
       </div>
+
+      <SomDoAviso />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-4 border-b border-gray-100"><h2 className="font-semibold text-gray-800">Meus chamados</h2></div>

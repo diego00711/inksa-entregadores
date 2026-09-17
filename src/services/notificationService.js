@@ -305,30 +305,125 @@ export async function saveFcmToken(token, apiBaseUrl, authHeaders) {
  * IMPORTANCE 5 = MAX: som + vibração + aparece por cima do que estiver aberto.
  * É o que faz o aviso competir com o iFood na mesma tela.
  *
- * ⚠️ O id tem que bater com CANAL_URGENTE do notification_service.py.
+ * ⚠️ O id tem que bater com o que o notification_service.py escolhe.
  *
  * ⚠️ ANDROID NÃO DEIXA MUDAR CANAL DEPOIS DE CRIADO. Volume, som e importância
  * ficam congelados na primeira criação — e passam a pertencer ao usuário, nas
  * configurações do sistema. Para mudar qualquer um deles é preciso criar um
- * canal com id NOVO (ex.: inksa_urgente_v2). Trocar só o texto daqui não faz
- * absolutamente nada em quem já abriu o app uma vez.
+ * canal com id NOVO. Trocar só o texto daqui não faz absolutamente nada em
+ * quem já abriu o app uma vez.
+ *
+ * ## 16/09/2026 — POR QUE NASCEU O `_v3`, E POR QUE ELE NÃO MANDA `sound`
+ *
+ * O `inksa_urgente` pedia `sound: 'default'`. Parece inofensivo e não é: o
+ * plugin do Capacitor NÃO trata 'default' como palavra especial. Ele monta
+ * literalmente
+ *
+ *     android.resource://com.inksa.entregador/raw/default
+ *
+ * (NotificationChannelManager.java, linha 97) — um recurso que **não existe**
+ * no pacote instalado, porque o `res/raw` só passou a ter arquivo no 1.0.7.
+ * Canal apontando pra som inexistente não avisa ninguém: falha calada na hora
+ * de tocar.
+ *
+ * OMITIR o campo é o conserto. Sem `sound`, o plugin nem chama `setSound()`, e
+ * o `new NotificationChannel(...)` do Android nasce com o som padrão DE
+ * VERDADE do sistema (Settings.System.DEFAULT_NOTIFICATION_URI). Existe, toca.
+ *
+ * ⚠️ NÃO confundir com o `inksa_urgente_v2`: aquele é o canal do som de alarme
+ * próprio (USAGE_ALARM + res/raw/inksa_alerta.mp3), criado no MainActivity.java
+ * porque o plugin fixa USAGE_NOTIFICATION e só olha pra `raw/`. O `_v2` depende
+ * de APK novo na loja; o `_v3` chega por OTA, no próximo open de cada um. São
+ * degraus diferentes da mesma escada.
+ *
+ * O `inksa_urgente` velho continua sendo criado de propósito: enquanto
+ * `platform_settings.push_canal_entregador` não virar, é pra ele que o
+ * servidor manda. Parar de criar abriria um buraco entre o deploy e a virada.
  */
+const CANAL_LEGADO = 'inksa_urgente';
+const CANAL_V3 = 'inksa_urgente_v3';
+
+/**
+ * Resultado da última tentativa de criar os canais, pra tela de diagnóstico.
+ * O `catch` vazio que existia aqui foi o que escondeu o problema por um mês:
+ * se falhar, o app segue funcionando e ninguém fica sabendo. Agora fica.
+ */
+let ultimoResultadoDoCanal = { estado: 'nao_tentado', erro: null };
+
 export async function criarCanalUrgente() {
-  if (!Capacitor.isNativePlatform()) return; // no navegador não existe canal
+  if (!Capacitor.isNativePlatform()) {
+    ultimoResultadoDoCanal = { estado: 'nao_e_app', erro: null };
+    return ultimoResultadoDoCanal;
+  }
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
+
     await PushNotifications.createChannel({
-      id: 'inksa_urgente',
-      name: 'Pedidos e entregas',
-      description: 'Avisos que exigem ação imediata. Toca alto mesmo com outro app aberto.',
+      id: CANAL_V3,
+      name: 'Corrida nova',
+      description: 'Avisos que exigem ação imediata. Aparece por cima de outro app.',
       importance: 5,   // MAX — heads-up + som
       visibility: 1,   // aparece na tela de bloqueio
-      sound: 'default',
+      // sem `sound`: ver o comentário acima. 'default' vira um caminho quebrado.
       vibration: true,
       lights: true,
     });
-  } catch {
-    // Plugin ausente ou versão antiga do Android: segue sem canal. O push
-    // ainda chega, só que no canal padrão (silencioso).
+
+    await PushNotifications.createChannel({
+      id: CANAL_LEGADO,
+      name: 'Pedidos e entregas',
+      description: 'Avisos que exigem ação imediata. Toca alto mesmo com outro app aberto.',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+    });
+
+    ultimoResultadoDoCanal = { estado: 'criado', erro: null };
+  } catch (e) {
+    // Continua sem derrubar o app — mas agora o motivo fica guardado.
+    ultimoResultadoDoCanal = { estado: 'falhou', erro: e?.message || String(e) };
   }
+  return ultimoResultadoDoCanal;
+}
+
+/**
+ * O que o Android REALMENTE tem registrado neste aparelho.
+ *
+ * Existe porque a tela de Configurações do Samsung não mostrava categoria
+ * nenhuma no app (16/09/2026) e não havia como saber se o canal tinha sido
+ * criado ou se o `catch` vazio tinha engolido a falha. `console.log` não serve:
+ * o build de produção apaga todo console.* nos quatro apps.
+ *
+ * Devolve sempre um objeto, nunca lança — é código de diagnóstico, não pode
+ * virar o próximo bug.
+ */
+export async function diagnosticoDeCanais() {
+  const base = {
+    ehApp: false,
+    tentativa: ultimoResultadoDoCanal,
+    canais: [],
+    erro: null,
+  };
+  try {
+    base.ehApp = Capacitor.isNativePlatform();
+  } catch {
+    return base;
+  }
+  if (!base.ehApp) return base;
+
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const r = await PushNotifications.listChannels();
+    base.canais = (r?.channels || []).map((c) => ({
+      id: c.id,
+      nome: c.name,
+      importancia: c.importance,
+      som: c.sound ?? null,
+      vibra: c.vibration ?? null,
+    }));
+  } catch (e) {
+    base.erro = e?.message || String(e);
+  }
+  return base;
 }
