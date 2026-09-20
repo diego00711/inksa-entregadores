@@ -2,6 +2,7 @@
 //
 // Import ESTATICO de proposito: o que este arquivo faz precisa acontecer na
 // mesma batida do toque, e import() dinamico e promessa.
+import { Capacitor } from '@capacitor/core';
 import { DELIVERY_API_URL } from '../services/api';
 //
 // TODA a navegação do app sai daqui. UM lugar, de propósito.
@@ -239,6 +240,27 @@ export function destinoTemCoordenada(pedido) {
  * apertou "Dirigir" pra dirigir. Se a rede estiver ruim, o Waze abre do mesmo
  * jeito e ela volta pelos recentes, como antes.
  */
+/**
+ * Apaga da barra o atalho de volta da corrida.
+ *
+ * O atalho é FIXO (`sticky`) de propósito: ele não some quando o entregador
+ * toca, senão deixaria de ser atalho — ele voltaria ao app uma vez e teria que
+ * sair e entrar no Waze de novo só pra fazer a notificação reaparecer.
+ *
+ * O preço de ser fixo é que alguém precisa apagar. O FCM não sabe: ele manda,
+ * não remove. Quem sabe é o app, e a hora certa é quando a corrida acaba.
+ *
+ * ⚠️ Nunca lança e nunca atrasa: é limpeza de tela, não pode atrapalhar o
+ * fechamento da entrega. No navegador o plugin nem existe.
+ */
+export async function limparAvisosDaCorrida() {
+  try {
+    if (!Capacitor.isNativePlatform()) return;
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    await PushNotifications.removeAllDeliveredNotifications();
+  } catch { /* sem plugin ou sem permissão: a barra fica como está */ }
+}
+
 export function pedirAtalhoDeVolta(pedidoId) {
   if (!pedidoId) return;
   try {

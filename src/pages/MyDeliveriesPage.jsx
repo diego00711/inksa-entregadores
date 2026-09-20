@@ -27,7 +27,7 @@ import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 import { limparCodigo, codigoCompleto, AVISO_CODIGO } from '../utils/codigoDoPedido';
-import { abrirWaze, destinoDaCorrida, pedirAtalhoDeVolta } from '../utils/navegacao';
+import { abrirWaze, destinoDaCorrida, pedirAtalhoDeVolta, limparAvisosDaCorrida } from '../utils/navegacao';
 
 // ⚠️ MAPA CARREGADO SÓ QUANDO APARECE — não troque por import estático.
 //
@@ -379,6 +379,11 @@ export function MyDeliveriesPage() {
       handleUpdateStatus(finishedId, 'delivered');
       setPendingFinishId(null);
       setFinishCode('');
+      // LIMPA A BARRA. O atalho de volta do Waze é FIXO de propósito (não some
+      // ao ser tocado), e o FCM não sabe apagar notificação — quem apaga é o
+      // app. Sem isto, a corrida terminada ficaria na barra convidando a abrir
+      // um pedido que já acabou.
+      limparAvisosDaCorrida();
       addToast('Entrega concluída com sucesso!', 'success');
       // Pedido em dinheiro: o backend já liquidou no fechamento e devolve o
       // resumo — mostra "você recebeu / deve à plataforma". A avaliação abre
