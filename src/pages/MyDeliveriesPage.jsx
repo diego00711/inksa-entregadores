@@ -12,7 +12,7 @@ import {
   Loader2, PackageSearch, MapPin, Phone, Eye, EyeOff, Route, Package,
   AlertTriangle, MessageCircle, CheckCircle, Star, Navigation,
 } from 'lucide-react';
-import { acceptDelivery, completeDelivery, reportIncident, getOrdersToReview } from '../services/orderService';
+import { acceptDelivery, completeDelivery, pickupOrder, reportIncident, getOrdersToReview } from '../services/orderService';
 import ReportIncidentModal from '../components/ReportIncidentModal.jsx';
 import PostDeliveryRating from '../components/PostDeliveryRating.jsx';
 import { DELIVERY_API_URL } from '../services/api';
@@ -93,6 +93,12 @@ export function MyDeliveriesPage() {
   const [pendingFinishId, setPendingFinishId] = useState(null);
   const [finishCode, setFinishCode] = useState('');
   const [finishing, setFinishing] = useState(false); // trava anti-duplo-clique no "Confirmar" do código
+  // RETIRADA (20/09/2026): o mesmo trio da entrega, agora pra buscar o pedido
+  // na loja. Antes quem confirmava era o parceiro, digitando o código que o
+  // entregador mostrava; inverteu.
+  const [pendingPickupId, setPendingPickupId] = useState(null);
+  const [pickupCodeInput, setPickupCodeInput] = useState('');
+  const [pickingUp, setPickingUp] = useState(false);
   const [incidentOrderId, setIncidentOrderId] = useState(null);
   const [incidentSubmitting, setIncidentSubmitting] = useState(false);
   const [returnOrder, setReturnOrder] = useState(null);
@@ -118,21 +124,14 @@ export function MyDeliveriesPage() {
   // (O aviso de nova mensagem do cliente — toast/bip/badge — agora é ÚNICO e vive
   // no layout via useChatAlarm/ChatAlarmContext; este card só LÊ o `unread`.)
 
-  const fetchOrderWithPickupCode = async (orderId) => {
-    try {
-      // apiFetch põe o Authorization sozinho, do token que estiver valendo — e
-      // renova antes se estiver vencendo. Ler o token à mão aqui congelava o
-      // valor do momento da chamada, sem chance de renovação.
-      const response = await apiFetch(`${DELIVERY_API_URL}/api/orders/${orderId}`, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.ok) return await response.json();
-      return null;
-    } catch (e) {
-      console.error('Erro ao buscar detalhes:', e);
-      return null;
-    }
-  };
+  // ⚠️ AQUI HAVIA UM `fetchOrderWithPickupCode` — REMOVIDO EM 20/09/2026.
+  //
+  // Ele buscava o código de retirada de CADA entrega ativa, a cada ciclo de
+  // atualização, só pra mostrar o número na tela. Agora o código não vem mais
+  // pro entregador: quem mostra é o parceiro, e quem digita é ele.
+  //
+  // Manter a chamada custaria um 403 por pedido a cada 20 segundos, no app que
+  // passa o dia no bolso — e o comentário já explicaria um erro que não existe.
 
   // Só mostra a tela cheia de carregamento na 1a busca. Nas atualizações
   // automáticas seguintes (a cada 30s), os dados trocam por baixo sem
@@ -147,14 +146,9 @@ export function MyDeliveriesPage() {
       const stats = await DeliveryService.getDashboardStats();
       let myActive = stats.activeOrders || [];
 
-      const withPickup = await Promise.all(
-        myActive.map(async (order) => {
-          if (order.pickup_code) return order;
-          const full = await fetchOrderWithPickupCode(order.id);
-          return full?.pickup_code ? { ...order, pickup_code: full.pickup_code } : order;
-        })
-      );
-      setMyDeliveries(withPickup);
+      // Sem a volta extra por pedido: o código de retirada não vem mais pra cá
+      // (ver o comentário acima). Uma chamada a menos por entrega, por ciclo.
+      setMyDeliveries(myActive);
 
       // disponíveis
       let available = [];
@@ -174,7 +168,7 @@ export function MyDeliveriesPage() {
       }
 
       // quais contam como “em andamento”
-      const ongoing = withPickup.find((d) =>
+      const ongoing = myActive.find((d) =>
         ['pending', 'accepted', 'accepted_by_delivery', 'picked_up', 'on_the_way', 'ready', 'preparing', 'delivering'].includes(d.status)
       );
 
@@ -183,7 +177,7 @@ export function MyDeliveriesPage() {
       // diz "acabou de mudar" — só traz o estado de agora.
       const antes = ultimaAtivaRef.current;
       if (antes) {
-        const agora = withPickup.find((d) => d.id === antes.id);
+        const agora = myActive.find((d) => d.id === antes.id);
         if (agora && ['cancelled', 'canceled'].includes(agora.status)) {
           setPedidoCancelado(agora);
         }
@@ -192,7 +186,7 @@ export function MyDeliveriesPage() {
 
       setActiveDelivery(ongoing);
 
-      setPageCache(CACHE_KEY, { availableOrders: available, myDeliveries: withPickup, activeDelivery: ongoing });
+      setPageCache(CACHE_KEY, { availableOrders: available, myDeliveries: myActive, activeDelivery: ongoing });
     } catch (err) {
       console.error('Erro ao carregar entregas:', err);
       addToast(mensagemDeErro(err, 'Não foi possível carregar as entregas.',
@@ -313,6 +307,47 @@ export function MyDeliveriesPage() {
   const finishFromHere = (orderId) => {
     setPendingFinishId(orderId);
     setFinishCode('');
+  };
+
+  const pickupFromHere = (orderId) => {
+    setPendingPickupId(orderId);
+    setPickupCodeInput('');
+  };
+
+  // CONFIRMAR RETIRADA — o entregador digita o código que o PARCEIRO mostra.
+  //
+  // O sentido era o contrário até 20/09/2026: o entregador mostrava o número e
+  // o parceiro digitava. A inversão tira o trabalho de quem está no aperto (o
+  // parceiro, com o pedido saindo) e passa pra quem está parado esperando — e
+  // mantém a prova de pé, porque o entregador precisa obter um número que ele
+  // não tem, e só consegue de frente pro balcão.
+  //
+  // ⚠️ É por isso que NÃO existe trava de GPS aqui: o código já é a prova de
+  // presença. Um raio dependeria da coordenada da loja, e duas das sete lojas
+  // não têm coordenada nenhuma — nelas a trava nunca abriria.
+  //
+  // O servidor conta as tentativas erradas POR PEDIDO (teto de 5) e devolve
+  // quantas restam no texto do erro; por isso a mensagem dele passa direto,
+  // sem ser trocada por uma genérica.
+  const confirmPickup = async () => {
+    if (pickingUp) return; // já está confirmando — ignora cliques repetidos
+    const codigo = String(pickupCodeInput).replace(/\D/g, '');
+    if (!codigoCompleto(codigo)) return;
+    setPickingUp(true);
+    try {
+      const orderId = pendingPickupId;
+      await pickupOrder(orderId, codigo);
+      handleUpdateStatus(orderId, 'delivering');
+      setPendingPickupId(null);
+      setPickupCodeInput('');
+      addToast('Retirada confirmada! Agora é levar ao cliente.', 'success');
+    } catch (e) {
+      console.error('Erro ao confirmar retirada:', e);
+      addToast(mensagemDeErro(e, 'Não deu pra confirmar a retirada. Confira o código com o parceiro.',
+        'Sem conexão agora. O código continua valendo — tente de novo quando o sinal voltar.'), 'error');
+    } finally {
+      setPickingUp(false);
+    }
   };
 
   // Busca o pedido recém-entregue na lista de "avaliações pendentes" do backend
@@ -590,11 +625,16 @@ export function MyDeliveriesPage() {
                           o que importa é quanto cobrar. O resto continua no
                           painel, a um toque. */}
 
-                      {!isDeliveryPhase && activeDelivery.pickup_code && (
-                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-purple-600/95 px-3.5 py-2 text-sm font-bold text-white shadow-xl backdrop-blur">
+                      {/* ⚠️ Aqui ficava o CÓDIGO DE RETIRADA, e ele saiu em
+                          20/09/2026. A conferência inverteu: o parceiro mostra
+                          o número na tela dele e o entregador digita. Um código
+                          que o entregador já tem não prova que ele foi na loja.
+                          A ação da fase de busca agora é o botão "Retirada" na
+                          alça, logo abaixo. */}
+                      {!isDeliveryPhase && (
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-purple-600/95 px-3.5 py-2 text-sm font-semibold text-white shadow-xl backdrop-blur">
                           <Package className="w-4 h-4 shrink-0" />
-                          Código
-                          <span className="tracking-widest">{activeDelivery.pickup_code}</span>
+                          Peça o código no balcão
                         </span>
                       )}
                       {/* Nas DUAS fases, não só na entrega: o entregador precisa
@@ -705,6 +745,21 @@ export function MyDeliveriesPage() {
                           {painelAberto ? 'tocar para ver o mapa' : 'tocar para ver tudo'}
                         </span>
                       </button>
+                      {/* UMA AÇÃO PRINCIPAL POR FASE, e agora as duas fases têm
+                          a sua: indo buscar, confirmar a RETIRADA; indo levar,
+                          confirmar a ENTREGA. Antes a fase de busca não tinha
+                          ação nenhuma aqui — só o código pra mostrar no balcão,
+                          porque quem confirmava era o parceiro. */}
+                      {!isDeliveryPhase && (
+                        <button
+                          type="button"
+                          onClick={() => pickupFromHere(activeDelivery.id)}
+                          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-2.5 text-sm font-bold text-white shadow-md active:scale-95"
+                        >
+                          <Package className="h-4 w-4" />
+                          Retirada
+                        </button>
+                      )}
                       {isDeliveryPhase && (
                         <button
                           type="button"
@@ -752,7 +807,10 @@ export function MyDeliveriesPage() {
                             entrega": um caminhão de seta é reconhecível, e
                             dois rótulos longos lado a lado é o que espremia
                             a legenda até cortar. */}
-                        <span className={isDeliveryPhase ? 'hidden sm:inline' : ''}>Dirigir</span>
+                        {/* A legenda some no celular estreito NAS DUAS FASES:
+                            desde que a fase de busca ganhou o botão "Retirada",
+                            a alça divide espaço nas duas, não só na entrega. */}
+                        <span className="hidden sm:inline">Dirigir</span>
                       </button>
                     </div>
                     {/* O corte reto no fim do painel parecia informação perdida,
@@ -770,11 +828,20 @@ export function MyDeliveriesPage() {
                       Entrega ativa {numeroPedido(activeDelivery)}
                     </h3>
 
-                    {activeDelivery.pickup_code && !isDeliveryPhase && (
-                      <div className="bg-purple-50 p-2 rounded border border-purple-200">
-                        <p className="text-xs text-purple-700 mb-1">Código de Retirada:</p>
-                        <p className="text-lg font-bold text-purple-800 tracking-widest">{activeDelivery.pickup_code}</p>
-                      </div>
+                    {/* O número saiu daqui em 20/09/2026 — quem tem o código é o
+                        parceiro. No lugar dele, o que o entregador precisa
+                        saber pra não chegar no balcão sem entender o passo. */}
+                    {!isDeliveryPhase && (
+                      <button
+                        type="button"
+                        onClick={() => pickupFromHere(activeDelivery.id)}
+                        className="w-full rounded border border-purple-200 bg-purple-50 p-2 text-left active:bg-purple-100"
+                      >
+                        <p className="text-xs text-purple-700">Retirada</p>
+                        <p className="text-sm font-semibold text-purple-900">
+                          Peça o código ao parceiro e toque aqui para confirmar
+                        </p>
+                      </button>
                     )}
 
                     {activeDelivery.payment_method === 'cash' && (
@@ -984,6 +1051,49 @@ export function MyDeliveriesPage() {
             >
               Entendi
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* RETIRADA — irmão gêmeo do modal de entrega logo abaixo, de propósito:
+          é a mesma interação que o entregador já faz todo dia no fim da
+          corrida, agora também no começo. Coisa nova que se parece com coisa
+          conhecida não precisa ser aprendida. */}
+      {pendingPickupId && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 mx-0 sm:mx-4" style={{ paddingBottom: '1.5rem' }}>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">Código de Retirada</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Peça o código ao parceiro — ele aparece na tela do pedido, no app dele.
+            </p>
+            <input
+              type="text"
+              value={pickupCodeInput}
+              onChange={e => setPickupCodeInput(limparCodigo(e.target.value))}
+              placeholder="Ex: 4803"
+              maxLength={6}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-base font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-400 mb-4"
+              onKeyDown={e => { if (e.key === 'Enter') confirmPickup(); }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPendingPickupId(null); setPickupCodeInput(''); }}
+                disabled={pickingUp}
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmPickup}
+                disabled={pickingUp || !codigoCompleto(pickupCodeInput)}
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {pickingUp ? (<><Loader2 className="h-4 w-4 animate-spin" /> Confirmando...</>) : 'Confirmar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

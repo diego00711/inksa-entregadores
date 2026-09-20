@@ -1,11 +1,10 @@
 // src/components/DeliveryCard.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  MapPin, Package, DollarSign, Clock, ChevronRight, KeyRound
+  MapPin, Package, DollarSign, Clock, ChevronRight
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getPickupCode } from '../services/orderService';
 import { numeroPedido } from '../utils/pedidoNumero';
 import { brl } from '../utils/dinheiro';
 import { rotuloDeStatus, classeDeStatus } from '../utils/rotuloDeStatus';
@@ -24,7 +23,6 @@ const StatusBadge = ({ status }) => (
 );
 
 export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
-  const [inlineCode, setInlineCode] = useState('');
   // O entregador vê o LÍQUIDO (o que cai pra ele, já sem a taxa da plataforma),
   // não o frete cheio — senão parece que ganha mais do que ganha. Só cai pro
   // frete bruto se, por algum motivo, o líquido não tiver sido calculado.
@@ -37,20 +35,6 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
   const clientName = delivery.client_name || delivery.customer?.name || 'Cliente';
   const orderId = numeroPedido(delivery).replace('#', '');
 
-  const pickupCode = delivery.pickup_code || inlineCode;
-  const showCode = pickupCode && !isAvailable;
-
-  const handleShowCode = async (e) => {
-    e.stopPropagation();
-    try {
-      const res = await getPickupCode(delivery.id);
-      const code = res?.pickup_code || '';
-      if (code) {
-        setInlineCode(code);
-        await navigator.clipboard?.writeText(code).catch(() => {});
-      }
-    } catch { /* silencioso */ }
-  };
 
   return (
     <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-orange-300 border-2" onClick={onClick}>
@@ -63,36 +47,11 @@ export function DeliveryCard({ delivery, onClick, isAvailable = false }) {
           {delivery.status && <StatusBadge status={delivery.status} />}
         </div>
 
-        {showCode ? (
-          <div className="mb-3 pb-3 border-b-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="bg-purple-600 p-2 rounded-full">
-                  <KeyRound className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-purple-700 uppercase tracking-wide">Código de Retirada</p>
-                  <p className="text-xs text-purple-600">Mostre ao restaurante</p>
-                </div>
-              </div>
-              <div className="bg-white px-4 py-2 rounded-lg border-2 border-purple-300 shadow-md">
-                <span className="text-2xl font-bold text-purple-700 tracking-widest">
-                  {pickupCode}
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (!isAvailable && (delivery.status === 'accepted_by_delivery' || delivery.status === 'ready')) ? (
-          <div className="mb-3">
-            <button
-              onClick={handleShowCode}
-              className="text-xs px-3 py-1 rounded-md bg-purple-600 text-white hover:bg-purple-700"
-            >
-              <KeyRound className="inline-block mr-1 h-3 w-3" />
-              Ver código de retirada
-            </button>
-          </div>
-        ) : null}
+        {/* ⚠️ AQUI FICAVA O CÓDIGO DE RETIRADA (removido em 20/09/2026).
+            A conferência inverteu: o PARCEIRO mostra o número na tela dele e
+            o entregador digita no app. Um código que o entregador já tem não
+            prova que ele foi até a loja — e era isso que o código existia pra
+            provar. A ação agora é o botão "Retirada" na entrega ativa. */}
 
         <div className="mb-3 pb-3 border-b border-gray-100">
           <div className="flex items-start gap-2 mb-1">

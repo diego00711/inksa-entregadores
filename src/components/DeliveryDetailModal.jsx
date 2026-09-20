@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import {
   X, MapPin, Package, DollarSign, Clock,
-  CheckCircle, Loader2, KeyRound, MessageCircle
+  CheckCircle, Loader2, MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { acceptDelivery, getPickupCode } from '../services/orderService';
+import { acceptDelivery } from '../services/orderService';
 import { rotuloDeStatus as rotuloDoStatus } from '../utils/rotuloDeStatus';
 import { useToast } from '../context/ToastContext';
 import { ChatModal } from './ChatModal';
@@ -67,7 +67,6 @@ export function DeliveryDetailModal({
   const addToast = useToast();
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);         // vira "Pedido aceito" + fecha sozinho
-  const [pickupCode, setPickupCode] = useState('');        // ⬅️ novo
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
 
@@ -107,25 +106,7 @@ export function DeliveryDetailModal({
     }
   };
 
-  // botão “ver código” quando já aceito/aguardando retirada
-  const handleShowCode = async () => {
-    try {
-      const res = await getPickupCode(order.id);
-      const code = res?.pickup_code || '';
-      if (code) {
-        setPickupCode(code);
-        await navigator.clipboard?.writeText(code).catch(() => {});
-        addToast('Código de retirada copiado para a área de transferência.', 'info');
-      } else {
-        addToast('Código ainda indisponível para este pedido.', 'warning');
-      }
-    } catch (e) {
-      addToast('Erro ao obter o código de retirada.', 'error');
-    }
-  };
 
-  const canShowGetCodeButton =
-    !isAvailable && ['accepted_by_delivery', 'ready'].includes(order.status || '');
 
   const canChat = ['accepted_by_delivery', 'delivering', 'picked_up', 'on_the_way'].includes(
     order.status || ''
@@ -173,21 +154,11 @@ export function DeliveryDetailModal({
                 </div>
               )}
 
-              {/* bloco com o código quando disponível */}
-              {pickupCode && (
-                <div className="p-4 rounded-lg border-2 border-purple-300 bg-purple-50">
-                  <div className="flex items-center gap-2 mb-1">
-                    <KeyRound className="h-5 w-5 text-purple-700" />
-                    <p className="text-sm text-purple-700 font-medium">Código de Retirada</p>
-                  </div>
-                  <div className="text-3xl font-extrabold tracking-widest text-purple-700 select-all">
-                    {pickupCode}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Apresente este código no balcão do restaurante.
-                  </p>
-                </div>
-              )}
+              {/* ⚠️ O BLOCO DO CÓDIGO SAIU DAQUI (20/09/2026). Quem tem o
+                  código agora é o parceiro: ele mostra na tela dele e o
+                  entregador digita no app, no botão "Retirada" da entrega
+                  ativa. Um código que o entregador já tem não prova que ele
+                  chegou na loja — e provar isso era a única função dele. */}
 
               {/* info entrega */}
               <div>
@@ -307,14 +278,6 @@ export function DeliveryDetailModal({
                         Aceitar Pedido
                       </>
                     )}
-                  </Button>
-                ) : canShowGetCodeButton ? (
-                  <Button
-                    onClick={handleShowCode}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold min-h-[44px] py-3 text-base"
-                  >
-                    <KeyRound className="mr-2 h-5 w-5" />
-                    Ver Código de Retirada
                   </Button>
                 ) : null}
 
