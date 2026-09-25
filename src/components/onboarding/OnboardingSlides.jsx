@@ -33,10 +33,24 @@ export default function OnboardingSlides({ onComplete }) {
   };
 
   const next = () => {
+    // ⚠️ DOIS TOQUES SEGUIDOS DERRUBAVAM O APP INTEIRO.
+    //
+    // A trava lia `current` do render atual, mas o incremento só acontecia
+    // 300 ms depois, dentro do setTimeout. Dois toques dentro dessa janela
+    // liam o MESMO `current`, passavam os dois pela trava e somavam dois:
+    // do penúltimo slide o índice passava do fim, SLIDES[n] virava undefined
+    // e o primeiro acesso a `slide` estourava no ErrorBoundary.
+    //
+    // E o botão pede esse segundo toque: espera a transição antes de mudar
+    // qualquer coisa na tela, então quem toca e não vê nada acontecer toca
+    // de novo. Reproduzido no app do Cliente em 25/09/2026; os três apps
+    // têm o mesmo componente, com a janela daqui ainda maior (300 ms).
+    if (!visible) return;
     if (current < SLIDES.length - 1) {
       setVisible(false);
       setTimeout(() => {
-        setCurrent((c) => c + 1);
+        // Teto: mesmo que algo volte a entrar duas vezes, não passa do fim.
+        setCurrent((c) => Math.min(c + 1, SLIDES.length - 1));
         setVisible(true);
       }, 300);
     } else {
