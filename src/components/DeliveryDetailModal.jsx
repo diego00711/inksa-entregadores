@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import {
   X, MapPin, Package, DollarSign, Clock,
-  CheckCircle, Loader2, MessageCircle
+  CheckCircle, Loader2, MessageCircle, XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { acceptDelivery } from '../services/orderService';
+// `declineDelivery` existia em orderService desde sempre e NUNCA foi chamada —
+// código morto que passou no build e no lint por meses. Agora tem botão.
+import { acceptDelivery, declineDelivery } from '../services/orderService';
 import { rotuloDeStatus as rotuloDoStatus } from '../utils/rotuloDeStatus';
 import { useToast } from '../context/ToastContext';
 import { ChatModal } from './ChatModal';
@@ -62,10 +64,12 @@ export function DeliveryDetailModal({
   onClose,
   isLoading,
   onUpdateStatus,
-  isAvailable = false
+  isAvailable = false,
+  onDecline
 }) {
   const addToast = useToast();
   const [accepting, setAccepting] = useState(false);
+  const [declining, setDeclining] = useState(false);
   const [accepted, setAccepted] = useState(false);         // vira "Pedido aceito" + fecha sozinho
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
@@ -103,6 +107,39 @@ export function DeliveryDetailModal({
       addToast('Erro ao aceitar pedido. Tente novamente.', 'error');
     } finally {
       setAccepting(false);
+    }
+  };
+
+  // RECUSAR A OFERTA.
+  //
+  // Sem este botão, quem não ia fazer a entrega só tinha um jeito de dizer
+  // não: deixar os 60 segundos correrem. O pedido ficava parado esperando
+  // alguém que já tinha decidido não ir, e o cliente pagava essa espera.
+  //
+  // ⚠️ TEM PREÇO, E O PREÇO É DITO ANTES. Recusar coloca o entregador em
+  // cooldown (hoje 5 min sem receber ofertas). Esconder isso faria ele tocar
+  // por engano e sentir uma punição que ninguém explicou — por isso a
+  // confirmação diz o número, e o número vem do servidor, não daqui: quem
+  // manda é `dispatch_decline_cooldown_min` no admin, e um valor cravado na
+  // tela viraria mentira no dia em que ele mudasse.
+  const handleDeclineOrder = async () => {
+    if (declining || accepting || accepted) return;
+    if (!window.confirm(
+      'Recusar esta entrega?\n\n' +
+      'Ela vai para o próximo entregador e você fica alguns minutos sem receber novas ofertas.'
+    )) return;
+    try {
+      setDeclining(true);
+      const r = await declineDelivery(order.id);
+      // A mensagem do servidor traz o tempo real do cooldown.
+      addToast(r?.message || 'Oferta recusada.', 'info');
+      onDecline?.(order.id);
+      onClose?.();
+    } catch (error) {
+      console.error('Erro ao recusar oferta:', error);
+      addToast('Não consegui recusar agora. Tente de novo.', 'error');
+    } finally {
+      setDeclining(false);
     }
   };
 
@@ -276,6 +313,33 @@ export function DeliveryDetailModal({
                       <>
                         <CheckCircle className="mr-2 h-5 w-5" />
                         Aceitar Pedido
+                      </>
+                    )}
+                  </Button>
+                ) : null}
+
+                {/* RECUSAR, ao lado de aceitar e claramente secundário.
+                    Cinza com borda, não vermelho: recusar é uma escolha
+                    legítima do entregador (moto na oficina, já indo pra casa),
+                    não um erro. Vermelho ensinaria que ele está fazendo algo
+                    errado ao ser honesto — e o que a gente quer é que ele diga
+                    não RÁPIDO, em vez de segurar o pedido por 60 segundos. */}
+                {isAvailable && !accepted ? (
+                  <Button
+                    onClick={handleDeclineOrder}
+                    disabled={declining || accepting}
+                    variant="outline"
+                    className="sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold min-h-[44px] py-3 text-base"
+                  >
+                    {declining ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Recusando...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="mr-2 h-5 w-5" />
+                        Recusar
                       </>
                     )}
                   </Button>

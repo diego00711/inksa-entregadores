@@ -1020,6 +1020,11 @@ export function MyDeliveriesPage() {
           isLoading={isModalLoading}
           onUpdateStatus={(id, st) => (st === 'delivered' ? finishFromHere(id) : undefined)}
           isAvailable={activeFilter === 'available'}
+          /* Recusou: o pedido some da lista na hora, sem esperar a próxima
+             sondagem. Deixar o card na tela depois de recusar faz o entregador
+             achar que não funcionou e tocar de novo — e a segunda chamada bate
+             num pedido que já não é dele. */
+          onDecline={() => fetchDeliveries()}
         />
       )}
 
