@@ -73,6 +73,44 @@ export function temServicoDeTurno() {
  * `estaRodando` vem do próprio plugin nativo: é a resposta do Android, não a
  * nossa suposição sobre ele.
  */
+/**
+ * Retrato IMEDIATO, sem um único `await`.
+ *
+ * ⚠️ EXISTE PORQUE O DIAGNÓSTICO ASSÍNCRONO NUNCA RESOLVEU (27/09/2026).
+ *
+ * Passei o dia protegendo uma etapa de cada vez — primeiro pus prazo na
+ * chamada do plugin, depois mudei o prazo de lugar — e a tela continuou em
+ * "lendo…" para sempre, porque a promessa travava ANTES de chegar no
+ * cronômetro. Cada tentativa custou um deploy e uma volta inteira de teste.
+ *
+ * O erro de método era insistir em blindar o caminho lento. O que interessa
+ * (`isPluginAvailable` e a lista de `PluginHeaders`) já está na memória do
+ * navegador e não precisa esperar por nada: basta ler. Assim a resposta
+ * aparece mesmo que TUDO depois disso trave.
+ *
+ * Regra que fica: informação que dá pra obter sem esperar não deve depender de
+ * uma promessa que pode não voltar.
+ */
+export function snapshotDoTurno() {
+  const out = { ehApp: null, plataforma: null, disponivel: null,
+                plugins: null, erro: null };
+  try {
+    const C = typeof window !== 'undefined' ? window.Capacitor : null;
+    if (!C) { out.erro = 'window.Capacitor ausente'; return out; }
+    out.ehApp = typeof C.isNativePlatform === 'function' ? !!C.isNativePlatform() : null;
+    out.plataforma = typeof C.getPlatform === 'function' ? C.getPlatform() : null;
+    out.disponivel = typeof C.isPluginAvailable === 'function'
+      ? !!C.isPluginAvailable('Turno') : null;
+    const cab = C.PluginHeaders;
+    out.plugins = Array.isArray(cab)
+      ? cab.map((p) => p.name).sort().join(',')
+      : Object.keys(C.Plugins || {}).sort().join(',');
+  } catch (e) {
+    out.erro = e?.message || String(e);
+  }
+  return out;
+}
+
 export async function diagnosticoDoTurno() {
   const out = { ehApp: false, plataforma: null, temPlugin: false,
                 motivo: ultimoMotivo, estaRodando: null, erro: null,

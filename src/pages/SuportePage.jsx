@@ -7,7 +7,7 @@ import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 import { criarCanalUrgente, diagnosticoDeCanais } from '../services/notificationService.js';
 // Import na MESMA edição do uso — a regra que este repositório aprendeu com o
 // ícone Lightbulb, e que vale igual pra função importada.
-import { diagnosticoDoTurno } from '../services/turnoNativo.js';
+import { diagnosticoDoTurno, snapshotDoTurno } from '../services/turnoNativo.js';
 
 const STATUS_META = {
   aberto:    { label: 'Aberto',       cls: 'bg-slate-100 text-slate-700' },
@@ -80,15 +80,20 @@ function SomDoAviso() {
     // `catch` nunca dispara e o estado fica nulo pra sempre. Um instrumento
     // que some quando dá errado é pior que instrumento nenhum, porque a
     // ausência dele é lida como "ainda não chegou a atualização".
-    // ⚠️ SEM `Promise.race` AQUI. O prazo mora dentro de `diagnosticoDoTurno`,
-    // em volta só da chamada ao plugin. Corrida em volta do diagnóstico
-    // inteiro fazia o ramo do timeout devolver um objeto pelado e apagar
-    // plataforma, isPluginAvailable e a lista de plugins — o relatório sumia
-    // justo quando havia algo a relatar.
+    // ⚠️ DUAS ETAPAS, E A PRIMEIRA NÃO ESPERA NADA.
+    //
+    // O retrato síncrono vai pra tela na hora: ele lê `window.Capacitor`, que
+    // já está na memória. Em 27/09 a versão assíncrona ficou em "lendo…" pra
+    // sempre — travava antes do cronômetro — e a informação que eu precisava
+    // (isPluginAvailable + lista de plugins) estava disponível o tempo todo,
+    // só refém de uma promessa que não voltava.
+    setTurno(snapshotDoTurno());
+    // Depois, o que depende do plugin. Se travar, o retrato acima permanece.
     try {
-      setTurno((await diagnosticoDoTurno()) || { erro: 'diagnostico vazio' });
+      const completo = await diagnosticoDoTurno();
+      if (completo) setTurno((antes) => ({ ...antes, ...completo }));
     } catch (e) {
-      setTurno({ erro: e?.message || String(e) });
+      setTurno((antes) => ({ ...antes, erro: e?.message || String(e) }));
     }
   }, []);
 
@@ -170,7 +175,9 @@ function SomDoAviso() {
                   ? 'lendo…'
                   : turno.travou
                     ? 'TRAVOU (o plugin nao respondeu em 4s)'
-                    : turno.temPlugin
+                    : turno.temPlugin === undefined
+                      ? 'verificando o plugin…'
+                      : turno.temPlugin
                       ? `plugin ok · rodando: ${turno.estaRodando === null ? '?' : (turno.estaRodando ? 'sim' : 'NAO')}`
                       : 'plugin indisponivel'}
                 {turno?.ehApp === false ? ' · ehApp: nao' : ''}
