@@ -174,9 +174,19 @@ function SomDoAviso() {
                       : 'plugin indisponivel'}
                 {turno?.ehApp === false ? ' · ehApp: nao' : ''}
                 {turno?.plataforma ? ` · ${turno.plataforma}` : ''}
+                {turno?.disponivel !== null && turno?.disponivel !== undefined
+                  ? ` · isPluginAvailable: ${turno.disponivel ? 'sim' : 'NAO'}` : ''}
                 {turno?.motivo && turno.motivo !== 'ok' ? ` (${turno.motivo})` : ''}
                 {turno?.erro ? ` · erro: ${turno.erro}` : ''}
               </p>
+              {/* A lista que o lado NATIVO anuncia pro JS. Se `Turno` não
+                  estiver aqui, o registro nativo não chegou — e aí o problema
+                  não é do lado do JavaScript. */}
+              {turno?.plugins && (
+                <p className="font-mono break-all">
+                  <span className="font-semibold font-sans">Plugins vistos pelo JS:</span> {turno.plugins}
+                </p>
+              )}
               <p><span className="font-semibold">Canais no aparelho:</span> {diag.canais.length}</p>
               {diag.canais.length === 0 ? (
                 <p className="text-amber-700">Nenhum canal registrado.</p>

@@ -75,11 +75,30 @@ export function temServicoDeTurno() {
  */
 export async function diagnosticoDoTurno() {
   const out = { ehApp: false, plataforma: null, temPlugin: false,
-                motivo: ultimoMotivo, estaRodando: null, erro: null };
+                motivo: ultimoMotivo, estaRodando: null, erro: null,
+                // ⚠️ O QUE O JAVASCRIPT ENXERGA (27/09/2026).
+                //
+                // O log do Android provou que a chamada NUNCA chega ao lado
+                // nativo: nem o erro "plugin não encontrado" aparece, e os
+                // plugins oficiais funcionam no mesmo app. Ou seja, o problema
+                // está antes — no que o bridge do Capacitor anuncia pro JS.
+                //
+                // `PluginHeaders` é a lista que o lado nativo INJETA dizendo
+                // quais plugins existem e quais métodos cada um tem. Se `Turno`
+                // não estiver nela, o registro nativo não chegou ao JS, e não
+                // adianta procurar mais nada do lado de cá.
+                disponivel: null, plugins: null };
   try {
     const { Capacitor } = await import('@capacitor/core');
     out.ehApp = !!Capacitor?.isNativePlatform?.();
     out.plataforma = Capacitor?.getPlatform?.() ?? null;
+    try {
+      out.disponivel = Capacitor?.isPluginAvailable?.('Turno') ?? null;
+      const cabecalhos = (typeof window !== 'undefined' && window.Capacitor?.PluginHeaders) || null;
+      out.plugins = cabecalhos
+        ? cabecalhos.map((p) => p.name).sort().join(',')
+        : Object.keys(window?.Capacitor?.Plugins || {}).sort().join(',');
+    } catch { /* lista é extra: não pode derrubar o diagnóstico */ }
   } catch (e) {
     out.erro = e?.message || String(e);
     return out;
