@@ -71,7 +71,24 @@ function SomDoAviso() {
     // tinha subido em campo — o canal `inksa_turno` não existia no aparelho —
     // e nada no app dizia isso. O batimento do JS seguia chegando ao servidor,
     // então de fora parecia tudo certo.
-    try { setTurno(await diagnosticoDoTurno()); } catch { /* card segue sem ele */ }
+    //
+    // ⚠️ COM PRAZO, E SEMPRE GRAVANDO ALGUMA COISA. A primeira versão disto
+    // fazia `try { setTurno(await ...) } catch {}` e a linha simplesmente não
+    // aparecia — foi o que aconteceu na noite de 26/09, e me custou três
+    // rodadas achando que era cache. Uma chamada a plugin nativo que o APK não
+    // tem pode NÃO rejeitar: ela fica pendurada, o `await` nunca volta, o
+    // `catch` nunca dispara e o estado fica nulo pra sempre. Um instrumento
+    // que some quando dá errado é pior que instrumento nenhum, porque a
+    // ausência dele é lida como "ainda não chegou a atualização".
+    try {
+      const r = await Promise.race([
+        diagnosticoDoTurno(),
+        new Promise((ok) => setTimeout(() => ok({ travou: true }), 4000)),
+      ]);
+      setTurno(r || { erro: 'diagnostico vazio' });
+    } catch (e) {
+      setTurno({ erro: e?.message || String(e) });
+    }
   }, []);
 
   useEffect(() => { ler(); }, [ler]);
@@ -143,16 +160,23 @@ function SomDoAviso() {
               {/* Serviço de turno — o que mantém o entregador online com o app
                   fechado. "rodando: não" com ele ONLINE é defeito, e o motivo
                   ao lado diz onde. */}
-              {turno && (
-                <p className={turno.temPlugin ? '' : 'text-amber-700'}>
-                  <span className="font-semibold">Serviço de turno:</span>{' '}
-                  {turno.temPlugin
-                    ? `plugin ok · rodando: ${turno.estaRodando === null ? '?' : (turno.estaRodando ? 'sim' : 'NÃO')}`
-                    : 'plugin indisponível'}
-                  {turno.motivo && turno.motivo !== 'ok' ? ` (${turno.motivo})` : ''}
-                  {turno.erro ? ` · erro: ${turno.erro}` : ''}
-                </p>
-              )}
+              {/* SEM `turno &&`: a linha aparece SEMPRE. Se ela sumir, some a
+                  informação de que algo deu errado junto — e é exatamente isso
+                  que aconteceu em 26/09. */}
+              <p className={turno?.temPlugin ? '' : 'text-amber-700'}>
+                <span className="font-semibold">Serviço de turno:</span>{' '}
+                {!turno
+                  ? 'lendo…'
+                  : turno.travou
+                    ? 'TRAVOU (plugin nao respondeu em 4s — provavelmente nao existe neste APK)'
+                    : turno.temPlugin
+                      ? `plugin ok · rodando: ${turno.estaRodando === null ? '?' : (turno.estaRodando ? 'sim' : 'NAO')}`
+                      : 'plugin indisponivel'}
+                {turno?.ehApp === false ? ' · ehApp: nao' : ''}
+                {turno?.plataforma ? ` · ${turno.plataforma}` : ''}
+                {turno?.motivo && turno.motivo !== 'ok' ? ` (${turno.motivo})` : ''}
+                {turno?.erro ? ` · erro: ${turno.erro}` : ''}
+              </p>
               <p><span className="font-semibold">Canais no aparelho:</span> {diag.canais.length}</p>
               {diag.canais.length === 0 ? (
                 <p className="text-amber-700">Nenhum canal registrado.</p>
