@@ -5,6 +5,9 @@ import apiFetch from '../services/apiClient';
 import authService from '../services/authService';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 import { criarCanalUrgente, diagnosticoDeCanais } from '../services/notificationService.js';
+// Import na MESMA edição do uso — a regra que este repositório aprendeu com o
+// ícone Lightbulb, e que vale igual pra função importada.
+import { diagnosticoDoTurno } from '../services/turnoNativo.js';
 
 const STATUS_META = {
   aberto:    { label: 'Aberto',       cls: 'bg-slate-100 text-slate-700' },
@@ -58,11 +61,17 @@ function headers() {
 // entregador o caso em que a criação falhou, sem depender de atualização.
 function SomDoAviso() {
   const [diag, setDiag] = useState(null);
+  const [turno, setTurno] = useState(null);
   const [aberto, setAberto] = useState(false);
   const [tentando, setTentando] = useState(false);
 
   const ler = useCallback(async () => {
     setDiag(await diagnosticoDeCanais());
+    // Serviço de TURNO no mesmo lugar: em 26/09/2026 descobrimos que ele nunca
+    // tinha subido em campo — o canal `inksa_turno` não existia no aparelho —
+    // e nada no app dizia isso. O batimento do JS seguia chegando ao servidor,
+    // então de fora parecia tudo certo.
+    try { setTurno(await diagnosticoDoTurno()); } catch { /* card segue sem ele */ }
   }, []);
 
   useEffect(() => { ler(); }, [ler]);
@@ -130,6 +139,19 @@ function SomDoAviso() {
               </p>
               {diag.erro && (
                 <p className="text-red-600"><span className="font-semibold">Leitura:</span> {diag.erro}</p>
+              )}
+              {/* Serviço de turno — o que mantém o entregador online com o app
+                  fechado. "rodando: não" com ele ONLINE é defeito, e o motivo
+                  ao lado diz onde. */}
+              {turno && (
+                <p className={turno.temPlugin ? '' : 'text-amber-700'}>
+                  <span className="font-semibold">Serviço de turno:</span>{' '}
+                  {turno.temPlugin
+                    ? `plugin ok · rodando: ${turno.estaRodando === null ? '?' : (turno.estaRodando ? 'sim' : 'NÃO')}`
+                    : 'plugin indisponível'}
+                  {turno.motivo && turno.motivo !== 'ok' ? ` (${turno.motivo})` : ''}
+                  {turno.erro ? ` · erro: ${turno.erro}` : ''}
+                </p>
               )}
               <p><span className="font-semibold">Canais no aparelho:</span> {diag.canais.length}</p>
               {diag.canais.length === 0 ? (

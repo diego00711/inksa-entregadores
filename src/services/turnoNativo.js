@@ -13,21 +13,44 @@ import { DELIVERY_API_URL, createAuthHeaders } from './api';
 import apiFetch from './apiClient';
 
 let plugin = null;
-let tentouCarregar = false;
+
+// ⚠️ POR QUE NÃO SE GUARDA FRACASSO (26/09/2026).
+//
+// Antes havia um `tentouCarregar` que memorizava a PRIMEIRA tentativa, desse
+// certo ou errado. Um tropeço qualquer na estreia — a ponte do Capacitor ainda
+// não pronta, o chunk do `import()` dinâmico voltando index.html depois de um
+// deploy — e o app gravava "não tem plugin" para o resto da sessão. Nem ficar
+// online de novo fazia ele tentar outra vez.
+//
+// Guardar SUCESSO economiza trabalho; guardar FRACASSO transforma um tropeço
+// momentâneo em defeito permanente e silencioso. Agora só o sucesso fica.
+//
+// O sintoma que isso produzia era perfeito pra enganar: o serviço nativo nunca
+// subia, mas o batimento do JavaScript continuava chegando com o app aberto —
+// então, no banco, o entregador parecia perfeitamente online.
+let ultimoMotivo = 'ainda nao tentou';
 
 async function pegarPlugin() {
-  if (tentouCarregar) return plugin;
-  tentouCarregar = true;
+  if (plugin) return plugin;
   try {
     const { Capacitor, registerPlugin } = await import('@capacitor/core');
     // No navegador o plugin não existe; sem esta guarda a chamada estoura
     // "not implemented on web" toda vez que o entregador liga o botão.
-    if (!Capacitor?.isNativePlatform?.() || Capacitor.getPlatform() !== 'android') {
-      plugin = null;
+    if (!Capacitor?.isNativePlatform?.()) {
+      ultimoMotivo = 'nao e app nativo (navegador)';
+      return null;
+    }
+    const plataforma = Capacitor.getPlatform();
+    if (plataforma !== 'android') {
+      ultimoMotivo = `plataforma ${plataforma} (servico so existe no Android)`;
       return null;
     }
     plugin = registerPlugin('Turno');
-  } catch {
+    ultimoMotivo = 'ok';
+  } catch (e) {
+    // O `catch` vazio que existia aqui é o mesmo erro do canal de notificação
+    // em 16/09: se falhar, o app segue funcionando e ninguém fica sabendo.
+    ultimoMotivo = `falha ao carregar: ${e?.message || e}`;
     plugin = null;
   }
   return plugin;
@@ -35,6 +58,43 @@ async function pegarPlugin() {
 
 export function temServicoDeTurno() {
   return !!plugin;
+}
+
+/**
+ * Estado do serviço de turno, pro cartão de diagnóstico da tela de Suporte.
+ *
+ * ⚠️ EXISTE PORQUE FICAMOS CEGOS (26/09/2026). O build de produção apaga todo
+ * `console.*`, então um defeito no APK em campo não deixa rastro nenhum. Este
+ * app passou semanas sem NUNCA subir o serviço de turno — o canal
+ * `inksa_turno` não existia no aparelho do Diego — e nada em lugar nenhum
+ * dizia isso. A única pista teria sido a AUSÊNCIA de um pedido no log do
+ * servidor, que ninguém procura.
+ *
+ * `estaRodando` vem do próprio plugin nativo: é a resposta do Android, não a
+ * nossa suposição sobre ele.
+ */
+export async function diagnosticoDoTurno() {
+  const out = { ehApp: false, plataforma: null, temPlugin: false,
+                motivo: ultimoMotivo, estaRodando: null, erro: null };
+  try {
+    const { Capacitor } = await import('@capacitor/core');
+    out.ehApp = !!Capacitor?.isNativePlatform?.();
+    out.plataforma = Capacitor?.getPlatform?.() ?? null;
+  } catch (e) {
+    out.erro = e?.message || String(e);
+    return out;
+  }
+  const p = await pegarPlugin();
+  out.temPlugin = !!p;
+  out.motivo = ultimoMotivo;
+  if (!p) return out;
+  try {
+    const r = await p.estaRodando();
+    out.estaRodando = !!(r?.rodando ?? r?.value ?? r);
+  } catch (e) {
+    out.erro = e?.message || String(e);
+  }
+  return out;
 }
 
 /**
@@ -49,21 +109,35 @@ export function temServicoDeTurno() {
  */
 export async function ligarTurno() {
   const p = await pegarPlugin();
-  if (!p) return false;
+  if (!p) return false;   // pegarPlugin já anotou o motivo
   try {
     const r = await apiFetch(`${DELIVERY_API_URL}/api/delivery/heartbeat-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
     });
     // 503 = instalação sem segredo de assinatura. Não é erro do entregador.
-    if (!r.ok) return false;
+    // ⚠️ Cada saída anota o PORQUÊ. Antes as cinco devolviam `false` calado e
+    // eram indistinguíveis: com o serviço nunca subindo, não havia como saber
+    // se faltava credencial no servidor, se o Android recusou, ou se o plugin
+    // nem existia no APK.
+    if (!r.ok) {
+      ultimoMotivo = r.status === 503
+        ? 'servidor sem segredo de assinatura (HEARTBEAT_TOKEN_SECRET)'
+        : `heartbeat-token devolveu ${r.status}`;
+      return false;
+    }
     const json = await r.json();
     const token = json?.data?.token;
-    if (!token) return false;
+    if (!token) {
+      ultimoMotivo = 'resposta do heartbeat-token veio sem token';
+      return false;
+    }
 
     await p.iniciar({ apiUrl: DELIVERY_API_URL, token });
+    ultimoMotivo = 'ok';
     return true;
-  } catch {
+  } catch (e) {
+    ultimoMotivo = `iniciar falhou: ${e?.message || e}`;
     return false;
   }
 }
