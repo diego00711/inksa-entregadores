@@ -9,8 +9,26 @@
 // servidor tira o entregador da fila. Um serviço em primeiro plano é a única
 // forma que o sistema oferece de um app continuar trabalhando de verdade.
 
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { DELIVERY_API_URL, createAuthHeaders } from './api';
 import apiFetch from './apiClient';
+
+// ⚠️ IMPORT ESTÁTICO, E ISSO É O CONSERTO (27/09/2026).
+//
+// Aqui havia `await import('@capacitor/core')` dentro de `pegarPlugin()`. Esse
+// await NUNCA VOLTAVA neste app — e como ele vem ANTES de tudo, o
+// `ligarTurno()` morria nessa linha, sem sequer pedir o token ao servidor. Era
+// por isso que o log do backend nunca registrava `POST /heartbeat-token` e o
+// serviço de turno jamais subia: não era o plugin, não era o APK, não era o
+// registro nativo.
+//
+// A prova veio do retrato SÍNCRONO no cartão de Suporte: lendo `window.Capacitor`
+// direto, sem esperar nada, ele respondeu na hora `isPluginAvailable: sim` e
+// listou `Turno` entre os plugins. Ou seja, tudo estava no lugar; só o caminho
+// até lá é que estava travado.
+//
+// `notificationService.js` sempre usou import estático e sempre funcionou —
+// os canais de notificação são criados por ele. Era o exemplo ao lado.
 
 let plugin = null;
 
@@ -30,10 +48,9 @@ let plugin = null;
 // então, no banco, o entregador parecia perfeitamente online.
 let ultimoMotivo = 'ainda nao tentou';
 
-async function pegarPlugin() {
+function pegarPlugin() {
   if (plugin) return plugin;
   try {
-    const { Capacitor, registerPlugin } = await import('@capacitor/core');
     // No navegador o plugin não existe; sem esta guarda a chamada estoura
     // "not implemented on web" toda vez que o entregador liga o botão.
     if (!Capacitor?.isNativePlatform?.()) {
@@ -127,7 +144,7 @@ export async function diagnosticoDoTurno() {
                 // adianta procurar mais nada do lado de cá.
                 disponivel: null, plugins: null, travou: false };
   try {
-    const { Capacitor } = await import('@capacitor/core');
+    
     out.ehApp = !!Capacitor?.isNativePlatform?.();
     out.plataforma = Capacitor?.getPlatform?.() ?? null;
     try {
@@ -141,7 +158,7 @@ export async function diagnosticoDoTurno() {
     out.erro = e?.message || String(e);
     return out;
   }
-  const p = await pegarPlugin();
+  const p = pegarPlugin();
   out.temPlugin = !!p;
   out.motivo = ultimoMotivo;
   if (!p) return out;
@@ -182,7 +199,7 @@ export async function diagnosticoDoTurno() {
  * @returns {Promise<boolean>} true se o serviço está de pé.
  */
 export async function ligarTurno() {
-  const p = await pegarPlugin();
+  const p = pegarPlugin();
   if (!p) return false;   // pegarPlugin já anotou o motivo
   try {
     const r = await apiFetch(`${DELIVERY_API_URL}/api/delivery/heartbeat-token`, {
@@ -218,7 +235,7 @@ export async function ligarTurno() {
 
 /** Desliga o serviço e tira a notificação permanente da barra. */
 export async function desligarTurno() {
-  const p = await pegarPlugin();
+  const p = pegarPlugin();
   if (!p) return false;
   try {
     await p.parar();
