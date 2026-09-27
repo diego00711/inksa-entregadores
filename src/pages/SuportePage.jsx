@@ -80,12 +80,13 @@ function SomDoAviso() {
     // `catch` nunca dispara e o estado fica nulo pra sempre. Um instrumento
     // que some quando dá errado é pior que instrumento nenhum, porque a
     // ausência dele é lida como "ainda não chegou a atualização".
+    // ⚠️ SEM `Promise.race` AQUI. O prazo mora dentro de `diagnosticoDoTurno`,
+    // em volta só da chamada ao plugin. Corrida em volta do diagnóstico
+    // inteiro fazia o ramo do timeout devolver um objeto pelado e apagar
+    // plataforma, isPluginAvailable e a lista de plugins — o relatório sumia
+    // justo quando havia algo a relatar.
     try {
-      const r = await Promise.race([
-        diagnosticoDoTurno(),
-        new Promise((ok) => setTimeout(() => ok({ travou: true }), 4000)),
-      ]);
-      setTurno(r || { erro: 'diagnostico vazio' });
+      setTurno((await diagnosticoDoTurno()) || { erro: 'diagnostico vazio' });
     } catch (e) {
       setTurno({ erro: e?.message || String(e) });
     }
@@ -168,7 +169,7 @@ function SomDoAviso() {
                 {!turno
                   ? 'lendo…'
                   : turno.travou
-                    ? 'TRAVOU (plugin nao respondeu em 4s — provavelmente nao existe neste APK)'
+                    ? 'TRAVOU (o plugin nao respondeu em 4s)'
                     : turno.temPlugin
                       ? `plugin ok · rodando: ${turno.estaRodando === null ? '?' : (turno.estaRodando ? 'sim' : 'NAO')}`
                       : 'plugin indisponivel'}
@@ -187,6 +188,22 @@ function SomDoAviso() {
                   <span className="font-semibold font-sans">Plugins vistos pelo JS:</span> {turno.plugins}
                 </p>
               )}
+              {/* ⚠️ QUAL BUILD ESTÁ RODANDO. Faltava, e custou caro: em 26 e
+                  27/09 passamos horas sem saber se o aparelho tinha o código
+                  novo ou o velho, tentando limpar cache e reinstalar às cegas.
+                  O nome do bundle tem hash, então ele responde isso sozinho. */}
+              <p className="font-mono break-all">
+                <span className="font-semibold font-sans">Versão do app (bundle):</span>{' '}
+                {(() => {
+                  try {
+                    const s = document.querySelector('script[type="module"][src*="/assets/index-"]');
+                    if (s?.src) return new URL(s.src).pathname.split('/').pop();
+                    const ent = performance.getEntriesByType?.('resource') || [];
+                    const m = ent.map((e) => e.name).find((n) => /\/assets\/index-[^/]+\.js$/.test(n));
+                    return m ? m.split('/').pop() : '—';
+                  } catch { return '—'; }
+                })()}
+              </p>
               <p><span className="font-semibold">Canais no aparelho:</span> {diag.canais.length}</p>
               {diag.canais.length === 0 ? (
                 <p className="text-amber-700">Nenhum canal registrado.</p>

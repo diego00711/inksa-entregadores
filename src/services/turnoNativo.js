@@ -87,7 +87,7 @@ export async function diagnosticoDoTurno() {
                 // quais plugins existem e quais métodos cada um tem. Se `Turno`
                 // não estiver nela, o registro nativo não chegou ao JS, e não
                 // adianta procurar mais nada do lado de cá.
-                disponivel: null, plugins: null };
+                disponivel: null, plugins: null, travou: false };
   try {
     const { Capacitor } = await import('@capacitor/core');
     out.ehApp = !!Capacitor?.isNativePlatform?.();
@@ -108,8 +108,25 @@ export async function diagnosticoDoTurno() {
   out.motivo = ultimoMotivo;
   if (!p) return out;
   try {
-    const r = await p.estaRodando();
-    out.estaRodando = !!(r?.rodando ?? r?.value ?? r);
+    // ⚠️ O PRAZO FICA AQUI DENTRO, EM VOLTA SÓ DA CHAMADA QUE TRAVA.
+    //
+    // Antes ele estava na tela, em volta do diagnóstico INTEIRO
+    // (`Promise.race([diagnosticoDoTurno(), timeout])`), e o ramo do timeout
+    // devolvia `{ travou: true }` — um objeto pelado. Resultado: quando
+    // travava, a tela perdia junto plataforma, isPluginAvailable e a lista de
+    // plugins, que são exatamente as informações que eu tinha acabado de
+    // acrescentar pra descobrir a causa. Passei a tarde sem conseguir dizer se
+    // o app estava com o código novo ou velho, porque o meu próprio
+    // cronômetro apagava a resposta.
+    //
+    // Regra: o prazo protege a parte perigosa, não o relatório. O que já foi
+    // apurado tem que chegar inteiro.
+    const r = await Promise.race([
+      p.estaRodando(),
+      new Promise((ok) => setTimeout(() => ok('__travou__'), 4000)),
+    ]);
+    if (r === '__travou__') out.travou = true;
+    else out.estaRodando = !!(r?.rodando ?? r?.value ?? r);
   } catch (e) {
     out.erro = e?.message || String(e);
   }
