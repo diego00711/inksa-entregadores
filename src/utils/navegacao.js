@@ -19,8 +19,10 @@ import { DELIVERY_API_URL } from '../services/api';
 // destino pro app que o entregador já usa. É o mesmo caminho que os apps de
 // delivery seguem.
 
-/** Sai da WebView do app. Sem isto o link abre DENTRO do Inksa, onde não há navegação. */
-function abrirFora(url) {
+/** Sai da WebView do app. Sem isto o link abre DENTRO do Inksa, onde não há navegação.
+ *  Exportado porque o aviso de atualizar o app precisa do mesmo caminho para
+ *  entregar o link à Play Store — dentro da WebView ele não abre a loja. */
+export function abrirFora(url) {
   try {
     if (window.Capacitor?.Plugins?.Browser?.open) {
       window.Capacitor.Plugins.Browser.open({ url });

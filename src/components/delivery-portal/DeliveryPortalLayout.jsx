@@ -38,6 +38,7 @@ import { useChatAlarm, ChatAlarmContext } from '../../hooks/useChatAlarm.js';
 import { useIdleLogout } from '../../hooks/useIdleLogout.js';
 import { ligarTurno, desligarTurno } from '../../services/turnoNativo.js';
 import { ChatModal } from '../ChatModal.jsx';
+import AvisoAtualizarApp from '../AvisoAtualizarApp.jsx';
 
 // O padrão de 1h mudou de casa: agora é PADRAO_MS em utils/tempoInatividade.js,
 // junto da busca que o consome. Duas cópias do mesmo número em arquivos
@@ -499,6 +500,11 @@ export default function DeliveryPortalLayout() {
             os 144px que o comentário aqui em cima explica serem necessários. A
             barra de baixo seguia cobrindo o fim da página. Uma definição só. */}
         <main className="flex-1 overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+9rem)] lg:pb-0">
+          {/* Mora no layout, e não na tela de Início, porque ele também é o
+              placar que diz quando a chave do som pode virar: precisa rodar em
+              toda abertura do app, entre por qual tela for. Some sozinho em
+              quem já está no APK novo. */}
+          <AvisoAtualizarApp />
           <Outlet />
         </main>
       </div>
